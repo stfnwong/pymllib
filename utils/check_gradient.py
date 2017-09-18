@@ -74,6 +74,58 @@ def eval_numerical_gradient_array(f, x, df, h=1e-5):
     return grad
 
 
+def eval_numerical_gradient_blobs(f, inputs, output, h=1e-5):
+    """
+    EVAL_NUMERICAL_GRADIENT_BLOBS
+    Compute nemeric gradients for a function that operates on
+    input and output blobs. We assume that f accepts several
+    input blobs as arguments, followed by a blob into which
+    output will be written. For example, f might be called
+    like this:
+
+        f(x, w, out)
+
+    where x and w are input blobs, and the result of f will be
+    written to out
+
+    INPUTS:
+        f -
+            function
+        inputs -
+            tuple of input blobs
+        output -
+            output blob
+        h -
+            step size
+    """
+
+    numeric_diffs = []
+
+    for input_blob in inputs:
+        diff = np.zeros_like(input_blob.diffs)
+        it = np.nditer(input_blob.vals, flags=['multi_index'],
+                       op_flags=['readwrite'])
+
+        while not it.finished:
+            idx = it.multi_index
+            orig = input_blob.vals[idx]
+
+            input_blob.vals[idx] = orig + h
+            f(*(inputs + (output,)))
+            pos = np.copy(output.vals)
+            input_blob.vals[idx] = orig - h
+            f(*(inputs + (output,)))
+            neg = np.copy(output.vals)
+            input_blob.vals[idx] = orig
+
+            diff[idx] = np.sum((pos - neg) * output.diffs) / (2.0 * h)
+            it.iternext()
+
+        numeric_diffs.append(diff)
+
+    return numeric_diffs
+
+
 def grad_compare_sparse(f, x, analytic_grad, num_checks=10, h=1e-5):
     """
     GRAD_COMPARE_SPARSE
