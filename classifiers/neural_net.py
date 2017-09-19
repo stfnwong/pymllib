@@ -13,3 +13,9 @@ import numpy as np
 class NeuralNetwork(object):
     def __init__(self):
         pass
+
+    def forward_iter(self):
+        pass
+
+    def backward_iter(self):
+        pass
