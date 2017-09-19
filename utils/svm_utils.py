@@ -61,3 +61,8 @@ def gen_datasets(cifar10_dir, num_training=4900, num_validation=1000, num_test=1
     datasets['y_val'] = y_val
 
     return datasets
+
+
+def gen_mean_image(X_train):
+    return np.mean(X_train, axis=0)
+
