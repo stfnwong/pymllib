@@ -5,47 +5,26 @@ Utilities for an SVM demo.
 Stefan Wong 2017
 """
 
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
+
 import numpy as np
-from utils.data_utils import load_CIFAR10
+from data_utils import load_CIFAR10
+#from utils.data_utils import load_CIFAR10
 
 # Debug
 #from pudb import set_trace; set_trace()
 
-
-# TODO : This should go into the GUI
-#def visualise_classes(X_train, classes):
-#
-#    num_classes = len(classes)
-#    samples_per_class = 7
-#
-#    for y, cls in enumerate(classes):
-#        idxs = np.flatnonzero(y_train == y)
-#        idxs = np.random.choice(idxs, samples_per_class, replace=False)
-#        for i, idx in enumerate(idxs):
-#            plt_idx = i * num_classes + y + 1
-#            plt.subplot(samples_per_class, num_classes, plt_idx)
-#            plt.imshow(X_train[idx].astype('uint8'))
-#            plt.axis('off')
-#            if i == 0:
-#                plt.title(cls)
-
-
 # Selection of classes from CIFAR10 dataset
 classes = ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
-def gen_datasets(cifar10_dir):
+def gen_datasets(cifar10_dir, num_training=4900, num_validation=1000, num_test=1000, num_dev=500):
 
-    cifar10_dir = 'datasets/cifar-10-batches-py'
     X_train, y_train, X_test, y_test = load_CIFAR10(cifar10_dir)
-
-    # NOTE : Taken directly from the python notebook
     # Split the data into train, val, and test sets. In addition we will
     # create a small development set as a subset of the training data;
     # we can use this for development so our code runs faster.
-    num_training = 49000
-    num_validation = 1000
-    num_test = 1000
-    num_dev = 500
 
     # Our validation set will be num_validation points from the original
     # training set.
@@ -72,12 +51,13 @@ def gen_datasets(cifar10_dir):
     y_test = y_test[mask]
 
     datasets = {}
-    datasets['X_train' : X_train]
-    datasets['X_val' : X_val]
-    datasets['X_dev' : X_dev]
-    datasets['X_test' : X_test]
-    datasets['y_dev' : y_dev]
-    datasets['y_test' : y_test]
-    datasets['y_val' : y_val]
+    datasets['X_train'] = X_train
+    datasets['X_val'] = X_val
+    datasets['X_dev'] = X_dev
+    datasets['X_test'] = X_test
+    datasets['y_train'] = y_train
+    datasets['y_dev'] = y_dev
+    datasets['y_test'] = y_test
+    datasets['y_val'] = y_val
 
     return datasets
