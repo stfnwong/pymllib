@@ -25,6 +25,7 @@ import neural_net_utils as nnu
 class NNGUI(object):
     def __init__(self):
         # Data params
+        self.num_iter = 100
         self.iter_sleep = 1
         self.data_dims = 2
         self.num_classes = 3
@@ -49,69 +50,44 @@ class NNGUI(object):
         self.linear_classifier = linear.LinearClassifier()
         self.linear_classifier.init_params(self.data_dims, self.num_classes)
 
+    def init_nn_classifer(self):
+
+        self.nn_classifier = neural_net.NeuralNetwork()
+        self.nn_classifier.init_params(self.data_dims, self.num_classes)
+
 
     def run_linear_classifier(self, X, y):
         self.anim_fig = plt.figure()
+        self.anim_fig.clf()
         self.anim_ax = self.anim_fig.add_subplot(111)
         self.init_linear_classifier()
         fig_title = self.anim_ax.set_title("")
-        num_iter = 100
+        self.num_iter = 100
 
-        def anim_init():
-            h = 0.02
-            x_min, x_max = X[:,0].min() - 1, X[:,0].max() + 1
-            y_min, y_max = X[:,1].min() - 1, X[:,1].max() + 1
-            xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                                np.arange(y_min, y_max, h))
-            Z = np.dot(np.c_[xx.ravel(), yy.ravel()], self.linear_classifier.W) + self.linear_classifier.b
-            Z = np.argmax(Z, axis=1)
-            Z = Z.reshape(xx.shape)
-            self.contour_data, = self.anim_ax.contourf(xx, yy, Z, alpha=0.8)
-            self.scatter_data, = self.anim_ax.scatter(X[:,0], X[:,1], animated=True)
 
-            #return self.contour_data, self.scatter_data
-            return (self.scatter_data, self.contour_data)
+        for n in range(num_iter):
+            loss, dscores = self.linear_classifier.forward_iter(X, y)
+            Wout, bout = self.linear_classifier.backward_iter(X)
 
-        def anim_frame(i):
+            self.vis_classifier(self.linear_classifier.W, X, y, self.linear_classifier.b, self.anim_ax, it=n)
+            time.sleep(1)
+            plt.show()
 
-            loss, dscores = self.linear_classifier.forward_iter(self.linear_classifier.W, X, y)
-            Wout, bout = self.linear_classifier.backward_iter(self.linear_classifier.W, X, dscores)
-            self.linear_classifier.b = bout
-            self.linear_classifier.W = Wout
+        #plt.show()
 
-            # Set data
-            h = 0.02
-            x_min, x_max = X[:,0].min() - 1, X[:,0].max() + 1
-            y_min, y_max = X[:,1].min() - 1, X[:,1].max() + 1
-            xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                                np.arange(y_min, y_max, h))
-            Z = np.dot(np.c_[xx.ravel(), yy.ravel()], self.linear_classifier.W) + self.linear_classifier.b
-            Z = np.argmax(Z, axis=1)
-            Z = Z.reshape(xx.shape)
-            self.contour_data.set_data(xx, yy, Z, alpha=0.8)
-            self.scatter_data.set_array(X[:,0], X[:,1])
-            fig_title.set_text("Iteration %d" % int(i))
 
-            return (self.scatter_data, self.contour_data)
+    def run_nn_classifier(self, X, y):
 
-        ani = animation.FuncAnimation(self.anim_fig, anim_frame, frames=num_iter, interval=10, init_func=anim_init)
-        plt.show()
+        self.init_nn_classifer()
 
-        #num_iters = 50
-        #for n in range(num_iters):
-        #    loss, dscores = self.linear_classifier.forward_iter(self.linear_classifier.W, X, y)
-        #    Wout, bout = self.linear_classifier.backward_iter(self.linear_classifier.W, X, dscores)
-        #    self.linear_classifier.b = bout
-        #    self.linear_classifier.W = Wout
+        for n in range(self.num_iter):
 
-        #    # Plot classifier
+            loss, dscores = self.nn_classifier.forward_iter(X, y)
+            dW, dB = self.nn_classifier.backward_iter(X)
+            print("Iter %d, loss = %f" % (n, loss))
 
-        #    self.vis_classifier(self.linear_classifier.W, X, y, self.linear_classifier.b, n+1)
-        #    plt.draw()
-        #    time.sleep(self.iter_sleep)
-
-        # Plot once at end for test purposes
-        #self.vis_classifier(self.linear_classifier.W, X, y, self.linear_classifier.b)
+            self.vis_classifier(self.nn_classifier.W1, X, y, self.nn_classifier.b1, None, it=n)
+            plt.show()
 
     def vis_classifier(self, W, X, y, b, ax, it=None):
 
@@ -124,7 +100,10 @@ class NNGUI(object):
         Z = np.argmax(Z, axis=1)
         Z = Z.reshape(xx.shape)
 
-        self.fig_classifier = plt.figure()
+        #self.fig_classifier = plt.figure()
+        plt.ion()
+        plt.figure(1)
+        plt.clf()
         plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral, alpha=0.8)
         plt.scatter(X[:,0], X[:,1], c=y, s=40, cmap=plt.cm.Spectral)
         plt.xlim(xx.min(), xx.max())
@@ -132,7 +111,8 @@ class NNGUI(object):
 
         if(it is not None):
             plt.title('Decision boundary at iteration %d' % it)
-        self.fig_classifier.canvas.draw()
+        plt.draw()
+        #self.fig_classifier.canvas.draw()
 
     #def vis_synth_data(self, X, y):
 
@@ -185,7 +165,8 @@ if __name__ == "__main__":
     #nngui.vis_synth_data(circle_data[0], circle_data[1])
     #nngui.vis_synth_data(spiral_data[0], spiral_data[1])
 
-    nngui.run_linear_classifier(spiral_data[0], spiral_data[1])
+    nngui.run_nn_classifier(spiral_data[0], spiral_data[1])
+    #nngui.run_linear_classifier(spiral_data[0], spiral_data[1])
 
     plt.show()
 
