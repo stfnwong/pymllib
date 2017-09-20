@@ -50,45 +50,12 @@ class LinearClassifier(object):
 
     def backward_iter(self, X):
         # backprop the gradient params
-        dW = np.dot(X.T, self.scores)
-        db = np.sum(self.scores, axis=0, keepdims=True)
+        dW = np.dot(X.T, self.dscores)
+        db = np.sum(self.dscores, axis=0, keepdims=True)
 
         dW += self.reg * self.W
 
-        Wout = self.W - self.step_size * dW
-        bout = self.b - self.step_size * db
+        self.W -= self.step_size * dW
+        self.b -= self.step_size * db
 
-        return Wout, bout
-
-    """ ================ DEPRECATED ================ """
-    # Just do inner loop here, outer loop can happen in GUI
-    # TODO ; Split into forward_iter() and backward_iter() ?
-    def compute_loss_iter(self, W, X, y):
-
-        num_examples = X.shape[0]
-        self.scores = np.dot(X, W) + self.b
-
-        # Compute class probs
-        exp_scores = np.exp(scores)
-        probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
-
-        correct_logprobs = -np.log(probs[range(num_examples), y])
-        data_loss = np.sum(correct_logprobs) / num_examples
-        reg_loss = 0.5 * self.reg * np.sum(W * W)
-        loss = data_loss + reg_loss
-
-        # Compute gradient on scores
-        dscores = probs
-        dscores[range(num_examples), y] -= 1
-        dscores /= num_examples
-
-        # backprop the gradient params
-        dW = np.dot(X.T, dscores)
-        db = np.sum(dscores, axis=0, keepdims=True)
-
-        dW += self.reg * W
-
-        Wout = W - self.step_size * dW
-        bout = self.b - self.step_size * db
-
-        return loss, Wout, bout
+        return self.W, self.b

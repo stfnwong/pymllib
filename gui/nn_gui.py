@@ -62,21 +62,24 @@ class NNGUI(object):
         self.anim_ax = self.anim_fig.add_subplot(111)
         self.init_linear_classifier()
         fig_title = self.anim_ax.set_title("")
-        self.num_iter = 100
 
 
-        for n in range(num_iter):
+        for n in range(self.num_iter):
             loss, dscores = self.linear_classifier.forward_iter(X, y)
             Wout, bout = self.linear_classifier.backward_iter(X)
-
+            print("Iter %d, loss = %f" % (n, loss))
             self.vis_classifier(self.linear_classifier.W, X, y, self.linear_classifier.b, self.anim_ax, it=n)
-            time.sleep(1)
-            plt.show()
+            #self.anim_fig.canvas.draw()
+            #plt.show()
+            plt.draw()
+            plt.pause(0.01)
 
-        #plt.show()
 
 
     def run_nn_classifier(self, X, y):
+        self.anim_fig = plt.figure()
+        self.anim_ax = self.anim_fig.add_subplot(111)
+        fig_title = self.anim_ax.set_title("")
 
         self.init_nn_classifer()
 
@@ -85,11 +88,17 @@ class NNGUI(object):
             loss, dscores = self.nn_classifier.forward_iter(X, y)
             dW, dB = self.nn_classifier.backward_iter(X)
             print("Iter %d, loss = %f" % (n, loss))
-
-            self.vis_classifier(self.nn_classifier.W1, X, y, self.nn_classifier.b1, None, it=n)
-            plt.show()
+            self.vis_classifier(self.nn_classifier.W1, X, y, self.nn_classifier.b1, self.anim_ax, it=n)
+            self.anim_fig.canvas.draw()
+            plt.draw()
+            plt.pause(0.01)
 
     def vis_classifier(self, W, X, y, b, ax, it=None):
+
+        if(ax is None):
+            return
+
+        ax.clear()
 
         h = 0.02
         x_min, x_max = X[:,0].min() - 1, X[:,0].max() + 1
@@ -101,18 +110,15 @@ class NNGUI(object):
         Z = Z.reshape(xx.shape)
 
         #self.fig_classifier = plt.figure()
-        plt.ion()
-        plt.figure(1)
-        plt.clf()
-        plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral, alpha=0.8)
-        plt.scatter(X[:,0], X[:,1], c=y, s=40, cmap=plt.cm.Spectral)
-        plt.xlim(xx.min(), xx.max())
-        plt.ylim(yy.min(), yy.max())
+        ax.contourf(xx, yy, Z, cmap=plt.cm.Spectral, alpha=0.8)
+        ax.scatter(X[:,0], X[:,1], c=y, s=40, cmap=plt.cm.Spectral)
+        ax.set_xlim(xx.min(), xx.max())
+        ax.set_ylim(yy.min(), yy.max())
 
         if(it is not None):
-            plt.title('Decision boundary at iteration %d' % it)
+            ax.set_title('Decision boundary at iteration %d' % it)
         plt.draw()
-        #self.fig_classifier.canvas.draw()
+        #self.anim_fig.canvas.draw()
 
     #def vis_synth_data(self, X, y):
 
@@ -165,8 +171,8 @@ if __name__ == "__main__":
     #nngui.vis_synth_data(circle_data[0], circle_data[1])
     #nngui.vis_synth_data(spiral_data[0], spiral_data[1])
 
+    nngui.run_linear_classifier(spiral_data[0], spiral_data[1])
     nngui.run_nn_classifier(spiral_data[0], spiral_data[1])
-    #nngui.run_linear_classifier(spiral_data[0], spiral_data[1])
 
     plt.show()
 
