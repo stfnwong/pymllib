@@ -7,9 +7,9 @@ import numpy as np
 
 
 class LinearClassifier(object):
-    def __init__(self):
-        self.step_size = 1e-0
-        self.reg = 1e-3         # regularization strength
+    def __init__(self, reg=5e-6, ss=1e-3):
+        self.step_size = ss
+        self.reg = reg       # regularization strength
         self.num_iter = 200
         self.W = None
         self.scores = None
@@ -26,11 +26,10 @@ class LinearClassifier(object):
 
     def forward_iter(self, X, y):
         num_examples = X.shape[0]
-        scores = np.dot(X, self.W) + self.b
-        self.scores = scores
+        self.scores = np.dot(X, self.W) + self.b
 
         # Compute class probs
-        exp_scores = np.exp(scores)
+        exp_scores = np.exp(self.scores)
         probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
 
         correct_logprobs = -np.log(probs[range(num_examples), y])
