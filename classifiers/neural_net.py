@@ -28,8 +28,8 @@ class NeuralNetwork(object):
         # K - number of classes
 
         h = self.h_layer_size
-        self.W1 = 0.001 * np.random.randn(D, h)
-        self.W2 = 0.001 * np.random.randn(h, K)
+        self.W1 = 0.01 * np.random.randn(D, h)
+        self.W2 = 0.01 * np.random.randn(h, K)
         self.b1 = np.zeros((1,h))
         self.b2 = np.zeros((1,K))
 
@@ -72,10 +72,10 @@ class NeuralNetwork(object):
         dW2 += self.reg * self.W2
         dW1 += self.reg * self.W1
 
-        self.W1 -= self.step_size * dW1
-        self.b1 -= self.step_size * db1
-        self.W2 -= self.step_size * dW2
-        self.b2 -= self.step_size * db2
+        self.W1 += -self.step_size * dW1
+        self.b1 += -self.step_size * db1
+        self.W2 += -self.step_size * dW2
+        self.b2 += -self.step_size * db2
         #self.step_size *= self.ss_decay
 
         return (dW1, dW2), (db1, db2)
@@ -97,6 +97,9 @@ class NeuralNetwork(object):
         y_pred = np.argmax(out, axis=1)
 
         return y_pred
+
+
+
 
 
 

@@ -19,7 +19,7 @@ import linear
 import neural_net_utils as nnu
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 class NNGUI(object):
     def __init__(self):
@@ -51,7 +51,7 @@ class NNGUI(object):
 
     def init_nn_classifer(self):
 
-        self.nn_classifier = neural_net.NeuralNetwork(h=100, reg=0.021, ss=0.21)
+        self.nn_classifier = neural_net.NeuralNetwork(h=100, reg=1e-3, ss=1e-0)
         self.nn_classifier.init_params(self.data_dims, self.num_classes)
 
 
@@ -97,11 +97,12 @@ class NNGUI(object):
             y_pred.append(self.nn_classifier.predict_iter(X))
             print("Iter %d, loss = %f" % (n, loss))
 
-            VisW = (self.nn_classifier.W1, self.nn_classifier.W2)
-            Visb = (self.nn_classifier.b1, self.nn_classifier.b2)
-            self.vis_classifier(VisW, X, y, Visb, self.anim_ax, it=n)
-            plt.draw()
-            plt.pause(self.anim_pause)
+            if(n % 1000 == 0):
+                VisW = (self.nn_classifier.W1, self.nn_classifier.W2)
+                Visb = (self.nn_classifier.b1, self.nn_classifier.b2)
+                self.vis_classifier(VisW, X, y, Visb, self.anim_ax, it=n)
+                plt.draw()
+                plt.pause(self.anim_pause)
 
             #if(n >= self.num_iter - 1):
             #    VisW = (self.nn_classifier.W1, self.nn_classifier.W2)
@@ -110,6 +111,8 @@ class NNGUI(object):
             #    plt.show()
             #    plt.draw()
             #    plt.pause(self.anim_pause)
+
+        # print the training accuracy
 
 
     def tune_nn_params(self, X, y):
@@ -225,8 +228,8 @@ if __name__ == "__main__":
     #nngui.vis_synth_data(circle_data[0], circle_data[1])
     #nngui.vis_synth_data(spiral_data[0], spiral_data[1], ax=vis_ax)
     #plt.pause(1)
-    nngui.num_iter = 500
-    nngui.tune_nn_params(spiral_data[0], spiral_data[1])
+    nngui.num_iter = 10000
+    #nngui.tune_nn_params(spiral_data[0], spiral_data[1])
     #nngui.run_linear_classifier(spiral_data[0], spiral_data[1])
     nngui.run_nn_classifier(spiral_data[0], spiral_data[1])
 
