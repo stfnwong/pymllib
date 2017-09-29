@@ -109,67 +109,81 @@ class NeuralNet(object):
 
         return self.loss, self.grads
 
-# This is just an alternative implementation of the neural network
+
 class TwoLayerNet(object):
-    def __init__(self):
-        self.num_iters = 10000
-        self.reg = 0
-        self.step_size = 0
 
-    def init_params(self,h, D, K, reg=1e-3, step_size=1e-0):
-        # h - size of hidden layer
-        # D - dimension of data
-        # K - number of classes
-
+    def __init__(self, reg=1e-3, step_size=1e0):
         self.reg = reg
         self.step_size = step_size
 
-        params = {}
-        params['W1'] = 0.01 * np.random.randn(D, h)
-        params['b1'] = np.zeros((1,h))
-        params['W2'] = 0.01 * np.random.randn(h, K)
-        params['b2'] = np.zeros((1, K))
+    def train(self, X, y):
+            # initialize parameters randomly
+        h = 100 # size of hidden layer
+        W1 = 0.01 * np.random.randn(D,h)
+        b1 = np.zeros((1,h))
+        W2 = 0.01 * np.random.randn(h,K)
+        b2 = np.zeros((1,K))
 
-    def compute_loss(self, X, y, params):
-        # params - a dict of parameters
-        W1 = params['W1']
-        W2 = params['W2']
-        b1 = params['b1']
-        b2 = params['b2']
+        # some hyperparameters
+        step_size = 1e-0
+        reg = 1e-3 # regularization strength
+
+        # gradient descent loop
         num_examples = X.shape[0]
+        for i in range(10000):
 
-        hidden_layer = activ.relu(np.dot(X, W1) + b1)
-        exp_scores = np.exp(scores)
-        probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
-        # Compute cross-entropy loss
-        logprobs = -np.log(probs[range(num_examples), y])
-        data_loss = np.sum(logprobs) / num_examples
-        reg_loss = 0.5 * self.reg * np.sum(W1 * W1) + np.sum(W2 * W2)
+            # evaluate class scores, [N x K]
+            hidden_layer = np.maximum(0, np.dot(X, W1) + b1) # note, ReLU activation
+            scores = np.dot(hidden_layer, W2) + b2
 
-        return data_loss + reg_loss
+            # compute the class probabilities
+            exp_scores = np.exp(scores)
+            probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True) # [N x K]
 
-    def compute_grad(self, params):
+            # compute the loss: average cross-entropy loss and regularization
+            corect_logprobs = -np.log(probs[range(num_examples),y])
+            data_loss = np.sum(corect_logprobs)/num_examples
+            reg_loss = 0.5*reg*np.sum(W1*W1) + 0.5*reg*np.sum(W2*W2)
+            loss = data_loss + reg_loss
+            if i % 1000 == 0:
+                print("iteration %d: loss %f" % (i, loss))
 
-        dW1 = 0
-        dW2 = 0
-        db1 = 0
-        db2 = 0
+            # max scores
+            max_scores = np.max(scores)
+            max_exp = np.max(exp_scores)
 
-        return dW1, db1, dW2, db2
+            # compute the gradient on scores
+            dscores = probs
+            dscores[range(num_examples),y] -= 1
+            dscores /= num_examples
 
-    def grad_descent(self, X, y):
+            # backpropate the gradient to the parameters
+            # first backprop into parameters W2 and b2
+            dW2 = np.dot(hidden_layer.T, dscores)
+            db2 = np.sum(dscores, axis=0, keepdims=True)
+            # next backprop into hidden layer
+            dhidden = np.dot(dscores, W2.T)
+            # backprop the ReLU non-linearity
+            dhidden[hidden_layer <= 0] = 0
+            # finally into W1,b1
+            dW = np.dot(X.T, dhidden)
+            db = np.sum(dhidden, axis=0, keepdims=True)
 
-        for n in range(self.num_iters):
-            loss = self.compute_loss(X, y, params)
-            # Update parameters
-            dW1, db1, dW2, db2 = self.compute_grad(params)
-            params['W1'] += -self.step_size * dW1
-            params['W2'] += -self.step_size * dW2
-            params['b1'] += -self.step_size * db1
-            params['b2'] += -self.step_size * db2
+            # add regularization gradient contribution
+            dW2 += reg * W2
+            dW += reg * W1
+
+            # perform a parameter update
+            W1 += -step_size * dW
+            b1 += -step_size * db
+            W2 += -step_size * dW2
+            b2 += -step_size * db2
+
+        return W1, W2, b1, b2
 
 
 
+# This is just a copy paste of the version from CS231n
 def NNFunction(X,y):
         # initialize parameters randomly
     h = 100 # size of hidden layer
@@ -202,6 +216,10 @@ def NNFunction(X,y):
         if i % 1000 == 0:
             print("iteration %d: loss %f" % (i, loss))
 
+        # max scores
+        max_scores = np.max(scores)
+        max_exp = np.max(exp_scores)
+
         # compute the gradient on scores
         dscores = probs
         dscores[range(num_examples),y] -= 1
@@ -229,6 +247,8 @@ def NNFunction(X,y):
         W2 += -step_size * dW2
         b2 += -step_size * db2
 
+    # This is the h for the visusalization, not for the size of the hidden
+    # layer
     h = 0.02
     x_min, x_max = X[:,0].min() - 1, X[:,0].max() + 1
     y_min, y_max = X[:,1].min() - 1, X[:,1].max() + 1
@@ -252,6 +272,8 @@ def NNFunction(X,y):
     plt.ylim(yy.min(), yy.max())
     plt.show()
 
+
+
 # ======== ENTRY POINT ======== #
 if __name__ == "__main__":
 
@@ -263,22 +285,22 @@ if __name__ == "__main__":
     theta = 0.3
     spiral_data = nnu.create_spiral_data(N, D, K, theta)
 
-    net = NeuralNet()
-    net.init_params(h, D, K)
+    net = TwoLayerNet()
+    #net.init_params(h, D, K)
     num_iters = 10000
 
     X = spiral_data[0]
     y = spiral_data[1]
 
-    NNFunction(X, y)
+    #NNFunction(X, y)
+    W1, W2, b1, b2 = net.train(X, y)
 
 
     #for n in range(num_iters):
     #    loss, grads = net.grad_descent(X, y)
     #    if(n % 1000 == 0):
     #        print("Iter %d, loss = %f" % (n, loss))
-    """
-    loss, grads = net.grad_descent(X, y)
+    #loss, grads = net.grad_descent(X, y)
 
     # Visualize the classifier
     h = 0.02
@@ -287,8 +309,10 @@ if __name__ == "__main__":
     xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
                             np.arange(y_min, y_max, h))
 
-    W = (net.W1, net.W2)
-    b = (net.b1, net.b2)
+    #W = (net.W1, net.W2)
+    #b = (net.b1, net.b2)
+    W = (W1, W2)
+    b = (b1, b2)
     if(type(W) is tuple):
         Z = np.dot(np.maximum(0, np.dot(np.c_[xx.ravel(), yy.ravel()], W[0]) + b[0]), W[1]) + b[1]
     else:
@@ -303,4 +327,3 @@ if __name__ == "__main__":
     plt.xlim(xx.min(), xx.max())
     plt.ylim(yy.min(), yy.max())
     plt.show()
-    """
