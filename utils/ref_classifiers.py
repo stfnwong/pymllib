@@ -11,7 +11,7 @@ Stefan Wong 2017
 import numpy as np
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 class TwoLayerNetSingleFunction(object):
     def __init__(self, reg=1e-3, step_size=1e0):
@@ -22,7 +22,7 @@ class TwoLayerNetSingleFunction(object):
         self.b1 = None
         self.b2 = None
 
-    def train(self, X, y, num_iter=10000):
+    def train(self, X, y, D, h, K, num_iter=10000):
             # initialize parameters randomly
         h = 100 # size of hidden layer
         W1 = 0.01 * np.random.randn(D,h)
@@ -50,7 +50,7 @@ class TwoLayerNetSingleFunction(object):
             data_loss = np.sum(corect_logprobs)/num_examples
             reg_loss = 0.5*reg*np.sum(W1*W1) + 0.5*reg*np.sum(W2*W2)
             loss = data_loss + reg_loss
-            if i % 1000 == 0:
+            if i % 100 == 0:
                 print("iteration %d: loss %f" % (i, loss))
 
             # compute the gradient on scores
