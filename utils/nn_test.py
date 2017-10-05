@@ -323,8 +323,8 @@ def layer_size_test(X, y, D):
             W = np.random.randn(layer_dims[n-1], layer_dims[n])
         b = np.zeros((1,layer_dims[n]))
         # create an output layer at the end
-        if(n == num_layers-1):
-            W = np.zeros((layer_dims[n-1], layer_dims[n]))
+        #if(n == num_layers-1):
+        #    W = np.zeros((layer_dims[n-1], layer_dims[n]))
         layer_list.append(W)
         bias_list.append(b)
         # calculate Z size
