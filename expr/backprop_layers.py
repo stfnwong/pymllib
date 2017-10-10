@@ -78,6 +78,16 @@ class SigmoidLayer(Layer):
 
 
 # ==== NETWORK FUNCTIONS ==== #
+def gradient_descent(layers, grads, X, y, reg=1e-0, step_size=1e-3):
+
+    # Technically there is no reason to do this by index, but
+    # I find that its clearer to me to write in this form
+
+    for l in range(len(layers)):
+        layer_out = layers[l].forward(layer_input)  # extra var for watching in debugger
+        layer_input = layer_out
+        #Z_list.append(layer_out)        # for later inspection
+
 
 def main():
     # Generate some data
@@ -92,27 +102,47 @@ def main():
 
     num_examples = X.shape[0]
 
+    # Hyperparams - TODO : move these
+    reg = 1e-0
+
     # Create layers
     layer_sizes = [h, 3]
     relu_hidden = ReLULayer(D, layer_sizes[0])
-    linear_output = LinearLayer(layer_sizes[1], K)
+    linear_output = LinearLayer(layer_sizes[0], layer_sizes[1])
     layer_list = [relu_hidden, linear_output]
+
+    # Pre-allocate memory for forward activations
+    z_forward = []
+    for l in range(len(layer_list)):
+        z = np.zeros((1, layer_sizes[l]))
+        z_forward.append(z)
+
+    # Pre-allocate memory for backward activations
+    z_backward = []
+    for l in range(len(layer_list)):
+        if(l == 0):
+            dz = np.zeros((X.shape[0], layer_sizes[-1]))
+        else:
+            dz = np.zeros((layer_sizes[l-1], layer_sizes[-1]))
+        z_backward.append(dz)
 
     # Gradient descent, Forward Pass
     layer_input = X
-    Z_list = []
-    for l in layer_list:
-        layer_out = l.forward(layer_input)  # extra var for watching in debugger
-        layer_input = layer_out
-        Z_list.append(layer_out)        # for later inspection
+    for l in range(len(layer_list)):
+        z_forward[l] = layer_list[l].forward(layer_input)
+        layer_input = z_forward[l]
 
     # Compute scores, loss
-    exp_scores = np.exp(layer_out) # same as np.exp(Z_list[-1])
+    exp_scores = np.exp(z_forward[-1])  # same as np.exp(Z_list[-1])
     probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
     logprobs = -np.log(probs[range(num_examples), y])
     data_loss = np.sum(logprobs) / num_examples
     reg_loss = 0   # TODO
+    for l in range(len(layer_list)):
+        reg_loss += 0.5 * reg * np.sum(layer_list[l].W * layer_list[l].W)
     loss = data_loss + reg_loss
+
+    print("iter %d : loss %f" % (0, loss))
 
     # Compute gradient on loss
     dscores = probs
@@ -120,14 +150,13 @@ def main():
     dscores /= num_examples
 
     # Gradient descent, backward pass
-    dz_list = []
     dz_prev = dscores
     for l in range(len(layer_list)):
         idx = len(layer_list) - l - 1
         # Z[idx] is the activation on layer idx
-        dz = layer_list[l].backward(dz_prev, Z_list[idx])
-        dz_prev = dz
-        dz_list.append(dz)
+        z_backward[l] = layer_list[l].backward(dz_prev, z_forward[idx])
+        dz_prev = z_backward[l]
+
 
 
 
