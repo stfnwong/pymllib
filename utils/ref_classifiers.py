@@ -11,7 +11,7 @@ Stefan Wong 2017
 import numpy as np
 
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 class TwoLayerNetSingleFunction(object):
     def __init__(self, reg=1e-3, step_size=1e0):
@@ -180,3 +180,4 @@ def LinearReference(W, X, y, reg=1e-3, step_size=1e-1):
     b += -step_size * db
 
     return loss, W, b
+

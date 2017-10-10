@@ -7,9 +7,10 @@ Stefan Wong 2017
 
 import numpy as np
 import neural_net_utils as nnu
+#import tracemalloc
 
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 # Some simple activation functions here
 def relu(z):
@@ -37,9 +38,8 @@ input_dim = 2
 layer_dims = [100, 100, 3]
 num_layers = len(layer_dims) + 1
 
-# Internals are global for now
-
-
+# Internals are global for now - allocate locally (as we move towards
+# localization)
 def init_weights(input_dim, layer_dims):
     W = []
     B = []
@@ -66,7 +66,6 @@ for n in range(num_layers-1):
     db = np.zeros((1,1))
     dW.append(dw)
     dB.append(db)
-
 
 def backprop(X, y, f, df, reg=1e-1, step_size=1e-3):
     # Forward pass
@@ -112,16 +111,55 @@ def backprop_sigmoid(X, y, reg=1e-1, step_size=1e-3):
         idx = len(Z) - n - 1
         dz = Z[idx] * (1 - Z[idx])
         #dx = np.dot(W[idx].T, dz)
-        dw = np.outer(dz, X)
+        #dw = np.outer(dz, X)
         print("Layer %d : dz.shape is (%d, %d)" % (idx, dz.shape[0], dz.shape[1]))
-        dW.append(dw)
+        #dW.append(dw)
         dZ.append(dz)
 
     return dW, dB, loss
 
+def backprop_relu(X, y, reg=1e-1, step_size=1e-3):
+    # Forward pass
+    layer_input = X
+    print("Forward pass")
+    for n in range(len(W)):
+        x = np.dot(layer_input, W[n]) + B[n]
+        Z[n] = np.maximum(0, x)
+        layer_input = Z[n]
+        print("Layer %d : activation shape is (%d,%d)" % (n+1, x.shape[0], x.shape[1]))
 
+    print("\n")
+    # At the end of that we can compute the correct probs
+    num_examples = X.shape[0]
+    exp_scores = np.exp(W[-1])
+    probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+    logprobs = -np.log(probs[range(num_examples), y])
+    data_loss = np.sum(logprobs) / num_examples
+    # Find the regularization loss
+    reg_loss = 0
+    for n in range(len(W)):
+        reg_loss += 0.5 * reg * np.sum(W[n] * W[n])
+    loss = data_loss + reg_loss
+
+    # Backward pass
+    dZ = []
+    dW = []
+    dB = []
+    print("Backward pass")
+    for n in range(len(Z)):
+        idx = len(Z) - n - 1
+        #dz = Z[idx] * (1 - Z[idx])
+        #dx = np.dot(W[idx].T, dz)
+        #dw = np.outer(dz, X)
+        #print("Layer %d : dz.shape is (%d, %d)" % (idx, dz.shape[0], dz.shape[1]))
+        #dW.append(dw)
+        #dZ.append(dz)
+
+    return dW, dB, loss
+
+# Entry point here
 def main():
-    #dW, db, loss = backprop(X, y, relu, relu_dz)
+    #dW, db, loss = backprop(X, y, relu, relu_dz
     dW, db, loss = backprop_sigmoid(X, y)
 
 if __name__ == "__main__":

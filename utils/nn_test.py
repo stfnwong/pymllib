@@ -361,8 +361,6 @@ if __name__ == "__main__":
         layer_dims.append(D)
         layer_sizes.append(h)
 
-
-
     input_dim = D
     #mod_net = ModularNetwork(layer_dims, layer_sizes, input_dim)
     mod_net = LessModularNetwork(layer_dims, layer_sizes)
@@ -378,7 +376,7 @@ if __name__ == "__main__":
 
     #NNFunction(X, y)
     W1, W2, b1, b2 = ref_net.train(X, y, D, h, K, num_iters)
-    modW, modb = mod_net.train(X, y, num_iters)
+    #modW, modb = mod_net.train(X, y, num_iters)
 
     # Visualize the classifier
     h = 0.02
@@ -386,11 +384,10 @@ if __name__ == "__main__":
     y_min, y_max = X[:,1].min() - 1, X[:,1].max() + 1
     xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
                             np.arange(y_min, y_max, h))
-
-    #W = (net.W1, net.W2)
-    #b = (net.b1, net.b2)
-    W = (modW[0], modW[1])
-    b = (modb[0], modb[1])
+    W = (ref_net.W1, ref_net.W2)
+    b = (ref_net.b1, ref_net.b2)
+    #W = (modW[0], modW[1])
+    #b = (modb[0], modb[1])
     if(type(W) is tuple):
         Z = np.dot(np.maximum(0, np.dot(np.c_[xx.ravel(), yy.ravel()], W[0]) + b[0]), W[1]) + b[1]
     else:
