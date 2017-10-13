@@ -28,11 +28,11 @@ class Layer(object):
 class LinearLayer(Layer):
     def __str__(self):
         s = []
-        s.append('ReLU Layer, \n\tinput dim : %d, \n\tlayer size : %d\n' % (self.W.shape[0], self.W.shape[1]))
+        s.append('Linear Layer, \n\tinput dim : %d, \n\tlayer size : %d\n' % (self.W.shape[0], self.W.shape[1]))
         return ''.join(s)
 
     def __repr__(self):
-        return self.__str__
+        return self.__str__()
 
     def forward(self, X):
         return np.dot(X, self.W) + self.b
@@ -48,7 +48,7 @@ class ReLULayer(Layer):
         return ''.join(s)
 
     def __repr__(self):
-        return self.__str__
+        return self.__str__()
 
     def forward(self, X):
         Z =  np.dot(X, self.W) + self.b
@@ -67,7 +67,7 @@ class SigmoidLayer(Layer):
         return ''.join(s)
 
     def __repr__(self):
-        return self.__str__
+        return self.__str__()
 
     def forward(self, X):
         return 1 / (1 + np.exp(-X))
@@ -76,17 +76,172 @@ class SigmoidLayer(Layer):
         return dz * (1 - dz)
 
 
+# ========= NETWORK ======== #
+"""
+Basic layered Neural Network using new layer objects
+"""
+class LayeredNeuralNetwork(object):
+    def __init__(self, input_dim, layer_dims, layer_types=None, reg=1e-0, step_size=1e-3):
+        """
+        TODO : Full doc string
 
-# ==== NETWORK FUNCTIONS ==== #
-def gradient_descent(layers, grads, X, y, reg=1e-0, step_size=1e-3):
+        input_dim:
+            Size of input
 
-    # Technically there is no reason to do this by index, but
-    # I find that its clearer to me to write in this form
+        layer_dims:
+            List of sizes for each hidden layer. layer_dims[-1] is the size of the output
+            layer.
+        """
+        # Hyperparameters
+        self.reg = reg
+        self.step_size = step_size
+        # Init layers
+        if(layer_types is None):
+            layer_types = ['linear'] * len(layer_dims)
+        else:
+            assert len(layer_types) == len(layer_dims)
 
-    for l in range(len(layers)):
-        layer_out = layers[l].forward(layer_input)  # extra var for watching in debugger
-        layer_input = layer_out
-        #Z_list.append(layer_out)        # for later inspection
+        #internal_layer_dims = [input_dim].extend(layer_dims)
+        internal_layer_dims = []
+        internal_layer_dims.append(input_dim)
+        for t in layer_dims:
+            internal_layer_dims.append(t)
+        self.init_layers(internal_layer_dims, layer_types)
+        self.num_layers = len(self.layers)
+        #self.num_layers = len(layer_dims) + 1
+
+        # Pre-allocate memory for forward and backward activations
+        self.z_forward = []
+        self.z_backward = []    # Gradient on weights
+        self.b_backward = []    # Gradient on biases
+        for l in range(len(self.layers)):
+            z = np.zeros((input_dim, internal_layer_dims[l+1]))
+            b = np.zeros((1, internal_layer_dims[l+1]))
+            dz = np.zeros((internal_layer_dims[l], internal_layer_dims[l+1]))
+            self.z_forward.append(z)
+            self.z_backward.append(dz)
+            self.b_backward.append(b)
+
+        # Debug options
+        self.verbose = False
+        self.cache_loss = False
+
+    def __str__(self):
+        s = []
+        s.append('% layers\n' % (self.num_layers))
+        for l in self.layers:
+            s.append('%s' % (str(l)))
+        s.append('\n')
+
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__
+
+    def init_layers(self, layer_dims, layer_types):
+        """
+        INPUTS:
+            layer_dims:
+                list containing dimensions for each layer. layer_dims[0]
+                must be an integer representing the size of the input
+                presented to the first layer. layer_dims[-1] must be an
+                integer representing the size of the output on the last
+                layer
+
+            layer_types:
+                A list indicating the type of activation for each layer.
+                This length of this list must be equal to the length of
+                layer_dims.
+
+        """
+        self.layers = []
+        # TODO : if I use soemthing like
+        # for l in self.layers;
+        # del(l)
+        # does this improve memory usage if/when we reset the weights?
+
+        for l in range(len(layer_types)):
+            dim_idx = l+1
+            # TODO: move sizes out to local variables
+            if(layer_types[l] == 'relu'):
+                layer = ReLULayer(layer_dims[dim_idx-1], layer_dims[dim_idx])
+            elif(layer_types[l] == 'sigmoid'):
+                layer = SigmoidLayer(layer_dims[dim_idx-1], layer_dims[dim_idx])
+            elif(layer_types[l] == 'linear'):
+                layer = LinearLayer(layer_dims[dim_idx-1], layer_dims[dim_idx])
+            else:
+                print('Invalid layer type %s' % (layer_types[l]))
+                sys.exit(2)     # TODO : throw an exception?
+
+            self.layers.append(layer)
+
+    def gradient_descent(self, X, y):
+
+        N = X.shape[0]
+        # ==== Forward passc
+        z_input = X
+        for l in range(len(self.layers)):
+            z_temp = self.layers[l].forward(z_input)
+            self.z_forward[l] = z_temp
+            z_input = self.z_forward[l]
+
+        # Compute scores
+        exp_scores = np.exp(self.z_forward[-1])
+        probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+        logprobs = -np.log(probs[range(N), y])
+        # Compute loss
+        data_loss = np.sum(logprobs) / N
+        reg_loss = 0
+        for l in range(len(self.layers)):
+            reg_loss += 0.5 * self.reg * np.sum(self.layers[l].W * self.layers[l].W)
+        loss = data_loss + reg_loss
+
+        # Compute derivative of scores
+        dscores = probs
+        dscores[range(N), y] -= 1
+        dscores /= N
+
+        # ==== Backward pass
+        dz_input = dscores
+        for l in range(len(self.layers)):
+            idx = len(self.layers) - l - 1
+            # TODO : I am not correctly applying the backward pass.... I think
+            dz_temp = self.layers[idx].backward(dz_input, self.z_forward[idx])
+            self.z_backward[idx] = dz_temp
+            db_temp = np.sum(dz_input)
+            self.b_backward[idx] = db_temp
+            dz_input = self.z_backward[idx]
+
+        # Add regularization gradient contribution
+        for l in range(len(self.layers)):
+            self.z_backward[l] += self.reg * self.layers[l].W
+
+        return loss
+
+    def train(self, X, y, num_iter=10000):
+
+        if(self.cache_loss):
+            loss_cache = np.ndarray((1, num_iter))
+
+        for i in range(num_iter):
+            loss = self.gradient_descent(X, y)
+            if(self.cache_loss):
+                loss_cache[i] = loss
+            if(self.verbose):
+                if(i % 100 == 0):
+                    print('iter %d : loss %f' % (i, loss))
+            self.update_weights()
+
+        if(self.cache_loss):
+            return loss_cache
+        else:
+            return None
+
+
+    def update_weights(self):
+        for l in range(len(self.layers)):
+            self.layers[l].update(self.z_backward[l], self.b_backward[l], self.step_size)
+
 
 
 def main():
@@ -102,60 +257,23 @@ def main():
 
     num_examples = X.shape[0]
 
-    # Hyperparams - TODO : move these
+    # Hyperparams
     reg = 1e-0
+    step_size = 1e-3
+    num_iter = 10000
 
     # Create layers
     layer_sizes = [h, 3]
-    relu_hidden = ReLULayer(D, layer_sizes[0])
-    linear_output = LinearLayer(layer_sizes[0], layer_sizes[1])
-    layer_list = [relu_hidden, linear_output]
+    layer_types = ['relu', 'linear']
 
-    # Pre-allocate memory for forward activations
-    z_forward = []
-    for l in range(len(layer_list)):
-        z = np.zeros((1, layer_sizes[l]))
-        z_forward.append(z)
+    net = LayeredNeuralNetwork(D, layer_sizes, layer_types, reg=reg, step_size=step_size)
+    net.verbose = True
+    net.cache_loss = True
+    print(net)
+    loss_cache = net.train(X, y, num_iter=num_iter)
 
-    # Pre-allocate memory for backward activations
-    z_backward = []
-    for l in range(len(layer_list)):
-        if(l == 0):
-            dz = np.zeros((X.shape[0], layer_sizes[-1]))
-        else:
-            dz = np.zeros((layer_sizes[l-1], layer_sizes[-1]))
-        z_backward.append(dz)
-
-    # Gradient descent, Forward Pass
-    layer_input = X
-    for l in range(len(layer_list)):
-        z_forward[l] = layer_list[l].forward(layer_input)
-        layer_input = z_forward[l]
-
-    # Compute scores, loss
-    exp_scores = np.exp(z_forward[-1])  # same as np.exp(Z_list[-1])
-    probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
-    logprobs = -np.log(probs[range(num_examples), y])
-    data_loss = np.sum(logprobs) / num_examples
-    reg_loss = 0   # TODO
-    for l in range(len(layer_list)):
-        reg_loss += 0.5 * reg * np.sum(layer_list[l].W * layer_list[l].W)
-    loss = data_loss + reg_loss
-
-    print("iter %d : loss %f" % (0, loss))
-
-    # Compute gradient on loss
-    dscores = probs
-    dscores[range(num_examples), y] -= 1
-    dscores /= num_examples
-
-    # Gradient descent, backward pass
-    dz_prev = dscores
-    for l in range(len(layer_list)):
-        idx = len(layer_list) - l - 1
-        # Z[idx] is the activation on layer idx
-        z_backward[l] = layer_list[l].backward(dz_prev, z_forward[idx])
-        dz_prev = z_backward[l]
+    print(net)
+    print(len(loss_cache))
 
 
 
