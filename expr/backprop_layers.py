@@ -6,74 +6,16 @@ Stefan Wong 2017
 
 import os
 import sys
+# TODO : Need to get rid of these
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
 import numpy as np
 import neural_net_utils as nnu
 
+# Use the layers in layers folder
+from layers import AffineLayer, ReLULayer, SigmoidLayer
 # Debug
 from pudb import set_trace; set_trace()
-
-
-class Layer(object):
-    def __init__(self, input_dim, layer_size, layer_sd=0.01):
-        self.layer_sd = layer_sd
-        self.W = self.layer_sd * np.random.randn(input_dim, layer_size)
-        self.b = np.zeros((1, layer_size))
-
-    def update(self, dW, db, step_size):
-        self.W += (-step_size) * dW
-        self.b += (-step_size) * db
-
-# Linear layer
-class LinearLayer(Layer):
-    def __str__(self):
-        s = []
-        s.append('Linear Layer, \n\tinput dim : %d, \n\tlayer size : %d\n' % (self.W.shape[0], self.W.shape[1]))
-        return ''.join(s)
-
-    def __repr__(self):
-        return self.__str__()
-
-    def forward(self, X):
-        return np.dot(X, self.W) + self.b
-
-    def backward(self, dz, X_prev):
-        return np.dot(X_prev.T, dz)
-
-# Layer with ReLU activation
-class ReLULayer(Layer):
-    def __str__(self):
-        s = []
-        s.append('ReLU Layer, \n\tinput dim : %d, \n\tlayer size : %d\n' % (self.W.shape[0], self.W.shape[1]))
-        return ''.join(s)
-
-    def __repr__(self):
-        return self.__str__()
-
-    def forward(self, X):
-        Z =  np.dot(X, self.W) + self.b
-        return np.maximum(0, Z)
-
-    def backward(self, dz, X_prev):
-        d = np.zeros_like(dz)
-        d[X_prev > 0] = 1
-        return dz * d
-
-# Layer with Sigmoid Activation
-class SigmoidLayer(Layer):
-    def __str__(self):
-        s = []
-        s.append('Sigmoid Layer, \n\tinput dim : %d, \n\tlayer size : %d\n' % (self.W.shape[0], self.W.shape[1]))
-        return ''.join(s)
-
-    def __repr__(self):
-        return self.__str__()
-
-    def forward(self, X):
-        return 1 / (1 + np.exp(-X))
-
-    def backward(self, dz, X_prev):  # Here to keep function prototype symmetry
-        return dz * (1 - dz)
 
 
 # ========= NETWORK ======== #
@@ -106,21 +48,22 @@ class LayeredNeuralNetwork(object):
         internal_layer_dims.append(input_dim)
         for t in layer_dims:
             internal_layer_dims.append(t)
-        self.init_layers(internal_layer_dims, layer_types)
+        self.layers = self.init_layers(internal_layer_dims, layer_types)
         self.num_layers = len(self.layers)
         #self.num_layers = len(layer_dims) + 1
 
         # Pre-allocate memory for forward and backward activations
-        self.z_forward = []
-        self.z_backward = []    # Gradient on weights
-        self.b_backward = []    # Gradient on biases
-        for l in range(len(self.layers)):
-            z = np.zeros((input_dim, internal_layer_dims[l+1]))
-            b = np.zeros((1, internal_layer_dims[l+1]))
-            dz = np.zeros((internal_layer_dims[l], internal_layer_dims[l+1]))
-            self.z_forward.append(z)
-            self.z_backward.append(dz)
-            self.b_backward.append(b)
+        # TODO : get rid of these, cache the forward activation in the layers
+        #self.z_forward = []
+        #self.z_backward = []    # Gradient on weights
+        #self.b_backward = []    # Gradient on biases
+        #for l in range(len(self.layers)):
+        #    z = np.zeros((input_dim, internal_layer_dims[l+1]))
+        #    b = np.zeros((1, internal_layer_dims[l+1]))
+        #    dz = np.zeros((internal_layer_dims[l], internal_layer_dims[l+1]))
+        #    self.z_forward.append(z)
+        #    self.z_backward.append(dz)
+        #    self.b_backward.append(b)
 
         # Debug options
         self.verbose = False
@@ -128,7 +71,7 @@ class LayeredNeuralNetwork(object):
 
     def __str__(self):
         s = []
-        s.append('% layers\n' % (self.num_layers))
+        s.append('%d layers\n' % (self.num_layers))
         for l in self.layers:
             s.append('%s' % (str(l)))
         s.append('\n')
@@ -136,7 +79,7 @@ class LayeredNeuralNetwork(object):
         return ''.join(s)
 
     def __repr__(self):
-        return self.__str__
+        return self.__str__()
 
     def init_layers(self, layer_dims, layer_types):
         """
@@ -154,12 +97,7 @@ class LayeredNeuralNetwork(object):
                 layer_dims.
 
         """
-        self.layers = []
-        # TODO : if I use soemthing like
-        # for l in self.layers;
-        # del(l)
-        # does this improve memory usage if/when we reset the weights?
-
+        layers = []
         for l in range(len(layer_types)):
             dim_idx = l+1
             # TODO: move sizes out to local variables
@@ -168,25 +106,32 @@ class LayeredNeuralNetwork(object):
             elif(layer_types[l] == 'sigmoid'):
                 layer = SigmoidLayer(layer_dims[dim_idx-1], layer_dims[dim_idx])
             elif(layer_types[l] == 'linear'):
-                layer = LinearLayer(layer_dims[dim_idx-1], layer_dims[dim_idx])
+                layer = AffineLayer(layer_dims[dim_idx-1], layer_dims[dim_idx])
             else:
                 print('Invalid layer type %s' % (layer_types[l]))
                 sys.exit(2)     # TODO : throw an exception?
+            layers.append(layer)
 
-            self.layers.append(layer)
+        return layers
 
-    def gradient_descent(self, X, y):
+    def gradient_descent(self, X, y, cache_a=False):
+
+        # For debugging - remove in final version
+        if(cache_a):
+            a_cache = []
 
         N = X.shape[0]
-        # ==== Forward passc
-        z_input = X
+        # ==== Forward pass
+        activation = X
         for l in range(len(self.layers)):
-            z_temp = self.layers[l].forward(z_input)
-            self.z_forward[l] = z_temp
-            z_input = self.z_forward[l]
+            activation = self.layers[l].forward(activation)
+            if(cache_a):
+                a_cache.append(activation)
+            #self.z_forward[l] = z_temp
+            #z_input = self.z_forward[l]
 
         # Compute scores
-        exp_scores = np.exp(self.z_forward[-1])
+        exp_scores = np.exp(self.layers[-1].Z)
         probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
         logprobs = -np.log(probs[range(N), y])
         # Compute loss
@@ -200,17 +145,19 @@ class LayeredNeuralNetwork(object):
         dscores = probs
         dscores[range(N), y] -= 1
         dscores /= N
+        #self.z_backward[-1] = dscores
 
         # ==== Backward pass
         dz_input = dscores
-        for l in range(len(self.layers)):
-            idx = len(self.layers) - l - 1
-            # TODO : I am not correctly applying the backward pass.... I think
-            dz_temp = self.layers[idx].backward(dz_input, self.z_forward[idx])
+        for l in range(len(self.layers)-1):
+            idx = len(self.layers) - l - 1          # should be N, .., 2
+            #dz_temp = self.layers[idx].backward(dz_input, self.z_forward[idx])
+            dz_temp = self.layers[idx].backwards(dz_input)
+            self.z_backward[idx] = np.dot(self.layers[idx].W.T, self.z_backward[idx+1]) * dz_temp
             self.z_backward[idx] = dz_temp
             db_temp = np.sum(dz_input)
             self.b_backward[idx] = db_temp
-            dz_input = self.z_backward[idx]
+            #dz_input = self.z_backward[idx]
 
         # Add regularization gradient contribution
         for l in range(len(self.layers)):
@@ -218,13 +165,13 @@ class LayeredNeuralNetwork(object):
 
         return loss
 
-    def train(self, X, y, num_iter=10000):
+    def train(self, X, y, num_iter=10000, debug=False):
 
         if(self.cache_loss):
             loss_cache = np.ndarray((1, num_iter))
 
         for i in range(num_iter):
-            loss = self.gradient_descent(X, y)
+            loss = self.gradient_descent(X, y, debug)
             if(self.cache_loss):
                 loss_cache[i] = loss
             if(self.verbose):
@@ -243,7 +190,7 @@ class LayeredNeuralNetwork(object):
             self.layers[l].update(self.z_backward[l], self.b_backward[l], self.step_size)
 
 
-
+# ==== TEST CODE ==== #
 def main():
     # Generate some data
     N = 500
@@ -254,8 +201,6 @@ def main():
     spiral_data = nnu.create_spiral_data(N, D, K, theta)
     X = spiral_data[0]      # data
     y = spiral_data[1]      # labels
-
-    num_examples = X.shape[0]
 
     # Hyperparams
     reg = 1e-0
@@ -270,13 +215,13 @@ def main():
     net.verbose = True
     net.cache_loss = True
     print(net)
-    loss_cache = net.train(X, y, num_iter=num_iter)
 
+    loss_cache = net.train(X, y, num_iter=num_iter, debug=True)
+
+    # TODO : plot the loss funtion
+    #import matplotlib.pyplot as plt
     print(net)
     print(len(loss_cache))
-
-
-
 
 
 if __name__ == "__main__":

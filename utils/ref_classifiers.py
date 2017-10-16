@@ -9,7 +9,6 @@ Stefan Wong 2017
 """
 
 import numpy as np
-
 # Debug
 from pudb import set_trace; set_trace()
 
