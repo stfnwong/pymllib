@@ -17,7 +17,6 @@ from layers import AffineLayer, ReLULayer, SigmoidLayer
 # Debug
 from pudb import set_trace; set_trace()
 
-
 # ========= NETWORK ======== #
 """
 Basic layered Neural Network using new layer objects
@@ -71,9 +70,11 @@ class LayeredNeuralNetwork(object):
 
     def __str__(self):
         s = []
-        s.append('%d layers\n' % (self.num_layers))
+        s.append('%d layers network\n' % (self.num_layers))
+        n = 1
         for l in self.layers:
-            s.append('%s' % (str(l)))
+            s.append('%2d) %s' % (n, str(l)))
+            n += 1
         s.append('\n')
 
         return ''.join(s)
@@ -125,7 +126,7 @@ class LayeredNeuralNetwork(object):
         activation = X
         for l in range(len(self.layers)):
             activation = self.layers[l].forward(activation)
-            if(cache_a):
+            if(cache_a is True):
                 a_cache.append(activation)
             #self.z_forward[l] = z_temp
             #z_input = self.z_forward[l]
@@ -152,18 +153,27 @@ class LayeredNeuralNetwork(object):
         for l in range(len(self.layers)-1):
             idx = len(self.layers) - l - 1          # should be N, .., 2
             #dz_temp = self.layers[idx].backward(dz_input, self.z_forward[idx])
-            dz_temp = self.layers[idx].backwards(dz_input)
-            self.z_backward[idx] = np.dot(self.layers[idx].W.T, self.z_backward[idx+1]) * dz_temp
-            self.z_backward[idx] = dz_temp
-            db_temp = np.sum(dz_input)
-            self.b_backward[idx] = db_temp
+            if(idx == 2):
+                prev_activ = X
+            else:
+                prev_activ = self.layers[idx-1].Z
+
+            dx, dw, db = self.layers[idx].backward(dz_input, prev_activ) # TODO : Need the activation from the layer before?
+            self.layers[idx].update(dw, db, self.step_size)
+            #self.z_backward[idx] = np.dot(self.layers[idx].W.T, self.z_backward[idx+1]) * dz_temp
+            #self.z_backward[idx] = dz_temp
+            #db_temp = np.sum(dz_input)
+            #self.b_backward[idx] = db_temp
             #dz_input = self.z_backward[idx]
 
         # Add regularization gradient contribution
         for l in range(len(self.layers)):
             self.z_backward[l] += self.reg * self.layers[l].W
 
-        return loss
+        if(cache_a is True):
+            return loss, a_cache
+        else:
+            return loss
 
     def train(self, X, y, num_iter=10000, debug=False):
 
@@ -171,7 +181,10 @@ class LayeredNeuralNetwork(object):
             loss_cache = np.ndarray((1, num_iter))
 
         for i in range(num_iter):
-            loss = self.gradient_descent(X, y, debug)
+            if(debug is True):
+                loss, a_cache = self.gradient_descent(X, y, debug)
+            else:
+                loss = self.gradient_descent(X, y, debug)
             if(self.cache_loss):
                 loss_cache[i] = loss
             if(self.verbose):

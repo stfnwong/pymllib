@@ -6,7 +6,7 @@ Stefan Wong 2017
 
 import numpy as np
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 # TODO : Implement mini-batch support....
 """
@@ -31,7 +31,7 @@ class Layer(object):
 class AffineLayer(Layer):
     def __str__(self):
         s = []
-        s.append('Linear Layer, \n\tinput dim : %d, \n\tlayer size : %d\n' %
+        s.append('Linear Layer \n\tinput dim : %d \n\tlayer size : %d\n' %
                  (self.W.shape[0], self.W.shape[1]))
         return ''.join(s)
 
@@ -42,15 +42,18 @@ class AffineLayer(Layer):
         self.Z = np.dot(X, self.W) + self.b
         return self.Z
 
-    def backward(self, dz, X_prev):
-        # TODO : calculate all gradients here
-        return np.dot(X_prev.T, dz)
+    def backward(self, dz, X):
+        dx = np.dot(dz, self.W.T)
+        p = np.prod(X.T, dz)
+        dw = np.dot(X, p)
+        db = np.sum(dz, axis=0)
+        return (dx, dw, db)
 
 # Layer with ReLU activation
 class ReLULayer(Layer):
     def __str__(self):
         s = []
-        s.append('ReLU Layer, \n\tinput dim : %d, \n\tlayer size : %d\n' %
+        s.append('ReLU Layer \n\tinput dim : %d \n\tlayer size : %d\n' %
                  (self.W.shape[0], self.W.shape[1]))
         return ''.join(s)
 
@@ -70,7 +73,7 @@ class ReLULayer(Layer):
 class SigmoidLayer(Layer):
     def __str__(self):
         s = []
-        s.append('Sigmoid Layer, \n\tinput dim : %d, \n\tlayer size : %d\n' %
+        s.append('Sigmoid Layer \n\tinput dim : %d \n\tlayer size : %d\n' %
                  (self.W.shape[0], self.W.shape[1]))
         return ''.join(s)
 
