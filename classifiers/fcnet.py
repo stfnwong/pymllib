@@ -106,7 +106,7 @@ class FCNet(object):
 
         if self.use_dropout:
 
-            hdrop, cache_hdrop = dropout_forward(hidden['h0'],
+            hdrop, cache_hdrop = layers.layers.dropout_forward(hidden['h0'],
                                                  self.dropout_param)
             hidden['hdrop0'] = hdrop
             hidden['cache_hdrop0'] = cache_hdrop
