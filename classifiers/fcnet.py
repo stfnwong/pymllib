@@ -9,8 +9,10 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
 import numpy as np
 import layers
+from solver import solver
 
 
 class FCNet(object):
@@ -169,21 +171,21 @@ class FCNet(object):
         # ===============================
         # BACKWARD PASS
         # ===============================
-        hidde['dh' + str(self.num_layers)] = dscores
+        hidden['dh' + str(self.num_layers)] = dscores
         for l in range(self.num_layers)[::-1]:
-            idx = i + 1
+            idx = l + 1
             dh = hidden['dh' + str(idx)]
             h_cache = hidden['cache_h' + str(idx)]
 
             if idx == self.num_layers:
-                dh, hw. db = affine_backwards(dh, h_cache)
+                dh, dw, db = layers.layers.affine_backward(dh, h_cache)
                 hidden['dh' + str(idx-1)] = dh
                 hidden['dW' + str(idx)] = dw
                 hidden['db' + str(idx)] = db
             else:
                 if self.use_dropout:
                     cache_hdrop = hidden['cache_hdrop' + str(idx)]
-                    dh = dropout_backward(dh, cache_hdrop)
+                    dh = layers.layers.cdropout_backward(dh, cache_hdrop)
                 if self.use_batchnorm:
                     dh, dw, db, dgamma, dbeta = layers.layers.affine_norm_relu_backward(dh, h_cache)
                     hidden['dh' + str(idx-1)] = dh
@@ -192,7 +194,7 @@ class FCNet(object):
                     hidden['dgamma' + str(idx)] = dgamma
                     hidden['dbeta' + str(idx)] = dbeta
                 else:
-                    dh, dw, db = affine_relu_backward(dh, h_cache)
+                    dh, dw, db = layers.layers.affine_relu_backward(dh, h_cache)         # TODO This layer definition
                     hidden['dh' + str(idx-1)] = dh
                     hidden['dW' + str(idx)] = dw
                     hidden['db' + str(idx)] = db
@@ -234,3 +236,11 @@ if __name__ == "__main__":
     hidden_dims = [200]
     input_dim = 32 * 32 * 3
     fcnet = FCNet(hidden_dims, input_dim)
+
+    # TODO : get some data
+    s = solver.Solver(fcnet, data, update_rule='sgd',
+                      optim_config={'learning_rate': 1e-3},
+                      lr_decay = 0.95,
+                      num_epochs=2,
+                      batch_size=250,
+                      print_every=100)
