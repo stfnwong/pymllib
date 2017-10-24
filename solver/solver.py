@@ -13,6 +13,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 from solver import optim
 import numpy as np
 
+# Debug
+#from pudb import set_trace; set_trace()
 
 class Solver(object):
     """

@@ -12,8 +12,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../l
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
 import numpy as np
 import layers
+from utils import data_utils
 from solver import solver
 
+# Debug
+#from pudb import set_trace; set_trace()
 
 class FCNet(object):
     def __init__(self, hidden_dims, input_dim, num_classes=10,
@@ -36,8 +39,6 @@ class FCNet(object):
             raise ValueError('hidden_dim must be a list')
 
         dims = [input_dim] + hidden_dims + [num_classes]
-        # TODO ; Do I need to save these parameters for later....?
-        # Weight dict
         Ws = {'W' + str(i+1) : weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
         bs = {'b' + str(i+1) : np.zeros(dims[i+1]) for i in range(len(dims)-1)}
 
@@ -75,15 +76,18 @@ class FCNet(object):
         # Cast params to correct data type
         if(self.verbose):
             print("Casting parameters to type %s" % (self.dtype))
-        for k, v in self.params.iteritems():
+        for k, v in self.params.items():
             self.params[k] = v.astype(self.dtype)
 
-    # TODO : String functions
+    #def __str__(self):
+    #    s = []
+    #    for key, val in self.params.items():
+    #        if key[:2] == 'dW':
+    #            #dw_list = {key[1:]: val + self.reg * self.params[key[1:]]}
 
     def loss(self, X, y=None):
         """
         LOSS
-
         Compute loss and gradients for the fully connected network
         """
 
@@ -97,7 +101,7 @@ class FCNet(object):
         # run
             self.dropout_param['mode'] = mode
         if self.use_batchnorm:
-            for k, bn_param in self.bn_params.iteritems():
+            for k, bn_param in self.bn_params.items():
                 bn_param[mode] = mode
 
         # ===============================
@@ -107,13 +111,19 @@ class FCNet(object):
         hidden['h0'] = X.reshape(X.shape[0], np.prod(X.shape[1:]))   # TODO ; Check this...
 
         if self.use_dropout:
-
             hdrop, cache_hdrop = layers.layers.dropout_forward(hidden['h0'],
                                                  self.dropout_param)
             hidden['hdrop0'] = hdrop
             hidden['cache_hdrop0'] = cache_hdrop
 
         # Iterate over layers
+        # TODO : How do we combine various (separate) layers together?
+        # In the object-oriented model we just call forward on each layer,
+        # and since the 'type' of the layer is determined by the object
+        # we can combine layers in any order. This makes things like generating
+        # a pretty print version of the network simpler, since we can just
+        # iterated over the layers, produce their individual strings, and
+        # arrange them into a single output
         for l in range(self.num_layers):
             idx = l + 1
             w = self.params['W' + str(idx)]
@@ -201,19 +211,19 @@ class FCNet(object):
 
         # w gradients where we add the regularization term
         # TODO :' Tidy this up
-        for key, val in hidden.iteritems():
+        for key, val in hidden.items():
             if key[:2] == 'dW':
                 dw_list = {key[1:]: val + self.reg * self.params[key[1:]]}
 
-        for key, val in hidden.iteritems():
+        for key, val in hidden.items():
             if key[:2] == 'db':
                 db_list = {key[1:]: val}
 
-        for key, val in hidden.iteritems():
+        for key, val in hidden.items():
             if key[:6] == 'dgamma':
                 dgamma_list = {key[1:]: val}
 
-        for key, val in hidden.iteritems():
+        for key, val in hidden.items():
             if key[:5] == 'dbeta':
                 dbeta_list = {key[1:]: val}
 
@@ -226,18 +236,24 @@ class FCNet(object):
         return loss, grads
 
 
-
-
-
+# TODO : This should eventually be elsewhere
+def rel_error(x, y):
+    return np.max(np.abs(x - y) / (np.maximum(1e-8, np.abs(x) + np.abs(y))))
 
 # ======== SOME BASIC TEST CODE ======== #
 if __name__ == "__main__":
+
+    # Get some data
+    data_dir = 'datasets/cifar-10-batches-py'
+    dataset = data_utils.get_CIFAR10_data(data_dir)
+    for k, v in dataset.items():
+        print("%s : %s" % (k, v.shape))
+
 
     hidden_dims = [200]
     input_dim = 32 * 32 * 3
     fcnet = FCNet(hidden_dims, input_dim)
 
-    # TODO : get some data
     s = solver.Solver(fcnet, data, update_rule='sgd',
                       optim_config={'learning_rate': 1e-3},
                       lr_decay = 0.95,

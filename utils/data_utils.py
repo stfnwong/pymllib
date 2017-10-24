@@ -6,6 +6,7 @@ import os
 from scipy.misc import imread
 import platform
 
+
 def load_pickle(f):
     version = platform.python_version_tuple()
     if version[0] == '2':
@@ -40,7 +41,7 @@ def load_CIFAR10(ROOT):
   return Xtr, Ytr, Xte, Yte
 
 
-def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=1000,
+def get_CIFAR10_data(cifar10_dir, num_training=49000, num_validation=1000, num_test=1000,
                      subtract_mean=True):
     """
     Load the CIFAR-10 dataset from disk and perform preprocessing to prepare
@@ -48,7 +49,7 @@ def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=1000,
     condensed to a single function.
     """
     # Load the raw CIFAR-10 data
-    cifar10_dir = 'cs231n/datasets/cifar-10-batches-py'
+    #cifar10_dir = 'datasets/cifar-10-batches-py'
     X_train, y_train, X_test, y_test = load_CIFAR10(cifar10_dir)
 
     # Subsample the data
