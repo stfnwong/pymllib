@@ -24,7 +24,7 @@ import fcnet
 
 import unittest
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 
 # Since we don't need to load a dataset for every test, don't put
@@ -139,20 +139,20 @@ class TestFCNet(unittest.TestCase):
 
         np.random.seed(231)
         N = 3
-        input_dim = 5;
-        hidden_dims = [50]
-        num_classes = 7
+        D = 5
+        H = 50
+        C = 7
         std = 1e-2
 
-        X = np.random.randn(N, input_dim)
-        y = np.random.randint(num_classes, size=N)
+        X = np.random.randn(N, D)
+        y = np.random.randint(C, size=N)
 
         # TODO : try with "twolayer" model as per CS231n
         #model = fcnet.FCNet(hidden_dims, input_dim,
         #                    num_classes, weight_scale=std,
         #                    verbose=True)
-        model = fcnet.TwoLayerNet(input_dim, hidden_dims[0],
-                            num_classes, weight_scale=std,
+        model = fcnet.TwoLayerNet(input_dim=D, hidden_dim=H,
+                            num_classes=C, weight_scale=std,
                             verbose=True)
         W1_std = abs(model.params['W1'].std() - std)
         W2_std = abs(model.params['W2'].std() - std)
@@ -166,12 +166,12 @@ class TestFCNet(unittest.TestCase):
         self.assertTrue(np.all(b2 == 0), msg="Problem in second layer biases")
 
         print("\tTest time forward pass")
-        model.params['W1'] = np.linspace(-0.7, 0.3, num=hidden_dims[0] * input_dim).reshape(input_dim, hidden_dims[0])
-        model.params['W2'] = np.linspace(-0.3, 0.4, num=hidden_dims[0] * num_classes).reshape(hidden_dims[0], num_classes)
-        model.params['b1'] = np.linspace(-0.1, 0.9, num=hidden_dims[0])
-        model.params['b2'] = np.linspace(-0.9, 0.1, num=num_classes)
+        model.params['W1'] = np.linspace(-0.7, 0.3, num=D*H).reshape(D, H)
+        model.params['W2'] = np.linspace(-0.3, 0.4, num=H*C).reshape(H, C)
+        model.params['b1'] = np.linspace(-0.1, 0.9, num=H)
+        model.params['b2'] = np.linspace(-0.9, 0.1, num=C)
 
-        X = np.linspace(-5.5, 4.5, num=N * input_dim).reshape(input_dim, N).T
+        X = np.linspace(-5.5, 4.5, num=N*D).reshape(D, N).T
         scores = model.loss(X)
 
         correct_scores = np.asarray(
@@ -181,17 +181,6 @@ class TestFCNet(unittest.TestCase):
 
         scores_diff = np.abs(scores - correct_scores).sum()
         self.assertLess(scores_diff, self.eps)
-
-        # For my reference - remove
-        """
-        def __init__(self, hidden_dims, input_dim, num_classes=10,
-                    dropout=0, use_batchnorm=False, reg=0.0,
-                    weight_scale=1e-2, dtype=np.float332, seed=None,
-                    verbose=False):
-        """
-
-
-        # Create a two-layer FCNet
 
         print("======== TestFCNet.test_two_layer_fcnet_solver: <END> ")
 
