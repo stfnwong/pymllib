@@ -10,7 +10,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
 
-from solver import optim
+import optim
 import numpy as np
 
 # Debug
@@ -162,9 +162,7 @@ class Solver(object):
         num_iterations = self.num_epochs * iterations_per_epoch
 
         for t in range(num_iterations):
-
             self._step()
-
             # Print training loss
             if self.verbose and (t % self.print_every == 0):
                 print("[Iteration %6d/%6d] loss : %f" % (t+1, num_iterations, self.loss_history[-1]))

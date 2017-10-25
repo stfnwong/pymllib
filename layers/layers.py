@@ -11,6 +11,9 @@ import numpy as np
 def affine_forward(X, w, b):
     """
     Compute forward pass for an affine layer
+
+    TODO: This does a reshape for minibatches, include in
+    docstring
     """
     N = X.shape[0]
     D = np.prod(X.shape[1:])
@@ -49,7 +52,6 @@ def relu_backward(dout, cache):
     dx[X <= 0] = 0
 
     return dx
-
 
 def dropout_forward(X, dropout_param):
     """
@@ -173,6 +175,26 @@ def batchnorm_backward(dout, cache):
 # TODO : Alternative function?
 
 
+# ==== Convenience layers
+def affine_relu_forward(X, w, b):
+    """
+    Affine transform followed by ReLU, forward pass
+    """
+    a, fc_cache = affine_forward(X, w, b)
+    out, relu_cache = relu_forward(a)
+    cache = (fc_cache, relu_cache)
+
+    return out, cache
+
+def affine_relu_backward(dout, cache):
+    """
+    Affine transform followed by ReLU, backward pass
+    """
+    fc_cache, relu_cache = cache
+    da = relu_backward(dout, relu_cache)
+    dx, dw, db = affine_backward(da, fc_cache)
+
+    return dx, dw, db
 
 # TODO ; Specialty layers
 

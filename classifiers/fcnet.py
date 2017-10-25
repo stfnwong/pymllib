@@ -12,16 +12,86 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../l
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
 import numpy as np
 import layers
-from utils import data_utils
-from solver import solver
+import data_utils
+import solver
 
 # Debug
 #from pudb import set_trace; set_trace()
 
+class TwoLayerNet(object):
+    def __init__(self, input_dim=(32*32*3), hidden_dim=100, num_classes=10, weight_scale=1e-3, reg=0.0, verbose=False):
+        """
+        Init a new two layer network.
+        This is just to ensure the unit test works correctly,
+        don't keep this module
+        """
+        self.params = {}
+        self.reg = reg
+        self.D = input_dim
+        if type(hidden_dim) is list:
+            self.M = hidden_dim[0]
+        else:
+            self.M = hidden_dim
+        self.C = num_classes
+
+        w1 = weight_scale * np.random.randn(self.D, self.M)
+        w2 = weight_scale * np.random.randn(self.M, self.C)
+        b1 = np.zeros(self.M)
+        b2 = np.zeros(self.C)
+
+        self.params.update({'W1': w1,
+                            'W2': w2,
+                            'b1': b1,
+                            'b2': b2})
+
+    def loss(self, X, y=None):
+        """
+        Compute loss and gradient
+        """
+
+        W1 = self.params['W1']
+        W2 = self.params['W2']
+        b1 = self.params['b1']
+        b2 = self.params['b2']
+
+        X = X.reshape(X.shape[0], self.D)
+        # Forward pass
+        hidden_layer, cache_hidden_layer = layers.affine_relu_forward(X, W1, b1)
+        scores, cache_scores = layers.affine_forward(hidden_layer, W2, b2)
+
+        # Return if we are in training mode
+        if y is None:
+            return scores
+
+        data_loss, dscores = layers.softmax_loss(scores, y)
+        reg_loss = 0.5 * self.reg * np.sum(W1 * W1) + 0.5 * self.reg * np.sum(W2 * W2)
+        loss = data_loss + reg_loss
+
+        # backward pass
+        grads = {}
+        # Second layer
+        dx1, dW2, db2 = layers.affine_backward(dscores, cache_scores)
+        dW2 += self.reg * W2
+        # First layer
+        dx, dW1, db1 = layers.affine_relu_backward(dx1, cache_hidden_layer)
+        dW1 += self.reg * W1
+
+        grads.update({'W1': dW1,
+                      'W2': dW2,
+                      'b1': db1,
+                      'b2': db2})
+
+        return loss, grads
+
+
+
 class FCNet(object):
+    """
+    TODO: Docstring
+    """
     def __init__(self, hidden_dims, input_dim, num_classes=10,
                  dropout=0, use_batchnorm=False, reg=0.0,
-                 weight_scale=1e-2, dtype=np.float332, seed=None,
+                 weight_scale=1e-2, dtype=np.float32, seed=None,
                  verbose=False):
 
         self.verbose = verbose
@@ -41,7 +111,6 @@ class FCNet(object):
         dims = [input_dim] + hidden_dims + [num_classes]
         Ws = {'W' + str(i+1) : weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
         bs = {'b' + str(i+1) : np.zeros(dims[i+1]) for i in range(len(dims)-1)}
-
         self.params.update(bs)
         self.params.update(Ws)
 
@@ -79,11 +148,19 @@ class FCNet(object):
         for k, v in self.params.items():
             self.params[k] = v.astype(self.dtype)
 
-    #def __str__(self):
-    #    s = []
-    #    for key, val in self.params.items():
-    #        if key[:2] == 'dW':
-    #            #dw_list = {key[1:]: val + self.reg * self.params[key[1:]]}
+    def __str__(self):
+        s = []
+        # TODO : How do we know what the type of the layer is when the weight
+        # information and the activation are separated?
+        for l in range(self.num_layers):
+            wl = self.params['W' + str(l+1)]
+            bl = self.params['b' + str(l+1)]
+            s.append('Layer %d\n\t W: (%d, %d), b: (%d)\n' % (l+1, wl.shape[0], wl.shape[1], bl.shape[0]))
+
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
 
     def loss(self, X, y=None):
         """
@@ -134,7 +211,7 @@ class FCNet(object):
             else:
                 h = hidden['h' + str(idx-1)]
 
-            if self.use_batchnorm:
+            if self.use_batchnorm and idx != self.num_layers:
                 gamma = self.params['gamma' + str(idx)]
                 beta = self.params['beta' + str(idx)]
                 bn_param = self.bn_params['bn_paramm' + str(idx)]
@@ -142,7 +219,6 @@ class FCNet(object):
             # Compute the forward pass
             # output layer is a special case
             if idx == self.num_layers:
-                # TODO ; re-create the layer definitions
                 h, cache_h = layers.affine_forward(h, w, b)
                 hidden['h' + str(idx)] = h
                 hidden['cache_h' + str(idx)] = cache_h
@@ -152,7 +228,7 @@ class FCNet(object):
                     hidden['h' + str(idx)] = h
                     hidden['cache_h' + str(idx)] = cache_h
                 else:
-                    h, cache_h = layers.affine_relu_forward(h, w, b, gamma, beta, bn_param)
+                    h, cache_h = layers.affine_relu_forward(h, w, b)
                     hidden['h' + str(idx)] = h
                     hidden['cache_h' + str(idx)] = cache_h
 
