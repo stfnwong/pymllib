@@ -67,9 +67,9 @@ class TestFCNet(unittest.TestCase):
         b = np.random.randn(5)
         dout = np.random.randn(10, 5)
 
-        dx_num = check_gradient.eval_numerical_gradient(lambda x: layers.affine_forward(x, w, b)[0], x, dout)
-        dw_num = check_gradient.eval_numerical_gradient(lambda w: layers.affine_forward(x, w, b)[0], w, dout)
-        db_num = check_gradient.eval_numerical_gradient(lambda b: layers.affine_forward(x, w, b)[0], b, dout)
+        dx_num = check_gradient.eval_numerical_gradient_array(lambda x: layers.affine_forward(x, w, b)[0], x, dout)
+        dw_num = check_gradient.eval_numerical_gradient_array(lambda w: layers.affine_forward(x, w, b)[0], w, dout)
+        db_num = check_gradient.eval_numerical_gradient_array(lambda b: layers.affine_forward(x, w, b)[0], b, dout)
 
         _, cache = layers.affine_forward(x, w, b)
         dx, dw, db = layers.affine_backward(dout, cache)

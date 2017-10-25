@@ -9,6 +9,9 @@ Stefan Wong 2017
 import numpy as np
 from random import randrange
 
+# debug
+#from pudb import set_trace; set_trace()
+
 def eval_numerical_gradient(f, x, verbose=False, h=1e-5):
     """
     A naive implementation of numerical gradient of f at x
@@ -38,6 +41,9 @@ def eval_numerical_gradient(f, x, verbose=False, h=1e-5):
         x[ix] = oldval              # restore
 
         # Compute the partial derivative with centered formula
+        # debug
+        print("ix type : %s" % (type(ix)))
+
         grad[ix] = (fxph - fxmh) / (2 * h)
         if verbose:
             print(ix, grad[ix])
