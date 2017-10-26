@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../l
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../classifiers')))
 
+import matplotlib.pyplot as plt
 import numpy as np
 import data_utils
 import check_gradient
@@ -103,6 +104,7 @@ class TestFCNet(unittest.TestCase):
 
 
     def test_fcnet_3layer_overfit(self):
+        print("\n======== TestFCNet.test_fcnet_3layer_overfit:")
 
         dataset = load_data(self.data_dir, self.verbose)
         num_train = 50
@@ -116,8 +118,8 @@ class TestFCNet(unittest.TestCase):
         #input_dim = small_data['X_train'].shape[0]
         input_dim = 3 * 32 * 32
         hidden_dims = [100, 100]
-        weight_scale = 1e-2
-        learning_rate = 1e-4
+        weight_scale = 0.079564
+        learning_rate = 0.003775
 
         # Get model and solver
         model = fcnet.FCNet(input_dim=input_dim,
@@ -128,20 +130,115 @@ class TestFCNet(unittest.TestCase):
         model_solver = solver.Solver(model,
                                      small_data,
                                      print_every=10,
-                                     num_epochs=20,
+                                     num_epochs=30,
                                      batch_size=50,     # previously 25
                                      update_rule='sgd',
                                      optim_config={'learning_rate': learning_rate})
         model_solver.train()
 
-        import matplotlib.pyplot as plt
-
+        # Plot results
         plt.plot(model_solver.loss_history, 'o')
-        plt.title('Training loss history')
+        plt.title('Training loss history (3 layers)')
         plt.xlabel('Iteration')
         plt.ylabel('Training loss')
         plt.show()
 
+        print("======== TestFCNet.test_fcnet_3layer_overfit: <END> ")
+
+    def test_fcnet_5layer_overfit(self):
+        print("\n======== TestFCNet.test_fcnet_5layer_overfit:")
+
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 50
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        #input_dim = small_data['X_train'].shape[0]
+        input_dim = 3 * 32 * 32
+        hidden_dims = [100, 100, 100, 100]
+        weight_scale = 1e-2
+        learning_rate = 1e-2
+
+        # Get model and solver
+        model = fcnet.FCNet(input_dim=input_dim,
+                            hidden_dims=hidden_dims,
+                            weight_scale=weight_scale,
+                            dtype=np.float64)
+        print(model)
+        model_solver = solver.Solver(model,
+                                     small_data,
+                                     print_every=10,
+                                     num_epochs=50,
+                                     batch_size=50,     # previously 25
+                                     update_rule='sgd',
+                                     optim_config={'learning_rate': learning_rate})
+        model_solver.train()
+
+        # Plot results
+        plt.plot(model_solver.loss_history, 'o')
+        plt.title('Training loss history (5 layers)')
+        plt.xlabel('Iteration')
+        plt.ylabel('Training loss')
+        plt.show()
+
+        print("======== TestFCNet.test_fcnet_5layer_overfit: <END> ")
+
+
+    def test_fcnet_5layer_param_search(self):
+        print("\n======== TestFCNet.test_fcnet_5layer_param_search :")
+
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 50
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        #input_dim = small_data['X_train'].shape[0]
+        input_dim = 3 * 32 * 32
+        hidden_dims = [100, 100, 100, 100]
+
+        param_search = True
+        while param_search:
+            weight_scale = 10 ** (np.random.uniform(-6, -1))
+            learning_rate = 10 ** (np.random.uniform(-4, -1))
+            model = fcnet.FCNet(input_dim=input_dim,
+                            hidden_dims=hidden_dims,
+                            weight_scale=weight_scale,
+                            dtype=np.float64)
+            if self.verbose:
+                print(model)
+            model_solver = solver.Solver(model,
+                                        small_data,
+                                        print_every=10,
+                                        num_epochs=30,
+                                        batch_size=50,     # previously 25
+                                        update_rule='sgd',
+                                        optim_config={'learning_rate': learning_rate})
+            model_solver.train()
+            if max(model_solver.train_acc_history) >= 1.0:
+                param_search = False
+                lr = learning_rate
+                ws = weight_scale
+
+        print("Best learning rate is %f" % lr)
+        print("Best weight scale is %f" % ws)
+
+        # Plot results
+        title = "Training loss history (5 layers) with lr=%f, ws=%f" % (lr, ws)
+        plt.plot(model_solver.loss_history, 'o')
+        plt.title(title)
+        plt.xlabel('Iteration')
+        plt.ylabel('Training loss')
+        plt.show()
+
+        print("======== TestFCNet.test_fcnet_5layer_param_search: <END> ")
 
 
 if __name__ == "__main__":

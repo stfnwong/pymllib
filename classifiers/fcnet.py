@@ -89,7 +89,7 @@ class FCNet(object):
         for l in range(self.num_layers):
             wl = self.params['W' + str(l+1)]
             bl = self.params['b' + str(l+1)]
-            s.append('Layer %d\n\t W: (%d, %d), b: (%d)\n' % (l+1, wl.shape[0], wl.shape[1], bl.shape[0]))
+            s.append('Layer %d\n\t W%d: (%d, %d),\t b%d: (%d)\n' % (l+1, l+1, wl.shape[0], wl.shape[1], l+1, bl.shape[0]))
 
         return ''.join(s)
 
