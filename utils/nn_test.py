@@ -44,7 +44,6 @@ def train_with_update(net, X, y, ax, num_iter, update_every=1000, cache_loss=Fal
         loss_cache = np.zeros(num_iter)
 
     for n in range(num_iter):
-
         loss, grads = net.loss(X, y)
         net.param_update(grads)
 
@@ -61,6 +60,7 @@ def train_with_update(net, X, y, ax, num_iter, update_every=1000, cache_loss=Fal
             vis.vis_classifier_simple(params, data, ax, title_text=title)
             plt.draw()
             plt.pause(0.01)
+            # TODO : Show loss over time
 
     # Show final boundaries
     params = {'W': [net.params['W1'], net.params['W2']],
@@ -75,9 +75,10 @@ def train_with_update(net, X, y, ax, num_iter, update_every=1000, cache_loss=Fal
 # ======== ENTRY POINT ======== #
 if __name__ == "__main__":
 
+    animate = True
     # Generate data
     N = 200         # Number of data points
-    h = 40          # Size of hidden dimension
+    h = 100          # Size of hidden dimension
     D = 2           # Dimension of data
     K = 3           # Number of classes
     theta = 0.45
@@ -89,13 +90,16 @@ if __name__ == "__main__":
     fig, ax = vis.init_classifier_plot()
 
     std = 1e-2
-    training_iter = int(2e5)
-    step_size = 3e-2
+    training_iter = int(2e4)
+    step_size = 6e-2
     #  Get a network
     net = twolayer_modular.TwoLayerNet(input_dim=D, hidden_dim=h,
                 num_classes=K, weight_scale=std, step_size=step_size,
                 verbose=True)
 
-    #train_to_end(net, X, y, ax, training_iter)
-    train_with_update(net, X, y, ax, training_iter, update_every=100)
+    # Show the plots
+    if animate is True:
+        train_with_update(net, X, y, ax, training_iter, update_every=100)
+    else:
+        train_to_end(net, X, y, ax, training_iter)
 

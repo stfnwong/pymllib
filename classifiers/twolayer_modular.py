@@ -81,6 +81,9 @@ class TwoLayerNet(object):
         return loss, grads
 
     def param_update(self, grads):
+        """
+        Update the internal parameters of the network
+        """
         self.params['W1'] -= self.step_size * grads['W1']
         self.params['W2'] -= self.step_size * grads['W2']
         self.params['b1'] -= self.step_size * grads['b1']

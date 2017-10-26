@@ -38,6 +38,8 @@ def vis_loss_iter(ax, loss, t=None):
 
     ax.plot(t, loss)
     ax.set_xlim(t[-1])
+    ax.set_xlabel("Iteration")
+    ax.set_ylabel("Loss")
     #ax.set_ylim
 
 def vis_weights():

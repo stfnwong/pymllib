@@ -197,7 +197,6 @@ def affine_relu_backward(dout, cache):
     return dx, dw, db
 
 # TODO ; Specialty layers
-
 def affine_norm_relu_forward(X, v, b, gamma, beta, bn_param):
     """
     Performs an affine transform followed by a ReLU
@@ -221,10 +220,46 @@ def softmax_loss(X, y):
     probs /= np.sum(probs, axis=1, keepdims=True)
     N = X.shape[0]
 
-
     loss = -np.sum(np.log(probs[np.arange(N), y])) / N
     dx = probs.copy()
     dx[np.arange(N), y] -= 1
     dx /= N
 
     return loss, dx
+
+
+
+# Sigmoid functions
+def sigmoid_forward(X, w, b):
+    """
+    Compute forward pass of sigmoid function
+    """
+
+    N = X.shape[0]
+    D = np.prod(X.shape[1:])
+    x2 = np.reshape(X, (N,D))
+    z = np.dot(x2, w) + b
+    out = 1 / (1 + np.exp(-z))
+    cache = (X, w, b)
+
+    return out, cache
+
+def sigmoid_backward(dout, cache):
+    """
+    Compute backward pass of sigmoid function
+    """
+
+    X, w, b = cache
+    sf, _ = sigmoid_forward(X, w, b)
+    ddot = (1  - sf) * sf
+    dx = np.dot(sf * (1-sf), w.T)
+    dw = np.dot(X.T, sf * (1-sf))
+    db = 1.0
+    #dx = np.dot(ddot, w.T).reshape(X.shape)
+    #dw = np.dot(X.reshape(X.shape[0], np.prod(X.shape[1:])).T, ddot)
+
+    return dx, dw, db
+
+
+
+
