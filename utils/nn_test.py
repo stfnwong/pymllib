@@ -6,14 +6,17 @@ Train a 2-layer network on spiral data
 import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../vis')))
 
 import numpy as np
 import matplotlib.pyplot as plt
 import ref_classifiers as rc
 # Internal libs
 import neural_net_utils as nnu
+import vis_classifier as vis
 # TODO ; Forget about external activations for now
 #import activations as activ
+
 #Debug
 from pudb import set_trace; set_trace()
 
@@ -378,47 +381,37 @@ if __name__ == "__main__":
     W1, W2, b1, b2 = ref_net.train(X, y, D, h, K, num_iters)
     #modW, modb = mod_net.train(X, y, num_iters)
 
-    # Visualize the classifier
-    h = 0.02
-    x_min, x_max = X[:,0].min() - 1, X[:,0].max() + 1
-    y_min, y_max = X[:,1].min() - 1, X[:,1].max() + 1
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                            np.arange(y_min, y_max, h))
-    W = (ref_net.W1, ref_net.W2)
-    b = (ref_net.b1, ref_net.b2)
-    #W = (modW[0], modW[1])
-    #b = (modb[0], modb[1])
-    if(type(W) is tuple):
-        Z = np.dot(np.maximum(0, np.dot(np.c_[xx.ravel(), yy.ravel()], W[0]) + b[0]), W[1]) + b[1]
-    else:
-        Z = np.dot(np.c_[xx.ravel(), yy.ravel()], W) + b
-    Z = np.argmax(Z, axis=1)
-    Z = Z.reshape(xx.shape)
+    fig, ax = vis.init_classifier_plot()
 
-    #self.fig_classifier = plt.figure()
-    plt.figure(1)
-    plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral, alpha=0.8)
-    plt.scatter(X[:,0], X[:,1], c=y, s=40, cmap=plt.cm.Spectral)
-    plt.xlim(xx.min(), xx.max())
-    plt.ylim(yy.min(), yy.max())
+    params = {'W': [W1, W2],
+              'b': [b1, b2]}
+    data = {'X': X,
+            'y': y}
+    vis.vis_classifier_simple(params, data, ax, title_text="Classifer")
     plt.show()
 
-    # To save time copy and paste but with a new W
-#    W = (modW[0], modW[1])
-#    b = (modb[0], modb[1])
+    # Visualize the classifier
+    #h = 0.02
+    #x_min, x_max = X[:,0].min() - 1, X[:,0].max() + 1
+    #y_min, y_max = X[:,1].min() - 1, X[:,1].max() + 1
+    #xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+    #                        np.arange(y_min, y_max, h))
+    #W = (ref_net.W1, ref_net.W2)
+    #b = (ref_net.b1, ref_net.b2)
+    ##W = (modW[0], modW[1])
+    ##b = (modb[0], modb[1])
+    #if(type(W) is tuple):
+    #    Z = np.dot(np.maximum(0, np.dot(np.c_[xx.ravel(), yy.ravel()], W[0]) + b[0]), W[1]) + b[1]
+    #else:
+    #    Z = np.dot(np.c_[xx.ravel(), yy.ravel()], W) + b
+    #Z = np.argmax(Z, axis=1)
+    #Z = Z.reshape(xx.shape)
 
-#    if(type(W) is tuple):
-#        Z = np.dot(np.maximum(0, np.dot(np.c_[xx.ravel(), yy.ravel()], W[0]) + b[0]), W[1]) + b[1]
-#    else:
-#        Z = np.dot(np.c_[xx.ravel(), yy.ravel()], W) + b
-#    Z = np.argmax(Z, axis=1)
-#    Z = Z.reshape(xx.shape)
-#
-#    #self.fig_classifier = plt.figure()
-#    plt.figure(1)
-#    plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral, alpha=0.8)
-#    plt.scatter(X[:,0], X[:,1], c=y, s=40, cmap=plt.cm.Spectral)
-#    plt.xlim(xx.min(), xx.max())
-#    plt.ylim(yy.min(), yy.max())
-#    plt.show()
-#
+    ##self.fig_classifier = plt.figure()
+    #plt.figure(1)
+    #plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral, alpha=0.8)
+    #plt.scatter(X[:,0], X[:,1], c=y, s=40, cmap=plt.cm.Spectral)
+    #plt.xlim(xx.min(), xx.max())
+    #plt.ylim(yy.min(), yy.max())
+    #plt.show()
+

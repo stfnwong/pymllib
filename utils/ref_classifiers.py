@@ -10,7 +10,7 @@ Stefan Wong 2017
 
 import numpy as np
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 class TwoLayerNetSingleFunction(object):
     def __init__(self, reg=1e-3, step_size=1e0):
