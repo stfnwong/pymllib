@@ -187,7 +187,7 @@ class TestFCNet(unittest.TestCase):
 
         print("======== TestFCNet.test_fcnet_5layer_overfit: <END> ")
 
-
+    # TODO : 3 layer search?
     def test_fcnet_5layer_param_search(self):
         print("\n======== TestFCNet.test_fcnet_5layer_param_search :")
 
@@ -203,8 +203,10 @@ class TestFCNet(unittest.TestCase):
         #input_dim = small_data['X_train'].shape[0]
         input_dim = 3 * 32 * 32
         hidden_dims = [100, 100, 100, 100]
+        num_epochs = 30
 
         param_search = True
+        num_searches = 0
         while param_search:
             weight_scale = 10 ** (np.random.uniform(-6, -1))
             learning_rate = 10 ** (np.random.uniform(-4, -1))
@@ -217,15 +219,17 @@ class TestFCNet(unittest.TestCase):
             model_solver = solver.Solver(model,
                                         small_data,
                                         print_every=10,
-                                        num_epochs=30,
+                                        num_epochs=num_epochs,
                                         batch_size=50,     # previously 25
                                         update_rule='sgd',
                                         optim_config={'learning_rate': learning_rate})
             model_solver.train()
+            num_searches += 1
             if max(model_solver.train_acc_history) >= 1.0:
                 param_search = False
                 lr = learning_rate
                 ws = weight_scale
+                print("Found parameters after %d epochs total (%d searches of %d epochs each)" % (num_searches * num_epochs, num_searches, num_epochs))
 
         print("Best learning rate is %f" % lr)
         print("Best weight scale is %f" % ws)
