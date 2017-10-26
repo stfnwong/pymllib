@@ -16,7 +16,7 @@ import data_utils
 import solver
 
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 
 class FCNet(object):
@@ -180,7 +180,7 @@ class FCNet(object):
         loss = 0.0
         grads = {}
         # Compute loss
-        data_loss, dscores = softmax_loss(scores, y)
+        data_loss, dscores = layers.softmax_loss(scores, y)
         reg_loss = 0
         for f in self.params.keys():
             if f[0] == 'W':
@@ -198,50 +198,61 @@ class FCNet(object):
             h_cache = hidden['cache_h' + str(idx)]
 
             if idx == self.num_layers:
-                dh, dw, db = layers.layers.affine_backward(dh, h_cache)
+                dh, dw, db = layers.affine_backward(dh, h_cache)
                 hidden['dh' + str(idx-1)] = dh
                 hidden['dW' + str(idx)] = dw
                 hidden['db' + str(idx)] = db
             else:
                 if self.use_dropout:
                     cache_hdrop = hidden['cache_hdrop' + str(idx)]
-                    dh = layers.layers.cdropout_backward(dh, cache_hdrop)
+                    dh = layers.cdropout_backward(dh, cache_hdrop)
                 if self.use_batchnorm:
-                    dh, dw, db, dgamma, dbeta = layers.layers.affine_norm_relu_backward(dh, h_cache)
+                    dh, dw, db, dgamma, dbeta = layers.affine_norm_relu_backward(dh, h_cache)
                     hidden['dh' + str(idx-1)] = dh
                     hidden['dW' + str(idx)] = dw
                     hidden['db' + str(idx)] = db
                     hidden['dgamma' + str(idx)] = dgamma
                     hidden['dbeta' + str(idx)] = dbeta
                 else:
-                    dh, dw, db = layers.layers.affine_relu_backward(dh, h_cache)         # TODO This layer definition
+                    dh, dw, db = layers.affine_relu_backward(dh, h_cache)         # TODO This layer definition
                     hidden['dh' + str(idx-1)] = dh
                     hidden['dW' + str(idx)] = dw
                     hidden['db' + str(idx)] = db
 
         # w gradients where we add the regularization term
         # TODO :' Tidy this up
+        dw_list = {}
         for key, val in hidden.items():
             if key[:2] == 'dW':
-                dw_list = {key[1:]: val + self.reg * self.params[key[1:]]}
+                dw_list[key[1:]] = val + self.reg * self.params[key[1:]]
 
+        db_list = {}
         for key, val in hidden.items():
             if key[:2] == 'db':
-                db_list = {key[1:]: val}
+                db_list[key[1:]] = val
 
+        # TODO : This is a hack
+        dgamma_list = {}
         for key, val in hidden.items():
             if key[:6] == 'dgamma':
-                dgamma_list = {key[1:]: val}
+                dgamma_list[key[1:]] = val
 
+        # TODO : This is a hack
+        dbeta_list = {}
         for key, val in hidden.items():
             if key[:5] == 'dbeta':
-                dbeta_list = {key[1:]: val}
+                dbeta_list[key[1:]] = val
 
         grads = {}
         grads.update(dw_list)
         grads.update(db_list)
         grads.update(dgamma_list)
         grads.update(dbeta_list)
+
+        #if dgamma_list is not None:
+        #    grads.update(dgamma_list)
+        #if dbeta_list is not None:
+        #    grads.update(dbeta_list)
 
         return loss, grads
 

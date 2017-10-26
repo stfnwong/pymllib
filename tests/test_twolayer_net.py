@@ -1,6 +1,6 @@
 """
-TEST_FCNET
-Test the fully connected network function
+TEST_TWOLAYER_NET
+Test the (fixed form) Two layer network function
 
 Note that the layer tests are taken directly from CS231n,
 and are in effect just re-factored into unit tests
@@ -20,9 +20,7 @@ import data_utils
 import check_gradient
 import error
 import layers
-import fcnet
 import twolayer_modular as twol
-import solver
 
 import unittest
 # Debug
@@ -41,16 +39,15 @@ def load_data(data_dir, verbose=False):
 
     return dataset
 
-class TestFCNet(unittest.TestCase):
+class TestTwoLayerNet(unittest.TestCase):
 
     def setUp(self):
-        self.data_dir = 'datasets/cifar-10-batches-py'
         self.verbose = False
         self.eps = 1e-6
-        self.never_cheat = False   # implement cheat switch
+        self.never_cheat = True
 
-    def test_fcnet_loss(self):
-        print("\n======== TestFCNet.test_fcnet_loss:")
+    def test_twolayer_loss(self):
+        print("\n======== TestTwoLayerNet.test_twolayer_loss:")
 
         np.random.seed(231)
         N = 3
@@ -59,10 +56,10 @@ class TestFCNet(unittest.TestCase):
         C = 7
         std = 1e-2
 
-        # Get model
-        model = fcnet.FCNet(hidden_dims=[H], input_dim=D,
+        # Create model
+        model = twol.TwoLayerNet(input_dim=D, hidden_dim=H,
                             num_classes=C, weight_scale=std,
-                            dtype=np.float64, verbose=True)
+                            verbose=True)
         W1_std = abs(model.params['W1'].std() - std)
         W2_std = abs(model.params['W2'].std() - std)
         b1 = model.params['b1']
@@ -80,7 +77,7 @@ class TestFCNet(unittest.TestCase):
         model.params['b1'] = np.linspace(-0.1, 0.9, num=H)
         model.params['b2'] = np.linspace(-0.9, 0.1, num=C)
 
-        # Get data
+        # Create some data
         X = np.linspace(-5.5, 4.5, num=N*D).reshape(D, N).T
         y = np.random.randint(C, size=N)
         scores = model.loss(X)
@@ -92,55 +89,18 @@ class TestFCNet(unittest.TestCase):
 
         scores_diff = np.abs(scores - correct_scores).sum()
         # Cheating constant
-        if self.eps < scores_diff:
-            cheat_constant = 2e-5
-            print("Note, added cheating param of %f to self.eps (%f)" % (cheat_constant, self.eps))
-        else:
+        if self.never_cheat is False:
             cheat_constant = 0.0
-        self.assertLess(scores_diff, self.eps + cheat_constant)
+            if self.eps < scores_diff:
+                cheat_constant = 2e-5
+                print("Note, added cheating param of %f to self.eps (%f)" % (cheat_constant, self.eps))
+            self.assertLess(scores_diff, self.eps + cheat_constant)
+        else:
+            self.assertLess(scores_diff, self.eps)
 
-        print("======== TestFCNet.test_fcnet_loss: <END> ")
+        print("======== TestTwoLayerNet.test_twolayer_loss: <END> ")
 
 
-    def test_fcnet_3layer_overfit(self):
-
-        dataset = load_data(self.data_dir, self.verbose)
-        num_train = 50
-
-        small_data = {
-            'X_train': dataset['X_train'][:num_train],
-            'y_train': dataset['y_train'][:num_train],
-            'X_val':   dataset['X_val'][:num_train],
-            'y_val':   dataset['y_val'][:num_train]
-        }
-        #input_dim = small_data['X_train'].shape[0]
-        input_dim = 3 * 32 * 32
-        hidden_dims = [100, 100]
-        weight_scale = 1e-2
-        learning_rate = 1e-4
-
-        # Get model and solver
-        model = fcnet.FCNet(input_dim=input_dim,
-                            hidden_dims=hidden_dims,
-                            weight_scale=weight_scale,
-                            dtype=np.float64)
-        print(model)
-        model_solver = solver.Solver(model,
-                                     small_data,
-                                     print_every=10,
-                                     num_epochs=20,
-                                     batch_size=50,     # previously 25
-                                     update_rule='sgd',
-                                     optim_config={'learning_rate': learning_rate})
-        model_solver.train()
-
-        import matplotlib.pyplot as plt
-
-        plt.plot(model_solver.loss_history, 'o')
-        plt.title('Training loss history')
-        plt.xlabel('Iteration')
-        plt.ylabel('Training loss')
-        plt.show()
 
 
 
