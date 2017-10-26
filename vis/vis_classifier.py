@@ -24,6 +24,22 @@ def init_classifier_plot(figtitle="", fignum=None):
     return (fig, ax)
 
 
+def vis_loss_iter(ax, loss, t=None):
+
+    if ax is None:
+        return
+
+    if t is None:
+        t = np.linspace(1, len(loss), len(loss))
+
+    if len(t) != len(loss):
+        print("t and loss must be same length")
+        return
+
+    ax.plot(t, loss)
+    ax.set_xlim(t[-1])
+    #ax.set_ylim
+
 def vis_weights():
     print("TODO: visualize weights")
 

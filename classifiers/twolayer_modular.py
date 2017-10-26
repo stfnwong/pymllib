@@ -12,7 +12,7 @@ import numpy as np
 import layers
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 class TwoLayerNet(object):
     def __init__(self, input_dim=(32*32*3), hidden_dim=100, num_classes=10, weight_scale=1e-3, reg=0.0, step_size=1e-1, verbose=False):
@@ -80,43 +80,28 @@ class TwoLayerNet(object):
 
         return loss, grads
 
-    def train(self, X, y, num_iter=10000, verbose=True):
+    def param_update(self, grads):
+        self.params['W1'] -= self.step_size * grads['W1']
+        self.params['W2'] -= self.step_size * grads['W2']
+        self.params['b1'] -= self.step_size * grads['b1']
+        self.params['b2'] -= self.step_size * grads['b2']
 
+
+    def train(self, X, y, num_iter=10000, verbose=True, cache_loss=False):
+
+        if(cache_loss is True):
+            loss_cache = np.zeros(num_iter)
+
+        # Gradient loop
         for n in range(num_iter):
             loss, grads = self.loss(X, y)
+            self.param_update(grads)
             if n % 100 == 0:
                 print("iter %5d, loss = %f\n" % (n+1, loss))
 
-            # Update parameters
-            self.params['W1'] -= self.step_size * grads['W1']
-            self.params['W2'] -= self.step_size * grads['W2']
-            self.params['b1'] -= self.step_size * grads['b1']
-            self.params['b2'] -= self.step_size * grads['b2']
+            if cache_loss is True:
+                loss_cache[n] = loss
 
-# Some test code....
-if __name__ == "__main__":
+        if cache_loss is True:
+            return loss_cache
 
-    import neural_net_utils as nnu
-
-    # Data params
-    N = 500
-    h = 100
-    D = 2
-    K = 3
-    theta = 0.3
-    std = 1e-2
-    # Get data
-    spiral_data = nnu.create_spiral_data(N, D, K, theta)
-    X = spiral_data[0]
-    y = spiral_data[1]
-
-    net = TwoLayerNet(input_dim=D, hidden_dim=h,
-                      num_classes=K, weight_scale=std,
-                      verbose=True)
-    print("Test loss function")
-    scores = net.loss(X)
-
-    print("Train loss function")
-    loss, grads = net.loss(X, y)
-
-    net.train(X, y, num_iter=10000)
