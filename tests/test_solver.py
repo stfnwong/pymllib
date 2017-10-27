@@ -165,7 +165,7 @@ class TestSolver(unittest.TestCase):
         hidden_dims = [100, 50, 10]     # just some random dims
         weight_scale = 5e-2
         learning_rate = 1e-2
-        num_epochs = 20
+        num_epochs = 50
         batch_size = 50
         solvers = {}
 

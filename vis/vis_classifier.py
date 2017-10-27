@@ -83,7 +83,7 @@ def vis_classifier_simple(params, data, ax, title_text=None):
 
     #self.fig_classifier = plt.figure()
     ax.contourf(xx, yy, Z, cmap=plt.cm.Spectral, alpha=0.8)
-    ax.scatter(X[:,0], X[:,1], c=y, s=40, cmap=plt.cm.Spectral)
+    ax.scatter(X[:,0], X[:,1], c=y, s=40, cmap=plt.cm.jet)
     ax.set_xlim(xx.min(), xx.max())
     ax.set_ylim(yy.min(), yy.max())
     ax.set_title(str(title_text))

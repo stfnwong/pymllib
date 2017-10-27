@@ -81,7 +81,7 @@ if __name__ == "__main__":
     h = 100          # Size of hidden dimension
     D = 2           # Dimension of data
     K = 3           # Number of classes
-    theta = 0.45
+    theta = 0.35
     spiral_data = nnu.create_spiral_data(N, D, K, theta)
     X = spiral_data[0]
     y = spiral_data[1]
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     # Show the plots
     if animate is True:
-        train_with_update(net, X, y, ax, training_iter, update_every=100)
+        train_with_update(net, X, y, ax, training_iter, update_every=1000)
     else:
         train_to_end(net, X, y, ax, training_iter)
 
