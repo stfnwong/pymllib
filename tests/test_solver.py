@@ -19,6 +19,8 @@ import optim
 import fcnet
 
 import unittest
+# Debug
+from pudb import set_trace; set_trace()
 
 
 def get_figure_handles():
@@ -31,12 +33,13 @@ def get_figure_handles():
     return fig, ax
 
 # Show the solver output
-def plot_test_result(ax, solver_dict):
+def plot_test_result(ax, solver_dict, num_epochs):
 
     assert len(ax) == 3, "Need 3 axis"
 
     for n in range(len(ax)):
         ax[n].set_xlabel("Epoch")
+        ax[n].set_xticks(range(num_epochs))
         if n == 0:
             ax[n].set_title("Training Loss")
         elif n == 1:
@@ -57,7 +60,6 @@ def plot_test_result(ax, solver_dict):
     # fig.set_size_inches(8,8)
     # fig.tight_layout()
 
-
 def load_data(data_dir, verbose=False):
 
     dataset = data_utils.get_CIFAR10_data(data_dir)
@@ -74,12 +76,12 @@ class TestSolver(unittest.TestCase):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.verbose = False
 
+    # CS231n test
     def test_sgd_momentum(self):
         print("\n======== TestSolver.test_sgd_momentum:")
 
         N = 4
         D = 5
-
         w = np.linspace(-0.4, 0.6, num=N*D).reshape(N, D)
         dw = np.linspace(-0.6, 0.4, num=N*D).reshape(N, D)
         v = np.linspace(0.6, 0.9, num=N*D).reshape(N, D)
@@ -102,19 +104,53 @@ class TestSolver(unittest.TestCase):
 
         print("next_w_error = %f" % next_w_error)
         print("velocity_error = %f" % velocity_error)
-
         self.assertLessEqual(next_w_error, self.eps)
         self.assertLessEqual(velocity_error, self.eps)
 
         print("======== TestSolver.test_sgd_momentum: <END> ")
+
+    # CS231n test
+    def test_rmsprop(self):
+        print("\n======== TestSolver.test_rmsprop:")
+
+        N = 4
+        D = 5
+        w = np.linspace(-0.4, 0.6, num=N*D).reshape(N, D)
+        dw = np.linspace(-0.6, 0.4, num=N*D).reshape(N, D)
+        cache = np.linspace(0.6, 0.9, num=N*D).reshape(N, D)
+        config = {'learning_rate': 1e-2, 'cache': cache}
+        next_w, _ = optim.rmsprop(w, dw, config=config)
+
+        expected_next_w = np.asarray([
+        [-0.39223849, -0.34037513, -0.28849239, -0.23659121, -0.18467247],
+        [-0.132737,   -0.08078555, -0.02881884,  0.02316247,  0.07515774],
+        [ 0.12716641,  0.17918792,  0.23122175,  0.28326742,  0.33532447],
+        [ 0.38739248,  0.43947102,  0.49155973,  0.54365823,  0.59576619]])
+        expected_cache = np.asarray([
+        [ 0.5976,      0.6126277,   0.6277108,   0.64284931,  0.65804321],
+        [ 0.67329252,  0.68859723,  0.70395734,  0.71937285,  0.73484377],
+        [ 0.75037008,  0.7659518,   0.78158892,  0.79728144,  0.81302936],
+        [ 0.82883269,  0.84469141,  0.86060554,  0.87657507,  0.8926    ]])
+
+        next_w_error = error.rel_error(next_w, expected_next_w)
+        cache_error = error.rel_error(config['cache'], expected_cache)
+        print("next_w_error = %f" % next_w_error)
+        print("cache_error = %f" % cache_error)
+        self.assertLessEqual(next_w_error, self.eps)
+        self.assertLessEqual(cache_error, self.eps)
+
+        print("======== TestSolver.test_rmsprop: <END> ")
+
+    def test_adam(self):
+        print("\n======== TestSolver.test_adam:")
+        print("======== TestSolver.test_adam: <END> ")
 
     def test_all_optim(self):
         print("\n======== TestSolver.test_all_optim:")
 
         dataset =  load_data(self.data_dir, self.verbose)
 
-        #optim_list = ['sgd', 'sgd_momentum', 'rmsprop']
-        optim_list = ['sgd', 'sgd_momentum']
+        optim_list = ['sgd', 'sgd_momentum', 'rmsprop']
         num_train = 50
 
         small_data = {
@@ -153,7 +189,7 @@ class TestSolver(unittest.TestCase):
 
         # get some figure handles and plot the data
         fig,ax = get_figure_handles()
-        plot_test_result(ax, solvers)
+        plot_test_result(ax, solvers, num_epochs)
         fig.set_size_inches(8,8)
         fig.tight_layout()
         plt.show()

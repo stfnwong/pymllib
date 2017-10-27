@@ -27,7 +27,7 @@ import solver
 
 import unittest
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 
 # Since we don't need to load a dataset for every test, don't put
@@ -74,6 +74,7 @@ def plot_test_result(ax, solver_dict):
     # Update legend
     for i in range(len(ax)):
         ax[i].legend(loc='upper right', ncol=4)
+
     # Note: outside the function we set
     # fig.set_size_inches(8,8)
     # fig.tight_layout()
@@ -89,7 +90,7 @@ class TestFCNet(unittest.TestCase):
 
     def test_fcnet_loss(self):
         print("\n======== TestFCNet.test_fcnet_loss:")
-
+        # Some model parameters
         np.random.seed(231)
         N = 3
         D = 5

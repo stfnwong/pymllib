@@ -40,6 +40,27 @@ def sgd_momentum(w, dw, config=None):
 
     return next_w, config
 
-# TODO : this is just here to shut the linter up
-def rmsprop(w, dw, config=None):
+def rmsprop(x, dx, config=None):
+
+    if config is None:
+        config = {}
+    config.setdefault('learning_rate', 1e-2)
+    config.setdefault('decay_rate', 0.99)
+    config.setdefault('epsilon', 1e-8)
+    config.setdefault('cache', np.zeros_like(x))
+
+    #mnsqr = config['cache']
+    config['cache'] = config['cache'] * config['decay_rate'] + (1 - config['decay_rate']) * dx**2
+    next_x = x - config['learning_rate'] * dx / np.sqrt(config['cache'] + config['epsilon'])
+    #config['cache'] = config['cache']
+
+    return next_x, config
+
+def adam(x, dx, config=None):
     pass
+
+
+
+
+    #next_x = x - config['learning_rate'] * dx / (np.sqrt(mnsqr + config['epsilon'])
+
