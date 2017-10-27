@@ -14,7 +14,7 @@ import optim
 import numpy as np
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 class Solver(object):
     """

@@ -1,8 +1,8 @@
 """
 FULL-CONNECTED NETWORK
-A more modular design in the style of Caffeo
+A more modular design in the style of Caffe
 
-
+TODO : Implement the layers as objects and produce an object oriented design
 """
 
 import os
@@ -16,7 +16,7 @@ import data_utils
 import solver
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 
 class FCNet(object):

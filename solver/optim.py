@@ -39,3 +39,7 @@ def sgd_momentum(w, dw, config=None):
     config['velocity'] = next_v
 
     return next_w, config
+
+# TODO : this is just here to shut the linter up
+def rmsprop(w, dw, config=None):
+    pass

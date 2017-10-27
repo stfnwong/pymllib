@@ -42,13 +42,42 @@ def load_data(data_dir, verbose=False):
 
     return dataset
 
-# TODO : factor out the plotting
-def plot_loss():
-    plt.plot(model_solver.loss_history, 'o')
-    plt.title('Training loss history (3 layers)')
-    plt.xlabel('Iteration')
-    plt.ylabel('Training loss')
-    plt.show()
+def get_figure_handles():
+    fig = plt.figure()
+    ax = []
+    for i in range(3):
+        sub_ax = fig.add_subplot(3,1,(i+1))
+        ax.append(sub_ax)
+
+    return fig, ax
+
+# Show the solver output
+def plot_test_result(ax, solver_dict):
+
+    assert len(ax) == 3, "Need 3 axis"
+
+    for n in range(len(ax)):
+        ax[n].set_xlabel("Epoch")
+        if n == 0:
+            ax[n].set_title("Training Loss")
+        elif n == 1:
+            ax[n].set_title("Training Accuracy")
+        elif n == 2:
+            ax[n].set_title("Validation Accuracy")
+
+    # update data
+    for method, solv in solver_dict.items():
+        ax[0].plot(solv.loss_history, 'o', label=method)
+        ax[1].plot(solv.train_acc_history, '-x', label=method)
+        ax[2].plot(solv.val_acc_history, '-x', label=method)
+
+    # Update legend
+    for i in range(len(ax)):
+        ax[i].legend(loc='upper right', ncol=4)
+    # Note: outside the function we set
+    # fig.set_size_inches(8,8)
+    # fig.tight_layout()
+
 
 class TestFCNet(unittest.TestCase):
 
@@ -291,36 +320,12 @@ class TestFCNet(unittest.TestCase):
             solvers[update_rule] = model_solver
             model_solver.train()
 
-
-        # Plot them against each other
-        plt.subplot(3,1,1)
-        plt.title("Training loss")
-        plt.xlabel("Epoch")
-
-        plt.subplot(3,1,2)
-        plt.title("Training accuracy")
-        plt.xlabel("Epoch")
-
-        plt.subplot(3,1,3)
-        plt.title("Validation accuracy")
-        plt.xlabel("Epoch")
-
-        for ur, solv in solvers.items():
-            plt.subplot(3,1,1)
-            plt.plot(solv.loss_history, 'o', label=ur)
-            plt.subplot(3,1,2)
-            plt.plot(solv.train_acc_history, '-x', label=ur)
-            plt.subplot(3,1,3)
-            plt.plot(solv.val_acc_history, '-o', label=ur)
-
-        for i in [1, 2, 3]:
-            plt.subplot(3,1,i)
-            plt.legend(loc='upper center', ncol=4)
-
-        plt.gcf().set_size_inches(8,8)
-        plt.tight_layout()
+        # Plot the training results on a common graph
+        fig, ax = get_figure_handles()
+        plot_test_result(ax, solvers)
+        fig.set_size_inches(8,8)
+        fig.tight_layout()
         plt.show()
-
 
         print("======== TestFCNet.test_fcnet_6layer_overfit: <END> ")
 
