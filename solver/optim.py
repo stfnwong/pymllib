@@ -7,7 +7,6 @@ TODO : Docstrings
 
 import numpy as np
 
-
 def sgd(w, dw, config=None):
     """
     Perform vanilla stochastic gradient descent
@@ -19,11 +18,9 @@ def sgd(w, dw, config=None):
     if config is None:
         config = {}
     config.setdefault('learning_rate', 1e-2)
-    w -= config['learning_rate'] * dw
+    next_w = w - config['learning_rate'] * dw
 
-    return w, config
-
-
+    return next_w, config
 
 def sgd_momentum(w, dw, config=None):
     """
@@ -35,7 +32,7 @@ def sgd_momentum(w, dw, config=None):
         config = {}
 
     config.setdefault('learning_rate', 1e-2)
-    config.setdefault('momentum', 0.9)
+    config.setdefault('momentum', 0.7)
     v = config.get('velocity', np.zeros_like(w))
     next_v = config['momentum'] * v - config['learning_rate'] * dw
     next_w = w + next_v

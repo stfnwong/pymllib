@@ -42,11 +42,19 @@ def load_data(data_dir, verbose=False):
 
     return dataset
 
+# TODO : factor out the plotting
+def plot_loss():
+    plt.plot(model_solver.loss_history, 'o')
+    plt.title('Training loss history (3 layers)')
+    plt.xlabel('Iteration')
+    plt.ylabel('Training loss')
+    plt.show()
+
 class TestFCNet(unittest.TestCase):
 
     def setUp(self):
         self.data_dir = 'datasets/cifar-10-batches-py'
-        self.verbose = False
+        self.verbose = True
         self.eps = 1e-6
         self.never_cheat = False   # implement cheat switch
 
@@ -203,7 +211,7 @@ class TestFCNet(unittest.TestCase):
         #input_dim = small_data['X_train'].shape[0]
         input_dim = 3 * 32 * 32
         hidden_dims = [100, 100, 100, 100]
-        num_epochs = 30
+        num_epochs = 20
 
         param_search = True
         num_searches = 0
@@ -244,6 +252,77 @@ class TestFCNet(unittest.TestCase):
 
         print("======== TestFCNet.test_fcnet_5layer_param_search: <END> ")
 
+    def test_fcnet_6layer_overfit(self):
+        print("\n======== TestFCNet.test_fcnet_6layer_overfit :")
+
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 200
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        #input_dim = small_data['X_train'].shape[0]
+        input_dim = 3 * 32 * 32
+        hidden_dims = [100, 100, 100, 100, 100]
+        weight_scale = 5e-2
+        learning_rate = 1e-2
+        num_epochs = 20
+        batch_size = 100
+        solvers = {}
+
+        for update_rule in ['sgd', 'sgd_momentum']:
+            print("Using update rule %s" % update_rule)
+            model = fcnet.FCNet(input_dim=input_dim,
+                            hidden_dims=hidden_dims,
+                            weight_scale=weight_scale,
+                            dtype=np.float64)
+            if self.verbose:
+                print(model)
+            model_solver = solver.Solver(model,
+                                        small_data,
+                                        print_every=100,
+                                        num_epochs=num_epochs,
+                                        batch_size=batch_size,     # previously 25
+                                        update_rule=update_rule,
+                                        optim_config={'learning_rate': learning_rate})
+            solvers[update_rule] = model_solver
+            model_solver.train()
+
+
+        # Plot them against each other
+        plt.subplot(3,1,1)
+        plt.title("Training loss")
+        plt.xlabel("Epoch")
+
+        plt.subplot(3,1,2)
+        plt.title("Training accuracy")
+        plt.xlabel("Epoch")
+
+        plt.subplot(3,1,3)
+        plt.title("Validation accuracy")
+        plt.xlabel("Epoch")
+
+        for ur, solv in solvers.items():
+            plt.subplot(3,1,1)
+            plt.plot(solv.loss_history, 'o', label=ur)
+            plt.subplot(3,1,2)
+            plt.plot(solv.train_acc_history, '-x', label=ur)
+            plt.subplot(3,1,3)
+            plt.plot(solv.val_acc_history, '-o', label=ur)
+
+        for i in [1, 2, 3]:
+            plt.subplot(3,1,i)
+            plt.legend(loc='upper center', ncol=4)
+
+        plt.gcf().set_size_inches(8,8)
+        plt.tight_layout()
+        plt.show()
+
+
+        print("======== TestFCNet.test_fcnet_6layer_overfit: <END> ")
 
 if __name__ == "__main__":
     unittest.main()

@@ -95,7 +95,17 @@ class Solver(object):
             dw = grads[p]
             config = self.optim_configs[p]
             next_w, next_config = self.update_rule(w, dw, config)
+            self.model.params[p] = next_w
             self.optim_configs[p] = next_config
+            # Debug
+            #if 'learning_rate' in config.keys():
+            #    print("Learning rate : %f" % config['learning_rate'])
+
+            #if 'momentum' in config.keys():
+            #    print("momentum : %f " % config['momentum'])
+
+            #if 'velocity' in config.keys():
+            #    print("max vel: %f, min vel: %f" % (np.max(config['velocity']), np.min(config['velocity'])))
 
     # TODO : Come back to this last
     #def save_checkpoint(self):
