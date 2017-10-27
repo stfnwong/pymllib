@@ -31,7 +31,7 @@ class TestLayers(unittest.TestCase):
         self.never_cheat = False   # TODO : implement cheat switch
 
     def test_affine_layer_forward(self):
-        print("\n======== TestFCNet.test_affine_layer_forward:")
+        print("\n======== TestLayers.test_affine_layer_forward:")
 
         num_inputs = 2
         input_shape = (4, 5, 6)
@@ -52,10 +52,10 @@ class TestLayers(unittest.TestCase):
         print("Difference is %.9f" % (diff))
         self.assertLessEqual(diff, self.eps)
 
-        print("======== TestFCNet.test_affine_layer_forward: <END> ")
+        print("======== TestLayers.test_affine_layer_forward: <END> ")
 
     def test_affine_layer_backward(self):
-        print("\n======== TestFCNet.test_affine_layer_backward:")
+        print("\n======== TestLayers.test_affine_layer_backward:")
 
         x = np.random.randn(10, 2, 3)
         w = np.random.randn(6, 5)
@@ -84,10 +84,10 @@ class TestLayers(unittest.TestCase):
         self.assertLessEqual(dw_diff, self.eps)
         self.assertLessEqual(db_diff, self.eps)
 
-        print("======== TestFCNet.test_affine_layer_backward: <END> ")
+        print("======== TestLayers.test_affine_layer_backward: <END> ")
 
     def test_relu_layer_forward(self):
-        print("\n======== TestFCNet.test_relu_layer_forward:")
+        print("\n======== TestLayers.test_relu_layer_forward:")
 
         x = np.linspace(-0.5, 0.5, num=12).reshape(3, 4)
         out, _ = layers.relu_forward(x)
@@ -100,10 +100,10 @@ class TestLayers(unittest.TestCase):
         self.assertLessEqual(diff, self.eps + 4e-8)        # NOTE: For this I had to cheat...
         print("Note : added cheating param of 4e-8 to self.eps (%f)" % self.eps)
 
-        print("======== TestFCNet.test_relu_layer_forward: <END> ")
+        print("======== TestLayers.test_relu_layer_forward: <END> ")
 
     def test_relu_layer_backward(self):
-        print("\n======== TestFCNet.test_relu_layer_backward:")
+        print("\n======== TestLayers.test_relu_layer_backward:")
 
         x = np.random.randn(10, 10)
         dout = np.random.randn(*x.shape)
@@ -115,7 +115,24 @@ class TestLayers(unittest.TestCase):
         print("dx_error : %.9f" % (dx_error))
         self.assertLessEqual(dx_error, self.eps)
 
-        print("======== TestFCNet.test_relu_layer_backward: <END> ")
+        print("======== TestLayers.test_relu_layer_backward: <END> ")
+
+
+
+# Test the batch norm
+class TestLayersBatchnorm(unittest.TestCase):
+    def setUp(self):
+        self.verbose = False
+        self.eps = 1e-6
+        self.never_cheat = False   # TODO : implement cheat switch
+
+    def test_batchnorm_forward(self):
+        print("\n======== TestLayersBatchnorm.test_batchnorm_forward:")
+        print("======== TestLayersBatchnorm.test_batchnorm_forward: <END> ")
+
+
+
+
 
 if __name__ == "__main__":
     unittest.main()
