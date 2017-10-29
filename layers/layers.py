@@ -263,3 +263,72 @@ def sigmoid_backward(dout, cache):
 
 
 
+
+
+# ===== LAYER OBJECT ===== #
+
+class Layer(object):
+    def __init__(self, input_dim, hidden_dim, weight_scale=1e-2):
+        self.W = weight_scale * np.random.randn(input_dim, hidden_dim)
+        self.b = np.zeros(hidden_dim)
+        self.input_cache = None
+
+
+class AffineLayer(Layer):
+    def __str__(self):
+        s = []
+        s.append('Affine Layer:\n\t (%d x %d)\n' % (self.W.shape[0], self.W.shape[1]))
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def forward(self, X):
+        self.input_cache = X
+        N = X.shape[0]
+        D = np.prod(X.shape[1:])
+        x2 = np.reshape(X, (N,D))
+        out = np.dot(x2, self.W) + self.b
+
+        return out
+
+    def backward(self, dout):
+        """
+        Compute the backward pass for an affine layer
+        """
+        X = self.input_cache
+        dx = np.dot(dout, self.W.T).reshape(X.shape)
+        dw = np.dot(X.reshape(X.shape[0], np.prod(X.shape[1:])).T, dout)
+        db = np.sum(dout, axis=0)
+
+        return dx, dw, db
+
+
+class ReLULayer(Layer):
+    def __str__(self):
+        s = []
+        s.append('ReLU Layer:\n\t (%d x %d)\n' % (self.W.shape[0], self.W.shape[1]))
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def forward(self, X):
+        """
+        Computes the forward pass for a layer of rectified linear units
+        """
+        self.input_cache = X
+        out = np.maximum(0, X)
+
+        return out
+
+    def backward(self, dout):
+        """
+        Compute the backward pass for a layer of rectified linear units
+        """
+        X = self.input_cache
+        dx = np.array(dout, copy=True)
+        dx[X <= 0] = 0
+
+        return dx
+

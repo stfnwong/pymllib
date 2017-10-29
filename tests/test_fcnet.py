@@ -86,6 +86,7 @@ class TestFCNet(unittest.TestCase):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.verbose = True
         self.eps = 1e-6
+        self.draw_plots = True
         self.never_cheat = False   # implement cheat switch
 
     def test_fcnet_loss(self):
@@ -175,11 +176,12 @@ class TestFCNet(unittest.TestCase):
         model_solver.train()
 
         # Plot results
-        plt.plot(model_solver.loss_history, 'o')
-        plt.title('Training loss history (3 layers)')
-        plt.xlabel('Iteration')
-        plt.ylabel('Training loss')
-        plt.show()
+        if self.draw_plots:
+            plt.plot(model_solver.loss_history, 'o')
+            plt.title('Training loss history (3 layers)')
+            plt.xlabel('Iteration')
+            plt.ylabel('Training loss')
+            plt.show()
 
         print("======== TestFCNet.test_fcnet_3layer_overfit: <END> ")
 
@@ -217,11 +219,12 @@ class TestFCNet(unittest.TestCase):
         model_solver.train()
 
         # Plot results
-        plt.plot(model_solver.loss_history, 'o')
-        plt.title('Training loss history (5 layers)')
-        plt.xlabel('Iteration')
-        plt.ylabel('Training loss')
-        plt.show()
+        if self.draw_plots:
+            plt.plot(model_solver.loss_history, 'o')
+            plt.title('Training loss history (5 layers)')
+            plt.xlabel('Iteration')
+            plt.ylabel('Training loss')
+            plt.show()
 
         print("======== TestFCNet.test_fcnet_5layer_overfit: <END> ")
 
@@ -273,12 +276,13 @@ class TestFCNet(unittest.TestCase):
         print("Best weight scale is %f" % ws)
 
         # Plot results
-        title = "Training loss history (5 layers) with lr=%f, ws=%f" % (lr, ws)
-        plt.plot(model_solver.loss_history, 'o')
-        plt.title(title)
-        plt.xlabel('Iteration')
-        plt.ylabel('Training loss')
-        plt.show()
+        if self.draw_plots:
+            title = "Training loss history (5 layers) with lr=%f, ws=%f" % (lr, ws)
+            plt.plot(model_solver.loss_history, 'o')
+            plt.title(title)
+            plt.xlabel('Iteration')
+            plt.ylabel('Training loss')
+            plt.show()
 
         print("======== TestFCNet.test_fcnet_5layer_param_search: <END> ")
 
@@ -322,11 +326,12 @@ class TestFCNet(unittest.TestCase):
             model_solver.train()
 
         # Plot the training results on a common graph
-        fig, ax = get_figure_handles()
-        plot_test_result(ax, solvers)
-        fig.set_size_inches(8,8)
-        fig.tight_layout()
-        plt.show()
+        if self.draw_plots:
+            fig, ax = get_figure_handles()
+            plot_test_result(ax, solvers)
+            fig.set_size_inches(8,8)
+            fig.tight_layout()
+            plt.show()
 
         print("======== TestFCNet.test_fcnet_6layer_overfit: <END> ")
 

@@ -75,6 +75,7 @@ class TestSolver(unittest.TestCase):
         self.eps = 1e-6
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.verbose = False
+        self.draw_plots = False
 
     # CS231n test
     def test_sgd_momentum(self):
@@ -188,11 +189,12 @@ class TestSolver(unittest.TestCase):
             model_solver.train()
 
         # get some figure handles and plot the data
-        fig,ax = get_figure_handles()
-        plot_test_result(ax, solvers, num_epochs)
-        fig.set_size_inches(8,8)
-        fig.tight_layout()
-        plt.show()
+        if self.draw_plots:
+            fig,ax = get_figure_handles()
+            plot_test_result(ax, solvers, num_epochs)
+            fig.set_size_inches(8,8)
+            fig.tight_layout()
+            plt.show()
 
         print("======== TestSolver.test_all_optim: <END> ")
 

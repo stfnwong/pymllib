@@ -148,7 +148,7 @@ class FCNet(object):
             if self.use_batchnorm and idx != self.num_layers:
                 gamma = self.params['gamma' + str(idx)]
                 beta = self.params['beta' + str(idx)]
-                bn_param = self.bn_params['bn_paramm' + str(idx)]
+                bn_param = self.bn_params['bn_param' + str(idx)]
 
             # Compute the forward pass
             # output layer is a special case
@@ -257,27 +257,70 @@ class FCNet(object):
         return loss, grads
 
 
-# TODO : This should eventually be elsewhere
-def rel_error(x, y):
-    return np.max(np.abs(x - y) / (np.maximum(1e-8, np.abs(x) + np.abs(y))))
 
-# ======== SOME BASIC TEST CODE ======== #
-if __name__ == "__main__":
+class FCNetObject(object):
+    def __init__(self, hidden_dims, input_dim, layer_types, num_classes=10,
+                 dropout=0, use_batchnorm=False, reg=0.0,
+                 weight_scale=1e-2, dtype=np.float32, seed=None,
+                 verbose=False):
 
-    # Get some data
-    data_dir = 'datasets/cifar-10-batches-py'
-    dataset = data_utils.get_CIFAR10_data(data_dir)
-    for k, v in dataset.items():
-        print("%s : %s" % (k, v.shape))
+        self.verbose = verbose
+        self.use_batchnorm = use_batchnorm
+        self.use_dropout = dropout > 0
+        self.reg = reg
+        self.num_layers = 1 + len(hidden_dims)
+        self.dtype = dtype
+        self.params = {}
+
+        # Initialize the parameters of the network, storing all values into a
+        # dictionary at self.params. The keys to the dictionary are W1, b1 fo
+        # layer 1, W2, b2 for layer 2, and so on.
+        if type(hidden_dims) is not list:
+            raise ValueError('hidden_dim must be a list')
+
+        if type(layer_types) is not list:
+            raise ValueError("layer_types must be a list")
+
+        if len(hidden_dims) != len(layer_types):
+            print('DEBUG : len(hidden_dims) != len(layer_types)')
+
+        dims = [input_dim] + hidden_dims + [num_classes]
+        self.layers = []
+        for i in range(len(dims)-1):
+            if layer_types[i] == 'affine':
+                l = layers.AffineLayer(dims[i], dims[i+1], weight_scale)
+            elif layer_types[i] == 'relu':
+                l = layers.ReLULayer(dims[i], dims[i+1], weight_scale)
+            elif layer_types[i] == 'relu-affine':
+                l = layers.ReluAffineLayer(dims[i], dims[i+1], weight_scale)
+
+            self.layers.append(l)
+
+    def __str__(self):
+        s = []
+        s.append("%d layer network\n" % self.num_layers)
+        s.append("Hidden layers\n")
+        for l in range(len(self.layers)):
+            s.append('Layer %d : %s\n' % (l+1, self.layers[l]))
+
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
 
 
-    hidden_dims = [200]
-    input_dim = 32 * 32 * 3
-    fcnet = FCNet(hidden_dims, input_dim)
+    def collect_params(self):
+        """
+        Collect params.
+        This is just a compatability layer for the solver. In a real object oriented
+        design the solver will need to be re-written
+        """
 
-    s = solver.Solver(fcnet, data, update_rule='sgd',
-                      optim_config={'learning_rate': 1e-3},
-                      lr_decay = 0.95,
-                      num_epochs=2,
-                      batch_size=250,
-                      print_every=100)
+        self.params = {}
+
+        for i in range(len(self.layers)):
+            self.params['W' + str(i+1)] = self.layers[l].W
+            # TODO: Where to the graients get stored in this configuration?
+
+    def loss(self, X, y=None):
+        print('TODO')
