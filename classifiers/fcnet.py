@@ -205,7 +205,7 @@ class FCNet(object):
             else:
                 if self.use_dropout:
                     cache_hdrop = hidden['cache_hdrop' + str(idx)]
-                    dh = layers.cdropout_backward(dh, cache_hdrop)
+                    dh = layers.dropout_backward(dh, cache_hdrop)
                 if self.use_batchnorm:
                     dh, dw, db, dgamma, dbeta = layers.affine_norm_relu_backward(dh, h_cache)
                     hidden['dh' + str(idx-1)] = dh
@@ -285,24 +285,29 @@ class FCNetObject(object):
             print('DEBUG : len(hidden_dims) != len(layer_types)')
 
         dims = [input_dim] + hidden_dims + [num_classes]
+        layer_types = layer_types + ['affine']
         self.layers = []
+        print(len(dims))
         for i in range(len(dims)-1):
+            if(self.verbose):
+                print("Adding layer %d" % (i+1))
             if layer_types[i] == 'affine':
                 l = layers.AffineLayer(dims[i], dims[i+1], weight_scale)
             elif layer_types[i] == 'relu':
                 l = layers.ReLULayer(dims[i], dims[i+1], weight_scale)
             elif layer_types[i] == 'relu-affine':
                 l = layers.ReluAffineLayer(dims[i], dims[i+1], weight_scale)
-
+            else:
+                raise ValueError("Invalid layer type %s" % layer_types[i])
             self.layers.append(l)
 
     def __str__(self):
         s = []
         s.append("%d layer network\n" % self.num_layers)
-        s.append("Hidden layers\n")
-        for l in range(len(self.layers)):
+        for l in range(len(self.layers)-1):
             s.append('Layer %d : %s\n' % (l+1, self.layers[l]))
-
+        # Output layer
+        s.append("Output layer: %s\n" % (self.layers[-1]))
         return ''.join(s)
 
     def __repr__(self):
@@ -319,8 +324,107 @@ class FCNetObject(object):
         self.params = {}
 
         for i in range(len(self.layers)):
-            self.params['W' + str(i+1)] = self.layers[l].W
+            self.params['W' + str(i+1)] = self.layers[i].W
             # TODO: Where to the graients get stored in this configuration?
 
     def loss(self, X, y=None):
-        print('TODO')
+        X = X.astype(self.dtype)
+        if y is None:
+            mode = 'test'
+        else:
+            mode = 'train'
+
+        # Set batchnorm params based on whether this is a training or a test
+        # run
+        self.dropout_param['mode'] = mode
+        if self.use_batchnorm:
+            for k, bn_param in self.bn_params.items():
+                bn_param[mode] = mode
+
+        # ===============================
+        # FORWARD PASS
+        # ===============================
+        #hidden['h0'] = X.reshape(X.shape[0], np.prod(X.shape[1:]))   # TODO ; Check this...
+        h = X.reshape(X.shape[0], np.prod(X.shape[1:]))
+        for l in range(self.num_layers):
+            idx = l + 1
+            # TODO : Dropout, batchnorm, etc
+            h = self.layers[l].forward(h)
+
+        #scores = hidden['h' + str(self.num_layers)]
+        scores = h
+
+        if mode == 'test':
+            return scores
+
+        loss = 0.0
+        grads = {}
+        # Compute loss
+        data_loss, dscores = layers.softmax_loss(scores, y)
+        reg_loss = 0
+        for f in self.params.keys():
+            if f[0] == 'W':
+                for w in self.params[f]:
+                    reg_loss += 0.5 * self.reg * np.sum(w * w)
+
+        loss = data_loss + reg_loss
+
+        # ===============================
+        # BACKWARD PASS
+        # ===============================
+        #hidden['dh' + str(self.num_layers)] = dscores
+        for l in range(self.num_layers)[::-1]:
+            idx = l + 1
+
+            # TODO : Need to create a structure in which to put all the
+            # various derivatives for parameter update later
+            lgrads = self.layers[l].backward(dh)
+
+
+            dh = hidden['dh' + str(idx)]
+            h_cache = hidden['cache_h' + str(idx)]
+
+            if idx == self.num_layers:
+                dh, dw, db = layers.affine_backward(dh, h_cache)
+                hidden['dh' + str(idx-1)] = dh
+                hidden['dW' + str(idx)] = dw
+                hidden['db' + str(idx)] = db
+            else:
+                if self.use_dropout:
+                    cache_hdrop = hidden['cache_hdrop' + str(idx)]
+                    dh = layers.dropout_backward(dh, cache_hdrop)
+                if self.use_batchnorm:
+                    dh, dw, db, dgamma, dbeta = layers.affine_norm_relu_backward(dh, h_cache)
+                    hidden['dh' + str(idx-1)] = dh
+                    hidden['dW' + str(idx)] = dw
+                    hidden['db' + str(idx)] = db
+                    hidden['dgamma' + str(idx)] = dgamma
+                    hidden['dbeta' + str(idx)] = dbeta
+                else:
+                    dh, dw, db = layers.affine_relu_backward(dh, h_cache)         # TODO This layer definition
+                    hidden['dh' + str(idx-1)] = dh
+                    hidden['dW' + str(idx)] = dw
+                    hidden['db' + str(idx)] = db
+
+
+
+
+# basic test of FCNetObject
+if __name__ == "__main__":
+
+    input_dim = 3 * 32 * 32
+    hidden_dims = [100, 100, 100, 100]
+    layer_types = ['relu', 'affine', 'relu', 'affine']
+    weight_scale = 5e-2
+    learning_rate = 1e-2
+    num_epochs = 20
+    batch_size = 100
+
+    net = FCNetObject(input_dim=input_dim,
+                            hidden_dims=hidden_dims,
+                            layer_types=layer_types,
+                            weight_scale=weight_scale,
+                            dtype=np.float64,
+                            verbose=True)
+
+    print(net)
