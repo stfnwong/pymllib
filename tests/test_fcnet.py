@@ -86,6 +86,8 @@ class TestFCNet(unittest.TestCase):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.verbose = True
         self.eps = 1e-6
+        self.draw_plot = True
+        self.num_classes = 10
         self.never_cheat = False   # implement cheat switch
 
     def test_fcnet_loss(self):
@@ -175,13 +177,50 @@ class TestFCNet(unittest.TestCase):
         model_solver.train()
 
         # Plot results
-        plt.plot(model_solver.loss_history, 'o')
-        plt.title('Training loss history (3 layers)')
-        plt.xlabel('Iteration')
-        plt.ylabel('Training loss')
-        plt.show()
+        if self.draw_plot is True:
+            plt.plot(model_solver.loss_history, 'o')
+            plt.title('Training loss history (3 layers)')
+            plt.xlabel('Iteration')
+            plt.ylabel('Training loss')
+            plt.show()
 
         print("======== TestFCNet.test_fcnet_3layer_overfit: <END> ")
+
+    def test_fcnet_5layer_loss(self):
+        print("\n======== TestFCNet.test_fcnet_5layer_loss:")
+
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 50
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        #input_dim = small_data['X_train'].shape[0]
+        input_dim = 3 * 32 * 32
+        hidden_dims = [100, 100, 100, 100]
+        weight_scale = 1e-2
+        learning_rate = 1e-2
+
+        # Get model and solver
+        model = fcnet.FCNet(input_dim=input_dim,
+                            hidden_dims=hidden_dims,
+                            weight_scale=weight_scale,
+                            reg=0.0,
+                            dtype=np.float64)
+        print(model)
+        model_solver = solver.Solver(model,
+                                     small_data,
+                                     print_every=10,
+                                     num_epochs=50,
+                                     batch_size=50,     # previously 25
+                                     update_rule='sgd',
+                                     optim_config={'learning_rate': learning_rate})
+        model_solver.train()
+
+        print("======== TestFCNet.test_fcnet_5layer_loss: <END> ")
 
     def test_fcnet_5layer_overfit(self):
         print("\n======== TestFCNet.test_fcnet_5layer_overfit:")
@@ -217,11 +256,12 @@ class TestFCNet(unittest.TestCase):
         model_solver.train()
 
         # Plot results
-        plt.plot(model_solver.loss_history, 'o')
-        plt.title('Training loss history (5 layers)')
-        plt.xlabel('Iteration')
-        plt.ylabel('Training loss')
-        plt.show()
+        if self.draw_plots is True:
+            plt.plot(model_solver.loss_history, 'o')
+            plt.title('Training loss history (5 layers)')
+            plt.xlabel('Iteration')
+            plt.ylabel('Training loss')
+            plt.show()
 
         print("======== TestFCNet.test_fcnet_5layer_overfit: <END> ")
 

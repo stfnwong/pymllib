@@ -112,24 +112,29 @@ def batchnorm_forward(X, gamma, beta, bn_param):
 
     if mode == 'train':
         # Training time forward pass
-
-        # shape of mu is (D,)
+        # Step 1
         mu = 1 / float(N) * np.sum(X, axis=0)
-        # shape of xmu is (N,D)
-        xmu = (X - mu)**2
-        # shape of var is (D,)
-        var = 1 / float(N) * np.sum(xmu, axis=0)
-        # shape sqrt is (D,)
-        sqrtvar = np.sqrt(var + eps)
-        invsqrt = 1. / sqrtvar
-        xh = xmu * invsqrt
-        out = gamma * xh + beta
+        # Step 2
+        xmu = (X - mu)
+        # Step 3
+        sq = xmu**2
+        # Step 4
+        var = 1 / float(N) * np.sum(sq, axis=0)
+        # Step 5
+        sqvar = np.sqrt(var + eps)
+        # Step 6
+        invvar = 1.0 / sqvar
+        # Step7
+        va2 = xmu * invvar
+        # Step 8
+        va3 = gamma * va2
+        # Step 9
+        out = va3 + beta
 
         running_mean = momentum * running_mean + (1.0 - momentum) * mu
         running_var = momentum * running_var + (1.0 - momentum) * var
-        cache = (mu, (X - mu), xmu, var, sqrtvar, invsqrt,
-                 (xmu * invsqrt), (gamma * xmu * invsqrt),
-                 gamma, beta, X, bn_param)
+
+        cache = (mu, xmu, sq, var, sqvar, invvar, va2, va3, gamma, beta, X, bn_param)
     elif mode == 'test':
         # Test time forward pass
         mu = running_mean
@@ -137,6 +142,8 @@ def batchnorm_forward(X, gamma, beta, bn_param):
         xhat = (X - mu) / np.sqrt(var + eps)
         out = gamma * xhat + beta
         cache = (mu, var, gamma, beta, bn_param)
+    else:
+        raise ValueError("Invalid forward batchnorm mode %s" % mode)
 
     return out, cache
 
@@ -220,10 +227,19 @@ def softmax_loss(X, y):
     probs /= np.sum(probs, axis=1, keepdims=True)
     N = X.shape[0]
 
-    loss = -np.sum(np.log(probs[np.arange(N), y])) / N
+    print("probs.shape; (%d, %d)" % (probs.shape[0], probs.shape[1]))
+    if np.min(probs) < 0.0:
+        print('min of probs is %f' % np.min(probs))
+
+    #l1 = np.log(np.max(probs[np.arange(N), y], 1e-15))
+    l1 = np.log(probs[np.arange(N), y])
+    loss = -np.sum(l1) / N
+    #loss = -np.sum(np.log(probs[np.arange(N), y])) / N
     dx = probs.copy()
     dx[np.arange(N), y] -= 1
     dx /= N
+
+    print("loss : %f" % loss)
 
     return loss, dx
 

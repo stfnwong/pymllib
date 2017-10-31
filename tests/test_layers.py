@@ -1,5 +1,5 @@
 """
-TEST LAYERS
+#TEST LAYERS
 Test that all the layers operate correctly, and that forward and
 backward computations are correct
 
@@ -128,11 +128,115 @@ class TestLayersBatchnorm(unittest.TestCase):
 
     def test_batchnorm_forward(self):
         print("\n======== TestLayersBatchnorm.test_batchnorm_forward:")
+
+        mean_allow_err = 0.1
+        std_allow_err = 0.1
+        N = 200
+        D1 = 50
+        D2 = 60
+        D3 = 3
+        X = np.random.randn(N, D1)
+        W1 = np.random.randn(D1, D2)
+        W2 = np.random.randn(D2, D3)
+        a = np.maximum(0, X.dot(W1)).dot(W2)  # ReLU activation for 2 layer network
+
+        print("Before batch normalization:")
+        print("means : %s" % a.mean(axis=0))
+        print("stds  : %s" % a.std(axis=0))
+
+        a_norm, _ = layers.batchnorm_forward(a, np.ones(D3), np.zeros(D3), {'mode': 'train'})
+
+        print("After batch normalization (training mode) with gamma = 1, beta = 0:")
+        print("means : %s" % a_norm.mean(axis=0))
+        print("stds  : %s" % a_norm.std(axis=0))
+
+        # Check that mean tends to beta, std tends to gamma
+        a_mean = a_norm.mean(axis=0)
+        a_std = a_norm.std(axis=0)
+        for n in range(len(a_mean)):
+            self.assertLessEqual(a_mean[n], 0.0 + mean_allow_err)
+
+        for n in range(len(a_std)):
+            self.assertLessEqual(a_std[n], 1.0 + std_allow_err)
+
+        gamma = np.asarray([1.0, 2.0, 3.0])
+        beta = np.asarray([11.0, 12.0, 13.0])
+        a_norm, _ = layers.batchnorm_forward(a, gamma, beta, {'mode': 'train'})
+
+        print("\nAfter batch normalization (training mode) with gamma = %s, beta = %s:" % (gamma, beta))
+        print("means : %s" % a_norm.mean(axis=0))
+        print("stds  : %s" % a_norm.std(axis=0))
+
+        a_mean = a_norm.mean(axis=0)
+        a_std = a_norm.std(axis=0)
+        for n in range(len(a_mean)):
+            self.assertLessEqual(a_mean[n], beta[n] + mean_allow_err)
+
+        for n in range(len(a_std)):
+            self.assertLessEqual(a_std[n], gamma[n] + std_allow_err)
+
+
+        # Try running many passes of batchnorm in test mode to generate some
+        # running averages
+        n_train = 200
+        bn_param = {'mode': 'train'}
+        gamma = np.ones(D3)
+        beta = np.zeros(D3)
+        for i in range(n_train):
+            X = np.random.randn(N, D1)
+            a = np.maximum(0, X.dot(W1)).dot(W2)
+            a, cache = layers.batchnorm_forward(a, gamma, beta, bn_param)
+            #bn_param = cache[-1]
+
+        # Now run a forward pass
+        #bn_param = {'mode': 'test'}
+        bn_param['mode'] = 'test'
+        X = np.random.randn(N, D1)
+        a = np.maximum(0, X.dot(W1)).dot(W2)
+        a_norm, _ = layers.batchnorm_forward(a, gamma, beta, bn_param)
+
+        print("\nAfter batch normalization (%d training runs) with gamma = %s, beta = %s:" % (n_train, gamma, beta))
+        print("means : %s" % a_norm.mean(axis=0))
+        print("stds  : %s" % a_norm.std(axis=0))
+
         print("======== TestLayersBatchnorm.test_batchnorm_forward: <END> ")
 
+    def test_batchnorm_backward(self):
+        print("\n======== TestLayersBatchnorm.test_batchnorm_backward:")
 
+        N = 4
+        D = 5
+        x = 5 * np.random.randn(N, D) + 12
+        gamma = np.random.randn(D)
+        beta = np.random.randn(D)
+        dout = np.random.randn(N, D)
 
+        bn_param = {'mode': 'train'}
 
+        fx = lambda x: layers.batchnorm_forward(x, gamma, beta, bn_param)[0]
+        fg = lambda a: layers.batchnorm_forward(x, gamma, beta, bn_param)[0]
+        fb = lambda b: layers.batchnorm_forward(x, gamma, beta, bn_param)[0]
+
+        dx_num = check_gradient.eval_numerical_gradient_array(fx, x, dout)
+        da_num = check_gradient.eval_numerical_gradient_array(fg, gamma, dout)
+        db_num = check_gradient.eval_numerical_gradient_array(fb, beta, dout)
+
+        _, cache = layers.batchnorm_forward(x, gamma, beta, bn_param)
+        dx, dgamma, dbeta = layers.batchnorm_backward(dout, cache)
+
+        dx_error = error.rel_error(dx, dx_num)
+        dgamma_error = error.rel_error(dgamma, da_num)
+        dbeta_error = error.rel_error(dbeta, db_num)
+
+        print("dx_error : %f" % dx_error)
+        print("dgamma_error : %f" % dgamma_error)
+        print("dbeta_error : %f" % dbeta_error)
+
+        self.assertLessEqual(dx_error, self.eps)
+        self.assertLessEqual(dgamma_error, self.eps)
+        self.assertLessEqual(dbeta_error, self.eps)
+
+        print("======== TestLayersBatchnorm.test_batchnorm_backward: <END> ")
 
 if __name__ == "__main__":
     unittest.main()
