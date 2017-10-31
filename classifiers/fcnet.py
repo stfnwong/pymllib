@@ -122,7 +122,7 @@ class FCNet(object):
         hidden['h0'] = X.reshape(X.shape[0], np.prod(X.shape[1:]))   # TODO ; Check this...
 
         if self.use_dropout:
-            hdrop, cache_hdrop = layers.layers.dropout_forward(hidden['h0'],
+            hdrop, cache_hdrop = layers.dropout_forward(hidden['h0'],
                                                  self.dropout_param)
             hidden['hdrop0'] = hdrop
             hidden['cache_hdrop0'] = cache_hdrop
@@ -168,7 +168,7 @@ class FCNet(object):
 
                 if self.use_dropout:
                     h = hidden['h' + str(idx)]
-                    hdrop, cache_hdrop = dropout_forward(h, self.dropout_param)
+                    hdrop, cache_hdrop = layers.dropout_forward(h, self.dropout_param)
                     hidden['hdrop' + str(idx)] = hdrop
                     hidden['cache_hdrop' + str(idx)] = cache_hdrop
 
@@ -205,7 +205,7 @@ class FCNet(object):
             else:
                 if self.use_dropout:
                     cache_hdrop = hidden['cache_hdrop' + str(idx)]
-                    dh = layers.cdropout_backward(dh, cache_hdrop)
+                    dh = layers.dropout_backward(dh, cache_hdrop)
                 if self.use_batchnorm:
                     dh, dw, db, dgamma, dbeta = layers.affine_norm_relu_backward(dh, h_cache)
                     hidden['dh' + str(idx-1)] = dh

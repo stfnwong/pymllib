@@ -10,6 +10,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../classifiers')))
 
 import numpy as np
 import unittest
@@ -22,7 +23,7 @@ import error
 # Debug
 #from pudb import set_trace; set_trace()
 
-
+# Test standard layers
 class TestLayers(unittest.TestCase):
 
     def setUp(self):
@@ -118,13 +119,11 @@ class TestLayers(unittest.TestCase):
         print("======== TestLayers.test_relu_layer_backward: <END> ")
 
 
-
-# Test the batch norm
+# Test batch norm layer
 class TestLayersBatchnorm(unittest.TestCase):
     def setUp(self):
         self.verbose = False
         self.eps = 1e-6
-        self.never_cheat = False   # TODO : implement cheat switch
 
     def test_batchnorm_forward(self):
         print("\n======== TestLayersBatchnorm.test_batchnorm_forward:")
@@ -237,6 +236,68 @@ class TestLayersBatchnorm(unittest.TestCase):
         self.assertLessEqual(dbeta_error, self.eps)
 
         print("======== TestLayersBatchnorm.test_batchnorm_backward: <END> ")
+
+
+# Test dropout layer
+class TestLayersDropout(unittest.TestCase):
+    def setUp(self):
+        self.verbose = False
+        self.eps = 1e-6
+
+    def test_droput_forward(self):
+        print("\n======== TestLayersDropout.test_droput_forward:")
+
+        X = np.random.randn(500, 500) + 10
+        dropout_probs = [0.3, 0.6, 0.1]
+
+        for p in dropout_probs:
+            out_train, cache = layers.dropout_forward(X, {'mode': 'train', 'p': p})
+            out_test, _ = layers.dropout_forward(X, {'mode': 'test', 'p': p})
+
+            print("Running test with p=%f" % p)
+            print("Input mean                : %f " % X.mean())
+            print("Mean of train-time output : %f " % out_train.mean())
+            print("Mean of test-time output  : %f " % out_test.mean())
+            print("Fraction of train-time output set to zero : %f " % (out_train == 0).mean())
+            print("Fraction of test-time output set to zero  : %f " % (out_test == 0).mean())
+
+        print("======== TestLayersDropout.test_dropout_forward: <END> ")
+
+    def test_dropout_backward(self):
+        print("\n======== TestLayersDropout.test_dropout_backward:")
+
+        N = 2
+        D = 15
+        H1 = 20
+        H2 = 30
+        C = 10
+        X = np.random.randn(N, D)
+        y = np.random.randint(C, size=(N,))
+        dropout_probs = [0.3, 0.6, 0.1]
+
+        import fcnet
+        # Network params
+        hidden_dims = [H1, H2]
+        weight_scale = 5e-2
+
+        for p in dropout_probs:
+            print("Running check with dropout p = %f" % p)
+            model = fcnet.FCNet(hidden_dims=hidden_dims,
+                                input_dim=D,
+                                num_classes=C,
+                                dropout=p,
+                                weight_scale=weight_scale,
+                                seed=123,
+                                dtype=np.float64)
+            loss, grads = model.loss(X, y)
+            print("Initial loss : %f" % loss)
+            for n in sorted(grads):
+                f = lambda _: model.loss(X,y)[0]
+                grad_num = check_gradient.eval_numerical_gradient(f, model.params[n])
+                grad_error = error.rel_error(grad_num, grads[n])
+                print("%s relative error : %.2e" % (n, grad_error))
+
+        print("======== TestLayersDropout.test_dropout_backward: <END> ")
 
 if __name__ == "__main__":
     unittest.main()
