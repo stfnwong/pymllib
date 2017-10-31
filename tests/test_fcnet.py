@@ -52,12 +52,14 @@ def get_figure_handles():
     return fig, ax
 
 # Show the solver output
-def plot_test_result(ax, solver_dict):
+def plot_test_result(ax, solver_dict, num_epochs=None):
 
     assert len(ax) == 3, "Need 3 axis"
 
     for n in range(len(ax)):
         ax[n].set_xlabel("Epoch")
+        if num_epochs is not None:
+            ax[n].set_xticks(range(num_epochs))
         if n == 0:
             ax[n].set_title("Training Loss")
         elif n == 1:
@@ -420,14 +422,57 @@ class TestFCNetDropout(unittest.TestCase):
 
         if self.draw_plot:
             fig, ax = get_figure_handles()
-            plot_test_result(ax, solvers)
+            plot_test_result(ax, solvers, num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()
 
-
         print("======== TestFCNetDropout.test_fcnet_2layer_dropout: <END> ")
 
+    def test_fcnet_5layer_dropout(self):
+        print("\n======== TestFCNetDropout.test_fcnet_5layer_dropout :")
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 10
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        #input_dim = small_data['X_train'].shape[0]
+        input_dim = 3 * 32 * 32
+        hidden_dims = [100, 100, 100, 100]
+        num_epochs = 20
+        batch_size = 100
+        dropout_probs = [0.0, 0.3, 0.5, 0.7]
+        solvers = {}
+
+        for d in dropout_probs:
+            model = fcnet.FCNet(hidden_dims=hidden_dims,
+                                input_dim=input_dim,
+                                num_classes=10,
+                                dropout=d,
+                                weight_scale=2e-2)
+            s = solver.Solver(model, small_data,
+                              num_epochs=num_epochs,
+                              batch_size=batch_size,
+                              update_rule='adam',
+                              optim_config = {'learning_rate': 5e-4},
+                              verbose=True,
+                              print_every=500)
+            print("Training with dropout %f" % d)
+            s.train()
+            solvers['p=' + str(d)] = s
+
+        if self.draw_plot:
+            fig, ax = get_figure_handles()
+            plot_test_result(ax, solvers, num_epochs)
+            fig.set_size_inches(8,8)
+            fig.tight_layout()
+            plt.show()
+
+        print("======== TestFCNetDropout.test_fcnet_5layer_dropout: <END> ")
 
 if __name__ == "__main__":
     unittest.main()

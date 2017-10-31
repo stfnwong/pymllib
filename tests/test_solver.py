@@ -33,13 +33,14 @@ def get_figure_handles():
     return fig, ax
 
 # Show the solver output
-def plot_test_result(ax, solver_dict, num_epochs):
+def plot_test_result(ax, solver_dict, num_epochs=None):
 
     assert len(ax) == 3, "Need 3 axis"
 
     for n in range(len(ax)):
         ax[n].set_xlabel("Epoch")
-        ax[n].set_xticks(range(num_epochs))
+        if num_epochs is not None:
+            ax[n].set_xticks(range(num_epochs))
         if n == 0:
             ax[n].set_title("Training Loss")
         elif n == 1:
@@ -292,8 +293,8 @@ class TestSolverFCNet(unittest.TestCase):
 
         print("======== TestSolverFCNet.test_adam_vs_rmsprop: <END> ")
 
-    def test_all_optim_fcnet(self):
-        print("\n======== TestSolverFCNet.test_all_optim_fcnet:")
+    def test_all_optim_fcnet_5layer(self):
+        print("\n======== TestSolverFCNet.test_all_optim_fcnet_5layer:")
 
         dataset =  load_data(self.data_dir, self.verbose)
         num_train = 50
@@ -305,8 +306,8 @@ class TestSolverFCNet(unittest.TestCase):
         }
         #input_dim = small_data['X_train'].shape[0]
         input_dim = 3 * 32 * 32
-        #hidden_dims = [100, 100, 100, 100, 100]
-        hidden_dims = [100, 50, 10]     # just some random dims
+        hidden_dims = [100, 100, 100, 100, 100]
+        #hidden_dims = [100, 50, 10]     # just some random dims
         weight_scale = 5e-2
         reg = 1e-1
         num_epochs = 30
@@ -316,10 +317,6 @@ class TestSolverFCNet(unittest.TestCase):
         # Solver params
         optim_list = ['rmsprop', 'sgd_momentum', 'adam', 'sgd']
         lr = {'rmsprop': 1e-4, 'adam': 1e-3, 'sgd': 1e-3, 'sgd_momentum': 1e-3}
-        #optim_list = ['sgd', 'sgd_momentum', 'adam', 'rmsprop']
-        # Configs
-        #sgd_config = {'learning_rate': learning_rate}
-        #sgd_momentum_config = {'learning_rate': learning_rate, 'momentum': 0.7}
 
         for update_rule in optim_list:
             print("Using update rule %s" % update_rule)
@@ -348,7 +345,7 @@ class TestSolverFCNet(unittest.TestCase):
             fig.tight_layout()
             plt.show()
 
-        print("======== TestSolverFCNet.test_all_optim_fcnet: <END> ")
+        print("======== TestSolverFCNet.test_all_optim_fcnet_5layer: <END> ")
 
 if __name__ == "__main__":
     unittest.main()
