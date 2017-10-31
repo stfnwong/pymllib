@@ -293,7 +293,7 @@ class TestSolverFCNet(unittest.TestCase):
         print("======== TestSolverFCNet.test_adam_vs_rmsprop: <END> ")
 
     def test_all_optim_fcnet(self):
-        print("\n======== TestSolverFCNet.test_all_optim:")
+        print("\n======== TestSolverFCNet.test_all_optim_fcnet:")
 
         dataset =  load_data(self.data_dir, self.verbose)
         num_train = 50
@@ -308,7 +308,6 @@ class TestSolverFCNet(unittest.TestCase):
         #hidden_dims = [100, 100, 100, 100, 100]
         hidden_dims = [100, 50, 10]     # just some random dims
         weight_scale = 5e-2
-        learning_rate = 1e-2
         reg = 1e-1
         num_epochs = 30
         batch_size = 50
@@ -316,6 +315,7 @@ class TestSolverFCNet(unittest.TestCase):
 
         # Solver params
         optim_list = ['rmsprop', 'sgd_momentum', 'adam', 'sgd']
+        lr = {'rmsprop': 1e-4, 'adam': 1e-3, 'sgd': 1e-3, 'sgd_momentum': 1e-3}
         #optim_list = ['sgd', 'sgd_momentum', 'adam', 'rmsprop']
         # Configs
         #sgd_config = {'learning_rate': learning_rate}
@@ -336,7 +336,7 @@ class TestSolverFCNet(unittest.TestCase):
                                         num_epochs=num_epochs,
                                         batch_size=batch_size,     # previously 25
                                         update_rule=update_rule,
-                                        optim_config={'learning_rate': learning_rate})
+                                        optim_config={'learning_rate': lr[update_rule]})
             solvers[update_rule] = model_solver
             model_solver.train()
 
@@ -348,7 +348,7 @@ class TestSolverFCNet(unittest.TestCase):
             fig.tight_layout()
             plt.show()
 
-        print("======== TestSolverFCNet.test_all_optim: <END> ")
+        print("======== TestSolverFCNet.test_all_optim_fcnet: <END> ")
 
 if __name__ == "__main__":
     unittest.main()
