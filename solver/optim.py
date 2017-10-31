@@ -77,8 +77,8 @@ def adam(x, dx, config=None):
     config['t'] += 1
     config['m'] = b1 * config['m'] + (1 - b1) * dx
     config['v'] = b2 * config['v'] + (1 - b2) * (dx**2)
-    mt_hat = config['m'] / (1 - (b1**config['t']))
-    vt_hat = config['v'] / (1 - (b2**config['t']))
+    mt_hat = config['m'] / (1 - (b1)**config['t'])
+    vt_hat = config['v'] / (1 - (b2)**config['t'])
     next_x = x - lr * mt_hat / (np.sqrt(vt_hat + eps))
 
     return next_x, config

@@ -142,50 +142,6 @@ class TestSolver(unittest.TestCase):
 
         print("======== TestSolver.test_rmsprop: <END> ")
 
-    def test_rmsprop_fcnet(self):
-        print("\n======== TestSolver.test_rmsprop_fcnet:")
-        dataset =  load_data(self.data_dir, self.verbose)
-        num_train = 50
-        small_data = {
-            'X_train': dataset['X_train'][:num_train],
-            'y_train': dataset['y_train'][:num_train],
-            'X_val':   dataset['X_val'][:num_train],
-            'y_val':   dataset['y_val'][:num_train]
-        }
-        #input_dim = small_data['X_train'].shape[0]
-        input_dim = 3 * 32 * 32
-        #hidden_dims = [100, 100, 100, 100, 100]
-        hidden_dims = [100, 50, 10]     # just some random dims
-        weight_scale = 5e-2
-        learning_rate = 1e-2
-        num_epochs = 20
-        batch_size = 50
-        update_rule = 'rmsprop'
-
-        model = fcnet.FCNet(input_dim=input_dim,
-                        hidden_dims=hidden_dims,
-                        weight_scale=weight_scale,
-                        dtype=np.float64)
-        if self.verbose:
-            print(model)
-        model_solver = solver.Solver(model,
-                                    small_data,
-                                    print_every=100,
-                                    num_epochs=num_epochs,
-                                    batch_size=batch_size,     # previously 25
-                                    update_rule=update_rule,
-                                    optim_config={'learning_rate': learning_rate})
-        model_solver.train()
-
-        if self.draw_fig is True:
-            solvers = {'rmsprop': model_solver}
-            fig, ax = get_figure_handles()
-            plot_test_result(ax, solvers, num_epochs)
-            fig.set_size_inches(8,8)
-            fig.tight_layout()
-            plt.show()
-
-        print("======== TestSolver.test_rmsprop_fcnet: <END> ")
 
     def test_adam(self):
         print("\n======== TestSolver.test_adam:")
@@ -229,14 +185,20 @@ class TestSolver(unittest.TestCase):
 
         print("======== TestSolver.test_adam: <END> ")
 
-    def test_all_optim(self):
-        print("\n======== TestSolver.test_all_optim:")
 
+
+class TestSolverFCNet(unittest.TestCase):
+
+    def setUp(self):
+        self.eps = 1e-6
+        self.data_dir = 'datasets/cifar-10-batches-py'
+        self.draw_fig = True
+        self.verbose = False
+
+    def test_rmsprop_fcnet(self):
+        print("\n======== TestSolverFCNet.test_rmsprop_fcnet:")
         dataset =  load_data(self.data_dir, self.verbose)
-
-        optim_list = ['sgd', 'sgd_momentum', 'adam', 'rmsprop']
         num_train = 50
-
         small_data = {
             'X_train': dataset['X_train'][:num_train],
             'y_train': dataset['y_train'][:num_train],
@@ -249,15 +211,122 @@ class TestSolver(unittest.TestCase):
         hidden_dims = [100, 50, 10]     # just some random dims
         weight_scale = 5e-2
         learning_rate = 1e-2
+        num_epochs = 20
+        batch_size = 50
+        update_rule = 'rmsprop'
+
+        model = fcnet.FCNet(input_dim=input_dim,
+                        hidden_dims=hidden_dims,
+                        weight_scale=weight_scale,
+                        dtype=np.float64)
+        if self.verbose:
+            print(model)
+        model_solver = solver.Solver(model,
+                                    small_data,
+                                    print_every=100,
+                                    num_epochs=num_epochs,
+                                    batch_size=batch_size,     # previously 25
+                                    update_rule=update_rule,
+                                    optim_config={'learning_rate': learning_rate})
+        model_solver.train()
+
+        if self.draw_fig is True:
+            solvers = {'rmsprop': model_solver}
+            fig, ax = get_figure_handles()
+            plot_test_result(ax, solvers, num_epochs)
+            fig.set_size_inches(8,8)
+            fig.tight_layout()
+            plt.show()
+
+        print("======== TestSolverFCNet.test_rmsprop_fcnet: <END> ")
+
+    # TODO : Perhaps change this to just adam
+    def test_adam_vs_rmsprop_fcnet(self):
+        print("\n======== TestSolverFCNet.test_adam_vs_rmsprop:")
+        dataset =  load_data(self.data_dir, self.verbose)
+        num_train = 50
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        #input_dim = small_data['X_train'].shape[0]
+        input_dim = 3 * 32 * 32
+        #hidden_dims = [100, 100, 100, 100, 100]
+        hidden_dims = [100, 100, 100, 100, 100]
+        weight_scale = 5e-2
+        num_epochs = 20
+        batch_size = 50
+        reg = 1e-1
+        lr = {'rmsprop': 1e-4, 'adam': 1e-3}
+        update_rule = ['rmsprop', 'adam']
+
+        solvers = {}
+        for u in update_rule:
+            model = fcnet.FCNet(input_dim=input_dim,
+                            hidden_dims=hidden_dims,
+                            weight_scale=weight_scale,
+                            reg=reg,
+                            dtype=np.float64)
+            if self.verbose:
+                print(model)
+            model_solver = solver.Solver(model,
+                                        small_data,
+                                        print_every=100,
+                                        num_epochs=num_epochs,
+                                        batch_size=batch_size,     # previously 25
+                                        update_rule=u,
+                                        optim_config={'learning_rate': lr[u]})
+            solvers[u] = model_solver
+            model_solver.train()
+
+        if self.draw_fig is True:
+            fig, ax = get_figure_handles()
+            plot_test_result(ax, solvers, num_epochs)
+            fig.set_size_inches(8,8)
+            fig.tight_layout()
+            plt.show()
+
+
+
+        print("======== TestSolverFCNet.test_adam_vs_rmsprop: <END> ")
+
+    def test_all_optim_fcnet(self):
+        print("\n======== TestSolverFCNet.test_all_optim:")
+
+        dataset =  load_data(self.data_dir, self.verbose)
+        num_train = 50
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        #input_dim = small_data['X_train'].shape[0]
+        input_dim = 3 * 32 * 32
+        #hidden_dims = [100, 100, 100, 100, 100]
+        hidden_dims = [100, 50, 10]     # just some random dims
+        weight_scale = 5e-2
+        learning_rate = 1e-2
+        reg = 1e-1
         num_epochs = 30
         batch_size = 50
         solvers = {}
+
+        # Solver params
+        optim_list = ['rmsprop', 'sgd_momentum', 'adam', 'sgd']
+        #optim_list = ['sgd', 'sgd_momentum', 'adam', 'rmsprop']
+        # Configs
+        #sgd_config = {'learning_rate': learning_rate}
+        #sgd_momentum_config = {'learning_rate': learning_rate, 'momentum': 0.7}
 
         for update_rule in optim_list:
             print("Using update rule %s" % update_rule)
             model = fcnet.FCNet(input_dim=input_dim,
                             hidden_dims=hidden_dims,
                             weight_scale=weight_scale,
+                            reg=reg,
                             dtype=np.float64)
             if self.verbose:
                 print(model)
@@ -279,8 +348,7 @@ class TestSolver(unittest.TestCase):
             fig.tight_layout()
             plt.show()
 
-        print("======== TestSolver.test_all_optim: <END> ")
-
+        print("======== TestSolverFCNet.test_all_optim: <END> ")
 
 if __name__ == "__main__":
     unittest.main()
