@@ -241,6 +241,37 @@ def softmax_loss(X, y):
 
     return loss, dx
 
+# ==== CONVOLUTION FUNCTIONS ==== #
+def conv_forward_naive(X, w, b, conv_param):
+
+    N, C, H, W = X.shape
+    F, C, HH, WW = w.shape
+    S = conv_param['stride']
+    P = conv_param['pad']
+
+    # Add padding to each image
+    x_pad = np.pad(X, ((0,), (0,), (P,), (P,)), 'constant')
+    # Size of the output
+    Hh = 1 + (H + 2 * P - HH) / S
+    Hw = 1 + (W + 2 * P - WW) / S
+    Hh = int(Hh)
+    Hw = int(Hw)
+    out = np.zeros((N, F, Hh, Hw))
+
+    for n in range(N):      # Iterate over images
+        for f in range(F):  # Iterate over kernels
+            for k in range(Hh):
+                for l in range(Hw):
+                    pad = x_pad[n, :, k * S:k * S + HH, l * S:l * S + WW]
+                    out[n, f, k, l] = np.sum(pad * w[f, :]) + b[f]
+    cache = (X, w, b, conv_param)
+
+    return out, cache
+
+# TODO : this
+def conv_backward_naive(dout, cache):
+    pass
+
 # Sigmoid functions
 def sigmoid_forward(X, w, b):
     """
@@ -271,6 +302,8 @@ def sigmoid_backward(dout, cache):
     #dw = np.dot(X.reshape(X.shape[0], np.prod(X.shape[1:])).T, ddot)
 
     return dx, dw, db
+
+
 
 
 
