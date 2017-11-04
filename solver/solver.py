@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 
 import optim
 import numpy as np
+import pickle
 
 # Debug
 #from pudb import set_trace; set_trace()
@@ -45,6 +46,7 @@ class Solver(object):
         self.checkpoint_name = kwargs.pop('checkpoint_name', None)
         self.print_every = kwargs.pop('print_every', 10)
         self.verbose = kwargs.pop('verbose', True)
+        self.checkpoint_dir = kwargs.pop('checkpoint_dir', 'checkpoint')
 
         # Make sure there are no additional arguments
         if len(kwargs) > 0:
@@ -107,23 +109,91 @@ class Solver(object):
             #if 'velocity' in config.keys():
             #    print("max vel: %f, min vel: %f" % (np.max(config['velocity']), np.min(config['velocity'])))
 
-    # TODO : Come back to this last
-    #def save_checkpoint(self):
-    #    """
-    #    Save the current training status
-    #    """
+    def _get_checkpoint(self):
+        checkpoint = {
+            'model': self.model,
+            'update_rule': self.update_rule,
+            'lr_decay': self.lr_decay,
+            'optim_config': self.optim_config,
+            'batch_size': self.batch_size,
+            #'num_train_samples': self.num_train_samples,
+            #'num_val_samples': self.num_val_samples,
+            'epoch': self.epoch,
+            'loss_history': self.loss_history,
+            'train_acc_history': self.train_acc_history,
+            'val_acc_history': self.val_acc_history,
+        }
 
-    #    if self.checkpoint_name is None:
-    #        return
+        return checkpoint
 
-    #    checkpoint = {
-    #        'model': self.model,
-    #        'update_rule': self.update_rule,
-    #        'lr_decay': self.lr_decay,
-    #        'optim_config': self.optim_config,
-    #        'batch_size': self.batch_size,
-    #        'num_train_samples': self.num_train_samples,
-    #        'num_val_samples': self.num_train_samples,
+    def _get_solver_params(self):
+        params = {
+            'model': self.model,
+            'update_rule': self.update_rule,
+            'lr_decay': self.lr_decay,
+            'optim_config': self.optim_config,
+            'batch_size': self.batch_size,
+            'num_epochs': self.num_epochs,
+            'print_every': self.print_every,
+            #'num_train_samples': self.num_train_samples,
+            #'num_val_samples': self.num_val_samples,
+            'epoch': self.epoch,
+            'loss_history': self.loss_history,
+            'train_acc_history': self.train_acc_history,
+            'val_acc_history': self.val_acc_history,
+        }
+
+        return params
+
+    def _save_checkpoint(self):
+        """
+        Save the current training status
+        """
+
+        if self.checkpoint_name is None:
+            return
+
+        checkpoint = self._get_checkpoint()
+        filename = "%s/%s_epoch_%d.pkl" % (self.checkpoint_dir, self.checkpoint_name, self.epoch)
+        if self.verbose:
+            print("Saving checkpoint to file %s" % filename)
+        with open(filename, 'wb') as fp:
+            pickle.dump(checkpoint, fp)
+
+    # TODO: should there be a _load_checkpoint()?
+
+    def save(self, filename):
+        params = self._get_solver_params()
+
+        if self.verbose:
+            print("Saving model to file %s" % filename)
+        with open(filename, 'wb') as fp:
+            pickle.dump(params, fp)
+
+    def load(self, filename):
+        """
+        Load an entire model from disk
+        """
+
+        if self.verbose:
+            print("Loading model from file %s" % filename)
+
+        with open(filename, 'rb') as fp:
+            model_data = pickle.load(fp)
+            # Copy the params to this object
+            self.model = model_data['model']
+            self.update_rule = model_data['update_rule']
+            self.lr_decay = model_data['lr_decay']
+            self.optim_confi = model_data['optim_config']
+            self.batch_size = model_data['batch_size']
+            self.num_epochs = model_data['num_epochs']
+            self.print_every = model_data['print_every']
+            #self.num_train_samples = model_data['num_train_samples']
+            #self.num_val_samples = model_data['num_val_samples']
+            self.epoch = model_data['epoch']
+            self.loss_history = model_data['loss_history']
+            self.train_acc_history = model_data['train_acc_history']
+            self.val_acc_history = model_data['val_acc_history']
 
 
     def check_accuracy(self, X, y, num_samples=None, batch_size=100):
@@ -193,6 +263,7 @@ class Solver(object):
                 val_acc = self.check_accuracy(self.X_val, self.y_val)
                 self.train_acc_history.append(train_acc)
                 self.val_acc_history.append(val_acc)
+                self._save_checkpoint()
 
                 if self.verbose:
                     print("[Epoch %6d/%6d] train acc : %f, val acc: %f" % (self.epoch, self.num_epochs, train_acc, val_acc))

@@ -34,7 +34,7 @@ def load_data(data_dir, verbose=False):
 class TestConvNet(unittest.TestCase):
 
     def setUp(self):
-        self.eps = 2e-8
+        self.eps = 1e-7
 
     def test_conv_forward_naive(self):
         print("\n======== TestConvNet.test_conv_forward_naive:")
@@ -64,6 +64,36 @@ class TestConvNet(unittest.TestCase):
         self.assertLessEqual(out_error, self.eps)
 
         print("======== TestConvNet.test_conv_forward_naive: <END> ")
+
+    def test_conv_backward_naive(self):
+        print("\n======== TestConvNet.test_conv_backward_naive:")
+        X = np.random.randn(4, 3, 5, 5)
+        W = np.random.randn(2, 3, 3, 3)
+        b = np.random.randn(2,)
+        dout = np.random.randn(4, 2, 5, 5)
+        conv_param = {'stride': 1, 'pad': 1}
+
+        dx_num = check_gradient.eval_numerical_gradient_array(lambda x: layers.conv_forward_naive(X, W, b, conv_param)[0], X, dout)
+        dw_num = check_gradient.eval_numerical_gradient_array(lambda w: layers.conv_forward_naive(X, W, b, conv_param)[0], W, dout)
+        db_num = check_gradient.eval_numerical_gradient_array(lambda b: layers.conv_forward_naive(X, W, b, conv_param)[0], b, dout)
+
+        out, cache = layers.conv_forward_naive(X, W, b, conv_param)
+        dx, dw, db = layers.conv_backward_naive(dout, cache)
+
+        dx_error = error.rel_error(dx, dx_num)
+        dw_error = error.rel_error(dw, dw_num)
+        db_error = error.rel_error(db, db_num)
+
+        print("dx_error : %f" % dx_error)
+        print("dw_error : %f" % dw_error)
+        print("db_error : %f" % db_error)
+
+        self.assertLessEqual(dx_error, self.eps)
+        self.assertLessEqual(dw_error, self.eps)
+        self.assertLessEqual(db_error, self.eps)
+
+
+        print("======== TestConvNet.test_conv_backward_naive: <END> ")
 
 class TestConvImgProc(unittest.TestCase):
 

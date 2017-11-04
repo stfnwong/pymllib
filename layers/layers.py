@@ -250,7 +250,7 @@ def conv_forward_naive(X, w, b, conv_param):
     P = conv_param['pad']
 
     # Add padding to each image
-    x_pad = np.pad(X, ((0,), (0,), (P,), (P,)), 'constant')
+    x_pad = np.pad(X, ((0,0), (0,0), (P,P), (P,P)), 'constant')
     # Size of the output
     Hh = 1 + (H + 2 * P - HH) / S
     Hw = 1 + (W + 2 * P - WW) / S
@@ -263,14 +263,62 @@ def conv_forward_naive(X, w, b, conv_param):
             for k in range(Hh):
                 for l in range(Hw):
                     pad = x_pad[n, :, k * S:k * S + HH, l * S:l * S + WW]
-                    out[n, f, k, l] = np.sum(pad * w[f, :]) + b[f]
+                    out[n, f, k, l] = np.sum(pad * w[f, :, : , :]) + b[f]
+                    #out[n, f, k, l] = np.sum(pad * w[f, :]) + b[f]
     cache = (X, w, b, conv_param)
 
     return out, cache
 
-# TODO : this
 def conv_backward_naive(dout, cache):
-    pass
+    """
+    Naive implementation of backward pass for convolutional layer
+    """
+
+    dx = None
+    dw = None
+    db = None
+
+    # TODO : A better name for the weight param?
+    X, w, b, conv_param = cache
+    P = conv_param['pad']
+    x_pad = np.pad(X, ((0,0), (0,0), (P,P), (P,P)), 'constant')
+
+    N, C, H, W = X.shape
+    F, C, HH, WW = w.shape
+    N, F, Hh, Hw = dout.shape
+    S = conv_param['stride']
+
+    # Weights
+    dw = np.zeros((F, C, HH, WW))
+    for fprime in range(F):
+        for cprime in range(C):
+            for i in range(HH):
+                for j in range(WW):
+                    sub_xpad = x_pad[:, cprime, i:i + Hh * S:S, j:j + Hw * S:S]
+                    dw[fprime, cprime, i, j] = np.sum(dout[:, fprime, :, :] * sub_xpad)
+    # Biases
+    db = np.zeros((F))
+    for fprime in range(F):
+        db[fprime] = np.sum(dout[:, fprime, :, :])
+
+    # "Downstream" (data) gradients
+    dx = np.zeros((N, C, H, W))
+    for nprime in range(N):
+        for i in range(H):
+            for j in range(W):
+                for f in range(F):
+                    for k in range(Hh):
+                        for l in range(Hw):
+                            mask1 = np.zeros_like(w[f, :, :, :])
+                            mask2 = np.zeros_like(w[f, :, :, :])
+                            if (i + P - k *S) < HH and (i + P - k * S) >= 0:
+                                mask1[:, i + P - k * S, :] = 1.0
+                            if (j + P - l * S) < WW and (j + P- l * S) >= 0:
+                                mask2[:, :, j + P - l * S] = 1.0
+                            w_masked = np.sum(w[f, :, :, :] * mask1 * mask2, axis=(1, 2))
+                            dx[nprime, :, i, j] += dout[nprime, f, k, l] * w_masked
+
+    return dx, dw, db
 
 # Sigmoid functions
 def sigmoid_forward(X, w, b):
@@ -294,7 +342,7 @@ def sigmoid_backward(dout, cache):
 
     X, w, b = cache
     sf, _ = sigmoid_forward(X, w, b)
-    ddot = (1  - sf) * sf
+    #ddot = (1 - sf) * sf
     dx = np.dot(sf * (1-sf), w.T)
     dw = np.dot(X.T, sf * (1-sf))
     db = 1.0

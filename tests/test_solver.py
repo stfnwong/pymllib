@@ -347,5 +347,71 @@ class TestSolverFCNet(unittest.TestCase):
 
         print("======== TestSolverFCNet.test_all_optim_fcnet_5layer: <END> ")
 
+
+class TestSolverCheckpoint(unittest.TestCase):
+    """
+    Tests that a model can be written to and read from disk
+    """
+
+    def setUp(self):
+        self.eps = 1e-6
+        self.data_dir = 'datasets/cifar-10-batches-py'
+        self.draw_fig = True
+        self.verbose = False
+
+    def test_model_restore(self):
+        print("\n======== TestSolverCheckpoint.test_model_restore:")
+
+        dataset =  load_data(self.data_dir, self.verbose)
+        num_train = 50
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        #input_dim = small_data['X_train'].shape[0]
+        input_dim = 3 * 32 * 32
+        #hidden_dims = [100, 100, 100, 100, 100]
+        hidden_dims = [100, 50, 10]     # just some random dims
+        weight_scale = 5e-2
+        learning_rate = 1e-2
+        num_epochs = 20
+        batch_size = 50
+        update_rule = 'adam'
+
+        model = fcnet.FCNet(input_dim=input_dim,
+                        hidden_dims=hidden_dims,
+                        weight_scale=weight_scale,
+                        dtype=np.float64)
+        if self.verbose:
+            print(model)
+        ref_solver = solver.Solver(model,
+                                    small_data,
+                                    print_every=100,
+                                    num_epochs=num_epochs,
+                                    batch_size=batch_size,     # previously 25
+                                    update_rule=update_rule,
+                                    optim_config={'learning_rate': learning_rate})
+        ref_solver.train()
+        ref_solver_file = 'tests/ref_solver.pkl'
+        ref_solver.save(ref_solver_file)
+
+        test_solver = solver.Solver(model, small_data)
+        test_solver.load(ref_solver_file)
+
+        # Compare the two solvers
+        print("Checking parameters")
+        self.assertEqual(ref_solver.update_rule, test_solver.update_rule)
+        self.assertEqual(ref_solver.num_epochs, test_solver.num_epochs)
+        self.assertEqual(ref_solver.batch_size, test_solver.batch_size)
+        self.assertEqual(ref_solver.print_every, test_solver.print_every)
+        self.assertEqual(ref_solver.lr_decay, test_solver.lr_decay)
+
+        #self.assertDictEqual(ref_solver.optim_config, test_solver.optim_config)
+
+        print("======== TestSolverCheckpoint.test_model_restore: <END> ")
+
+
 if __name__ == "__main__":
     unittest.main()
