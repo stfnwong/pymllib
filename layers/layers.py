@@ -288,6 +288,7 @@ class AffineLayer(Layer):
         N = X.shape[0]
         D = np.prod(X.shape[1:])
         x2 = np.reshape(X, (N,D))
+        print('affine x2 shape (%d, %d)' % (x2.shape[0], x2.shape[1]))
         out = np.dot(x2, self.W) + self.b
 
         return out
@@ -332,3 +333,15 @@ class ReLULayer(Layer):
 
         return dx
 
+
+class SoftmaxLayer(Layer):
+    def __str__(self):
+        s = []
+        s.append('Softmax Layer:\n\t (%d x %d)\n' % (self.W.shape[0], self.W.shape[1]))
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def forward(self, X):
+        pass

@@ -35,6 +35,9 @@ from pudb import set_trace; set_trace()
 # tests that need CIFAR data
 def load_data(data_dir, verbose=False):
 
+    if verbose is True:
+        print("Loading data from %s" % data_dir)
+
     dataset = data_utils.get_CIFAR10_data(data_dir)
     if verbose:
         for k, v in dataset.items():
@@ -164,7 +167,8 @@ class TestFCNet(unittest.TestCase):
         model = fcnet.FCNet(input_dim=input_dim,
                             hidden_dims=hidden_dims,
                             weight_scale=weight_scale,
-                            dtype=np.float64)
+                            dtype=np.float64,
+                            verbose=True)
         print(model)
         model_solver = solver.Solver(model,
                                      small_data,
@@ -334,6 +338,63 @@ class TestFCNet(unittest.TestCase):
             plt.show()
 
         print("======== TestFCNet.test_fcnet_6layer_overfit: <END> ")
+
+
+
+class TestFCNetObject(unittest.TestCase):
+
+    def setUp(self):
+        self.data_dir = 'datasets/cifar-10-batches-py'
+        self.verbose = True
+        self.eps = 1e-6
+        self.draw_plots = True
+
+    def test_fcnet_3layer_overfit(self):
+        print("\n======== TestFCNetObject.test_fcnet_3layer_overfit:")
+
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 50
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        #input_dim = small_data['X_train'].shape[0]
+        input_dim = 3 * 32 * 32
+        hidden_dims = [100, 100]
+        layer_types = ['relu', 'relu']
+        weight_scale = 0.079564
+        learning_rate = 0.003775
+
+        # Get model and solver
+        model = fcnet.FCNetObject(input_dim=input_dim,
+                            hidden_dims=hidden_dims,
+                            layer_types=layer_types,
+                            weight_scale=weight_scale,
+                            dtype=np.float64,
+                            verbose=True)
+        print(model)
+        # TODO : Update solver for object oriented design
+        model_solver = solver.Solver(model,
+                                     small_data,
+                                     print_every=10,
+                                     num_epochs=30,
+                                     batch_size=50,     # previously 25
+                                     update_rule='sgd',
+                                     optim_config={'learning_rate': learning_rate})
+        model_solver.train()
+
+        # Plot results
+        if self.draw_plots:
+            plt.plot(model_solver.loss_history, 'o')
+            plt.title('Training loss history (3 layers)')
+            plt.xlabel('Iteration')
+            plt.ylabel('Training loss')
+            plt.show()
+
+        print("======== TestFCNetObject.test_fcnet_3layer_overfit: <END> ")
 
 if __name__ == "__main__":
     unittest.main()
