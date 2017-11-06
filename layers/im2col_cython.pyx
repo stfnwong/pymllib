@@ -9,11 +9,12 @@ cimport cython
 
 
 # DTYPE = np.float64
-# ctypedef np.float64_t DTYPE_t
+ctypedef np.float64_t DTYPE_t
+# TODO : check how to do fused types in cython...
 
-ctypedef fused DTYPE_t:
-    np.float32_t
-    np.float64_t
+#ctypedef fused DTYPE_t:
+#    np.float32_t
+#    np.float64_t
 
 
 
@@ -93,7 +94,7 @@ def col2im_cython(np.ndarray[DTYPE_t, ndim=2] cols,
     col2im_cython_inner(cols, x_padded, N, C, H, W, HH, WW,
                         field_height, field_width, padding, stride)
     if padding > 0:
-        return x_padded[:. :. padding:-padding, padding:-padding]
+        return x_padded[:, :, padding:-padding, padding:-padding]
 
     return x_padded
 
@@ -122,11 +123,10 @@ def col2im_6d_cython(np.ndarray[DTYPE_t, ndim=6] cols,
 
     cdef np.ndarray x = np.empty((N, C, H, W), dtype=cols.dtype)
     cdef int out_h = 1 + (H + 2 * pad - HH) / stride
-    cdef int out_w = 1 + (W + 2 * pad - WW) / stride\
-    cdef np.ndarray[DTYPE_t, ndim=4] x_padded = np.zeros(
-        (N, C, H + 2 * pad, W + 2 * pad), dtype=cols.dtype)
+    cdef int out_w = 1 + (W + 2 * pad - WW) / stride
+    cdef np.ndarray[DTYPE_t, ndim=4] x_padded = np.zeros((N, C, H + 2 * pad, W + 2 * pad), dtype=cols.dtype)
 
-    col2im_6d_cython_innner(cols, x_padded, N, C, H, W, HH, WW, out_h, out_w, pad, stride)
+    col2im_6d_cython_inner(cols, x_padded, N, C, H, W, HH, WW, out_h, out_w, pad, stride)
 
     if pad > 0:
         return x_padded[:, :, pad:-pad, pad:-pad]

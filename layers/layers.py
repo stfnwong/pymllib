@@ -6,6 +6,8 @@ layers in Caffe.
 
 import numpy as np
 import im2col
+from im2col_cython import col2im_cython, im2col_cython
+
 # Debug
 #from pudb import set_trace; set_trace()
 
@@ -392,7 +394,7 @@ def conv_forward_strides(x, w, b, conv_param):
     assert (W + 2 * pad - WW) % stride == 0, 'Width does not align'
     assert (H + 2 * pad - HH) % stride == 0, 'Height does not align'
 
-    x_padded = np.pad(x, ((0,0), (0,0), (p,p), (p,p)), mode='constant')
+    x_padded = np.pad(x, ((0,0), (0,0), (pad,pad), (pad,pad)), mode='constant')
 
     # Compute output dimensions
     H += 2 * pad
@@ -410,7 +412,7 @@ def conv_forward_strides(x, w, b, conv_param):
     x_cols = np.ascontiguousarray(x_stride)
     x_cols.shape = (C * HH * WW, N * out_h * out_w)
     # Now convolutions are just a large matrix multiply
-    res = w.shape(F, -1).dot(x_cols) + b.reshape(-1, 1)
+    res = w.reshape(F, -1).dot(x_cols) + b.reshape(-1, 1)
     # reshape the output
     res.shape = (F, N, out_h, out_w)
     out = res.transpose(1, 0, 2, 3)
