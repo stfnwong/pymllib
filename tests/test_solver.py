@@ -77,6 +77,7 @@ class TestSolver(unittest.TestCase):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.draw_fig = True
         self.verbose = False
+        self.draw_plots = False
 
     # CS231n test
     def test_sgd_momentum(self):
@@ -338,7 +339,7 @@ class TestSolverFCNet(unittest.TestCase):
             model_solver.train()
 
         # get some figure handles and plot the data
-        if self.draw_fig is True:
+        if self.draw_plots:
             fig, ax = get_figure_handles()
             plot_test_result(ax, solvers, num_epochs)
             fig.set_size_inches(8,8)

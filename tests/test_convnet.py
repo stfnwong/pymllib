@@ -9,13 +9,14 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
-
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../classifiers')))
 import numpy as np
 import data_utils
 import check_gradient
 import error
 import layers
 import solver
+import convnet
 
 import unittest
 # Debug
@@ -29,7 +30,6 @@ def load_data(data_dir, verbose=False):
             print("%s : %s " % (k, v.shape))
 
     return dataset
-
 
 class TestConvNet(unittest.TestCase):
 
@@ -92,8 +92,25 @@ class TestConvNet(unittest.TestCase):
         self.assertLessEqual(dw_error, self.eps)
         self.assertLessEqual(db_error, self.eps)
 
-
         print("======== TestConvNet.test_conv_backward_naive: <END> ")
+
+    def test_loss_3layer_conv(self):
+
+        print("\n======== TestConvNet.test_loss_3layer_conv:")
+
+        N = 50
+        X = np.random.randn(N, 3, 32, 32)
+        y = np.random.randint(10, size=N)
+        model_3l = convnet.ThreeLayerConvNet()
+        model_3l.reg = 0.0
+        loss, grads = model_3l.loss(X,y)
+        print("Initial loss (no regularization) : %f" % loss)
+        model_3l.reg = 0.5
+        loss, grads = model_3l.loss(X, y)
+        print("Initial loss (with regularization) : %f" % loss)
+
+        print("======== TestConvNet.test_loss_3layer_conv: <END> ")
+
 
 class TestConvImgProc(unittest.TestCase):
 

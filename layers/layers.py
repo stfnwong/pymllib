@@ -5,6 +5,7 @@ layers in Caffe.
 """
 
 import numpy as np
+import im2col
 # Debug
 #from pudb import set_trace; set_trace()
 
@@ -193,6 +194,7 @@ def affine_relu_forward(X, w, b):
 
     return out, cache
 
+
 def affine_relu_backward(dout, cache):
     """
     Affine transform followed by ReLU, backward pass
@@ -219,6 +221,7 @@ def affine_norm_relu_forward(X, v, b, gamma, beta, bn_param):
             Parameters to the batchnorm layer
     """
 
+
 def softmax_loss(X, y):
     """
     Compute loss and gradient for softmax classification
@@ -241,7 +244,9 @@ def softmax_loss(X, y):
 
     return loss, dx
 
-# ==== CONVOLUTION FUNCTIONS ==== #
+# TODO : Other loss functions, eg, for autoencoder...
+
+# ==== CONVOLUTION LAYERS ==== #
 def conv_forward_naive(X, w, b, conv_param):
 
     N, C, H, W = X.shape
@@ -268,6 +273,7 @@ def conv_forward_naive(X, w, b, conv_param):
     cache = (X, w, b, conv_param)
 
     return out, cache
+
 
 def conv_backward_naive(dout, cache):
     """
@@ -304,6 +310,7 @@ def conv_backward_naive(dout, cache):
     # "Downstream" (data) gradients
     dx = np.zeros((N, C, H, W))
     for nprime in range(N):
+        print("(Conv backward naive) : Computing image %d" % nprime)
         for i in range(H):
             for j in range(W):
                 for f in range(F):
@@ -311,7 +318,11 @@ def conv_backward_naive(dout, cache):
                         for l in range(Hw):
                             mask1 = np.zeros_like(w[f, :, :, :])
                             mask2 = np.zeros_like(w[f, :, :, :])
-                            if (i + P - k *S) < HH and (i + P - k * S) >= 0:
+                            # NOTE TO SELF
+                            # The mask here is supposed to represent the fact
+                            # that all the components where nprime != n and
+                            # mprime != m become zero in the partial derivative
+                            if (i + P - k * S) < HH and (i + P - k * S) >= 0:
                                 mask1[:, i + P - k * S, :] = 1.0
                             if (j + P - l * S) < WW and (j + P- l * S) >= 0:
                                 mask2[:, :, j + P - l * S] = 1.0
@@ -319,6 +330,174 @@ def conv_backward_naive(dout, cache):
                             dx[nprime, :, i, j] += dout[nprime, f, k, l] * w_masked
 
     return dx, dw, db
+
+
+# Util layer forward passes
+def max_pool_forward_reshape(x, pool_param):
+    """
+    Fast implementation of max pooling that uses some clever reshaping
+    """
+
+    N, C, H, W = x.shape
+    pool_h = pool_param['pool_height']
+    pool_w = pool_param['pool_width']
+    stride = pool_param['stride']
+
+    assert pool_w == pool_h == stride, 'Invalid pool param'
+    assert H % pool_h == 0
+    assert W % pool_w == 0
+
+    x_reshaped = x.reshape(N, C, int(H / pool_h), pool_h, int(W / pool_w), pool_w)
+    out = x_reshaped.max(axis=3).max(axis=4)
+    cache = (x, x_reshaped, out)
+
+    print("(max_pool_forward_reshape), out.shape")
+    print(out.shape)
+
+    return out, cache
+
+
+def max_pool_forward_im2col(x, pool_param):
+    """
+    An implementation of the forward pass for maxpooling based
+    on im2col. Not much faster than the naive version
+
+    """
+    N, C, W, H = x.shape
+    pool_h = pool_param['pool_height']
+    pool_w = pool_param['pool_width']
+    stride = pool_param['stride']
+
+    assert (H - pool_h) % stride == 0, "Invalid height"
+    assert (W - pool_w) % stride == 0, "Invalid width"
+
+    out_height = int(1 + (H - pool_h) / stride)
+    out_width = int(1 + (W - pool_w) / stride)
+
+    x_split = x.reshape(N * C, 1, H, W)
+    x_cols = im2col(x_split, pool_h, pool_w, padding=0, stride=stride)
+    x_cols_argmax = np.argmax(x_cols, axis=0)
+    x_cols_max = x_cols[x_cols_argmax, np.arange(x_cols.shape[1])]
+    out = x_cols_max.reshape(out_height, out_width, N, C).transpose(2, 3, 0, 1)
+
+    cache = (x, x_cols, x_cols_argmax, pool_param)
+
+    return out, cache
+
+
+def max_pool_forward_fast(x, pool_param):
+    """
+    Fast implementation of the max pool forward pass
+
+    """
+    N, C, H, W = x.shape
+    pool_h = pool_param['pool_height']
+    pool_w = pool_param['pool_width']
+    stride = pool_param['stride']
+
+    same_size = (pool_w == pool_h == stride)
+    tiles = (H % pool_h == 0) and (W % pool_w == 0)
+
+    if same_size and tiles:
+        out, reshape_cache = max_pool_forward_reshape(x, pool_param)
+        cache = ('reshape', reshape_cache)
+    else:
+        out, im2col_cache = max_pool_forward_im2col(x, pool_param)
+        cache = ('im2col', im2col_cache)
+
+    return out, cache
+
+
+def max_pool_backward_fast(dout, cache):
+    """
+    A fast implementation of the backward pass for a max pool layer
+
+
+    """
+    method, real_cache = cache
+    if method == 'reshape':
+        return max_pool_backward_reshape(dout, real_cache)
+    elif method == 'im2col':
+        return max_pool_backward_im2col(dout, real_cache)
+    else:
+        raise ValueError('Unknown method %s' % method)
+
+
+# Util layer backward passes
+def max_pool_backward_reshape(dout, cache):
+    """
+    Fast implementation of the max_pool_reshape backward pass. This
+    function can only be used if the forward pass was computed using
+    max_pool_forward_reshape
+    """
+
+    x, x_reshaped, out = cache
+
+    dx_reshaped = np.zeros_like(x_reshaped)
+    out_newaxis = out[:, :, :, np.newaxis, :, np.newaxis]
+    mask = (x_reshaped == out_newaxis)
+
+    # TODO : for some reason dout is smaller than I expected....
+    print(dout.shape)
+    dout_newaxis = dout[:, :, :, np.newaxis, :, np.newaxis]
+    dout_broadcast, _ = np.broadcast_arrays(dout_newaxis, dx_reshaped)
+    dx_reshaped[mask] = dout_broadcast[mask]
+    dx_reshaped /= np.sum(mask, axis=(3,5), keepdims=True)
+    dx = dx_reshaped.reshape(x.shape)
+
+    return dx
+
+
+def max_pool_backward_im2col(dout, cache):
+    """
+    An implementation of the backward pass for max pooling based on
+    im2col.
+
+    """
+    x, x_cols, x_cols_argmax, pool_param = cache
+    N, C, H, W = x.shape
+    pool_h = pool_param['pool_height']
+    pool_w = pool_param['pool_width']
+    stride = pool_param['stride']
+
+    dout_reshaped = dout.transpose(2, 3, 0, 1).flatten()
+    dx_cols = np.zeros_like(x_cols)
+    dx_cols[x_cols_argmax, np.arange(dx_cols.shape[1])] = dout_reshaped
+    dx = im2col.col2im_indicies(dx_cols, (N * C, 1, H, W), pool_h, pool_w, padding=0, stride=stride)
+    dx = dx.reshape(x.shape)
+
+    return dx
+
+
+# Combinational convolution functions
+def conv_relu_pool_forward(x, w, b, conv_param, pool_param):
+    """
+    Convenience layer that performs a convolution, a relu, and a pool.
+
+    TODO : docstring
+    """
+
+    # TODO : implement Cython versions
+    a, conv_cache = conv_forward_naive(x, w, b, conv_param)
+    s, relu_cache = relu_forward(a)
+    out, pool_cache = max_pool_forward_fast(s, pool_param)
+    cache = (conv_cache, relu_cache, pool_cache)
+
+    return out, cache
+
+
+def conv_relu_pool_backward(dout, cache):
+    """
+    Backward pass for the conv_relu_pool layer
+    """
+    conv_cache, relu_cache, pool_cache = cache
+    ds = max_pool_backward_fast(dout, pool_cache)
+    da = relu_backward(ds, relu_cache)
+    dx, dw, db = conv_backward_naive(da, conv_cache)
+
+    return dx, dw, db
+
+
 
 # Sigmoid functions
 def sigmoid_forward(X, w, b):
@@ -334,6 +513,7 @@ def sigmoid_forward(X, w, b):
     cache = (X, w, b)
 
     return out, cache
+
 
 def sigmoid_backward(dout, cache):
     """
@@ -353,6 +533,83 @@ def sigmoid_backward(dout, cache):
 
 
 
+# ===== LAYER OBJECT ===== #
+
+class Layer(object):
+    def __init__(self, input_dim, hidden_dim, weight_scale=1e-2):
+        self.W = weight_scale * np.random.randn(input_dim, hidden_dim)
+        self.b = np.zeros(hidden_dim)
+        self.input_cache = None
 
 
+class AffineLayer(Layer):
+    def __str__(self):
+        s = []
+        s.append('Affine Layer:\n\t (%d x %d)\n' % (self.W.shape[0], self.W.shape[1]))
+        return ''.join(s)
 
+    def __repr__(self):
+        return self.__str__()
+
+    def forward(self, X):
+        self.input_cache = X
+        N = X.shape[0]
+        D = np.prod(X.shape[1:])
+        x2 = np.reshape(X, (N,D))
+        print('affine x2 shape (%d, %d)' % (x2.shape[0], x2.shape[1]))
+        out = np.dot(x2, self.W) + self.b
+
+        return out
+
+    def backward(self, dout):
+        """
+        Compute the backward pass for an affine layer
+        """
+        X = self.input_cache
+        dx = np.dot(dout, self.W.T).reshape(X.shape)
+        dw = np.dot(X.reshape(X.shape[0], np.prod(X.shape[1:])).T, dout)
+        db = np.sum(dout, axis=0)
+
+        return dx, dw, db
+
+
+class ReLULayer(Layer):
+    def __str__(self):
+        s = []
+        s.append('ReLU Layer:\n\t (%d x %d)\n' % (self.W.shape[0], self.W.shape[1]))
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def forward(self, X):
+        """
+        Computes the forward pass for a layer of rectified linear units
+        """
+        self.input_cache = X
+        out = np.maximum(0, X)
+
+        return out
+
+    def backward(self, dout):
+        """
+        Compute the backward pass for a layer of rectified linear units
+        """
+        X = self.input_cache
+        dx = np.array(dout, copy=True)
+        dx[X <= 0] = 0
+
+        return dx
+
+
+class SoftmaxLayer(Layer):
+    def __str__(self):
+        s = []
+        s.append('Softmax Layer:\n\t (%d x %d)\n' % (self.W.shape[0], self.W.shape[1]))
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def forward(self, X):
+        pass

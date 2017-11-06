@@ -145,10 +145,13 @@ class FCNet(object):
             else:
                 h = hidden['h' + str(idx-1)]
 
+            #if self.verbose:
+            #    print(h.shape)
+
             if self.use_batchnorm and idx != self.num_layers:
                 gamma = self.params['gamma' + str(idx)]
                 beta = self.params['beta' + str(idx)]
-                bn_param = self.bn_params['bn_paramm' + str(idx)]
+                bn_param = self.bn_params['bn_param' + str(idx)]
 
             # Compute the forward pass
             # output layer is a special case
@@ -257,27 +260,192 @@ class FCNet(object):
         return loss, grads
 
 
-# TODO : This should eventually be elsewhere
-def rel_error(x, y):
-    return np.max(np.abs(x - y) / (np.maximum(1e-8, np.abs(x) + np.abs(y))))
 
-# ======== SOME BASIC TEST CODE ======== #
+class FCNetObject(object):
+    def __init__(self, hidden_dims, input_dim, layer_types, num_classes=10,
+                 dropout=0, use_batchnorm=False, reg=0.0,
+                 weight_scale=1e-2, dtype=np.float32, seed=None,
+                 verbose=False):
+
+        self.verbose = verbose
+        self.use_batchnorm = use_batchnorm
+        self.use_dropout = dropout > 0
+        self.reg = reg
+        self.num_layers = 1 + len(hidden_dims)
+        self.dtype = dtype
+        self.params = {}
+
+        # Initialize the parameters of the network, storing all values into a
+        # dictionary at self.params. The keys to the dictionary are W1, b1 fo
+        # layer 1, W2, b2 for layer 2, and so on.
+        if type(hidden_dims) is not list:
+            raise ValueError('hidden_dim must be a list')
+
+        if type(layer_types) is not list:
+            raise ValueError("layer_types must be a list")
+
+        if len(hidden_dims) <= 0:
+            raise ValueError("hidden_dims cannot be an empty list")
+
+        if len(layer_types) <= 0:
+            raise ValueError("layer_types cannot be an empty list")
+
+        if len(hidden_dims) != len(layer_types):
+            print('DEBUG : len(hidden_dims) != len(layer_types)')
+
+        dims = [input_dim] + hidden_dims + [num_classes]
+        layer_types = layer_types + ['affine']
+        self.layers = []
+
+        # TODO ; Debug - remove
+        if self.verbose:
+            print(len(dims))
+            print(dims)
+
+        # Init the layers
+        for i in range(len(dims)-1):
+            if(self.verbose):
+                print("Adding layer %d" % (i+1))
+            if layer_types[i] == 'affine':
+                l = layers.AffineLayer(dims[i], dims[i+1], weight_scale)
+            elif layer_types[i] == 'relu':
+                l = layers.ReLULayer(dims[i], dims[i+1], weight_scale)
+            elif layer_types[i] == 'relu-affine':
+                l = layers.ReluAffineLayer(dims[i], dims[i+1], weight_scale)
+            else:
+                raise ValueError("Invalid layer type %s" % layer_types[i])
+            self.layers.append(l)
+
+    def __str__(self):
+        s = []
+        s.append("%d layer network\n" % self.num_layers)
+        for l in range(len(self.layers)-1):
+            s.append('Layer %d : %s\n' % (l+1, self.layers[l]))
+        # Output layer
+        s.append("Output layer: %s\n" % (self.layers[-1]))
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
+
+
+    def collect_params(self):
+        """
+        Collect params.
+        This is just a compatability layer for the solver. In a real object oriented
+        design the solver will need to be re-written
+        """
+
+        self.params = {}
+
+        for i in range(len(self.layers)):
+            self.params['W' + str(i+1)] = self.layers[i].W
+            # TODO: Where to the gradients get stored in this configuration?
+
+    def loss(self, X, y=None):
+        X = X.astype(self.dtype)
+        if y is None:
+            mode = 'test'
+        else:
+            mode = 'train'
+
+        # TODO : worry about dropout, batchnorm, later
+        # Set batchnorm params based on whether this is a training or a test
+        # run
+        #self.dropout_param['mode'] = mode
+        #if self.use_batchnorm:
+        #    for k, bn_param in self.bn_params.items():
+        #        bn_param[mode] = mode
+
+        # ===============================
+        # FORWARD PASS
+        # ===============================
+        #hidden['h0'] = X.reshape(X.shape[0], np.prod(X.shape[1:]))   # TODO ; Check this...
+        h = X.reshape(X.shape[0], np.prod(X.shape[1:]))
+        for l in range(self.num_layers):
+            idx = l + 1
+            print("Layer %d forward pass" % idx)
+            print(self.layers[l])
+            # TODO : Dropout, batchnorm, etc
+            h = self.layers[l].forward(h)
+            if self.verbose:
+                print(h.shape)
+
+        #scores = hidden['h' + str(self.num_layers)]
+        scores = h
+
+        if mode == 'test':
+            return scores
+
+        loss = 0.0
+        #grads = {}
+
+        # Compute loss
+        data_loss, dscores = layers.softmax_loss(scores, y)
+        reg_loss = 0
+        for l in range(self.num_layers):
+            reg_loss +- 0.5 * self.reg * np.sum(self.layers[l].W * self.layers[l].W)
+
+        loss = data_loss + reg_loss
+
+        # ===============================
+        # BACKWARD PASS
+        # ===============================
+        #hidden['dh' + str(self.num_layers)] = dscores
+        for l in range(self.num_layers)[::-1]:
+            idx = l + 1
+
+            # TODO : Need to create a structure in which to put all the
+            # various derivatives for parameter update later
+            lgrads = self.layers[l].backward(dh)
+            dh = lgrads[0]
+
+
+            #dh = hidden['dh' + str(idx)]
+            #h_cache = hidden['cache_h' + str(idx)]
+
+            #if idx == self.num_layers:
+            #    dh, dw, db = layers.affine_backward(dh, h_cache)
+            #    hidden['dh' + str(idx-1)] = dh
+            #    hidden['dW' + str(idx)] = dw
+            #    hidden['db' + str(idx)] = db
+            #else:
+            #    if self.use_dropout:
+            #        cache_hdrop = hidden['cache_hdrop' + str(idx)]
+            #        dh = layers.dropout_backward(dh, cache_hdrop)
+            #    if self.use_batchnorm:
+            #        dh, dw, db, dgamma, dbeta = layers.affine_norm_relu_backward(dh, h_cache)
+            #        hidden['dh' + str(idx-1)] = dh
+            #        hidden['dW' + str(idx)] = dw
+            #        hidden['db' + str(idx)] = db
+            #        hidden['dgamma' + str(idx)] = dgamma
+            #        hidden['dbeta' + str(idx)] = dbeta
+            #    else:
+            #        dh, dw, db = layers.affine_relu_backward(dh, h_cache)         # TODO This layer definition
+            #        hidden['dh' + str(idx-1)] = dh
+            #        hidden['dW' + str(idx)] = dw
+            #        hidden['db' + str(idx)] = db
+
+
+        return loss
+
+
+# basic test of FCNetObject
 if __name__ == "__main__":
 
-    # Get some data
-    data_dir = 'datasets/cifar-10-batches-py'
-    dataset = data_utils.get_CIFAR10_data(data_dir)
-    for k, v in dataset.items():
-        print("%s : %s" % (k, v.shape))
+    input_dim = 3 * 32 * 32
+    hidden_dims = [100, 100, 100, 100]
+    layer_types = ['relu', 'affine', 'relu', 'affine']
+    weight_scale = 5e-2
+    learning_rate = 1e-2
+    num_epochs = 20
+    batch_size = 100
 
+    net = FCNetObject(input_dim=input_dim,
+                            hidden_dims=hidden_dims,
+                            layer_types=layer_types,
+                            weight_scale=weight_scale,
+                            dtype=np.float64,
+                            verbose=True)
 
-    hidden_dims = [200]
-    input_dim = 32 * 32 * 3
-    fcnet = FCNet(hidden_dims, input_dim)
-
-    s = solver.Solver(fcnet, data, update_rule='sgd',
-                      optim_config={'learning_rate': 1e-3},
-                      lr_decay = 0.95,
-                      num_epochs=2,
-                      batch_size=250,
-                      print_every=100)
+    print(net)
