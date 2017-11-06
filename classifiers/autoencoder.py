@@ -10,8 +10,8 @@ def sparse_autoencoder_loss(scores, y):
     pass
 
 class Autoencoder(object):
-    def __init__(self, hidden_dims, input_dim, num_classes=10,
-                 dropout=0, use_batchnorm=False, reg=0.0,
+    def __init__(self, hidden_dims, input_dim,
+                 dropout=0, use_batchnorm=False, reg=1.0,
                  weight_scale=1e-2, dtype=np.float32, seed=None,
                  verbose=False):
 
@@ -24,9 +24,9 @@ class Autoencoder(object):
         self.params = {}
 
         # Init the params of the network into the dictionary self.params
-        dims = [input_dim] + hidden_dims + [num_classes]
-        Ws = {'W' + str(i+1) : weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
-        bs = {'b' + str(i+1) : np.zeros(dims[i+1]) for i in range(len(dims)-1)}
+        dims = [input_dim] + hidden_dims + [input_dim]
+        Ws = {'W' + str(i+1): weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
+        bs = {'b' + str(i+1): np.zeros(dims[i+1]) for i in range(len(dims)-1)}
         self.params.update(bs)
         self.params.update(Ws)
 
@@ -133,13 +133,11 @@ class Autoencoder(object):
             if key[:2] == 'db':
                 db_list[key[1:]] = val
 
-        # TODO : This is a hack
         dgamma_list = {}
         for key, val in hidden.items():
             if key[:6] == 'dgamma':
                 dgamma_list[key[1:]] = val
 
-        # TODO : This is a hack
         dbeta_list = {}
         for key, val in hidden.items():
             if key[:5] == 'dbeta':
@@ -150,10 +148,5 @@ class Autoencoder(object):
         grads.update(db_list)
         grads.update(dgamma_list)
         grads.update(dbeta_list)
-
-        #if dgamma_list is not None:
-        #    grads.update(dgamma_list)
-        #if dbeta_list is not None:
-        #    grads.update(dbeta_list)
 
         return loss, grads
