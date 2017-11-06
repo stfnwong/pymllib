@@ -98,7 +98,7 @@ class TestConvNet(unittest.TestCase):
 
         print("\n======== TestConvNet.test_loss_3layer_conv:")
 
-        N = 50
+        N = 10       # Because the naive implementation is VERY slow
         X = np.random.randn(N, 3, 32, 32)
         y = np.random.randint(10, size=N)
         model_3l = convnet.ThreeLayerConvNet()
