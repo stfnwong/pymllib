@@ -4,7 +4,7 @@ from Cython.Build import cythonize
 import numpy
 
 """
-Run python3 layer_setup.py build_ext --inplace
+Run python3 setup.py build_ext --inplace
 """
 
 extensions = [

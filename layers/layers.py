@@ -4,9 +4,21 @@ Functional implementation of layers in neural network. These are based on the
 layers in Caffe.
 """
 
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
+
 import numpy as np
 import im2col
-from im2col_cython import col2im_cython, im2col_cython
+try:
+    from im2col_cython import *
+except ImportError:
+    print("Failed to import im2col_cython. Ensure that setup.py has")
+    print("been run with build_ext --inplace.")
+    print("eg: python3 setup.py build_ext --inplace")
+
+from im2col import *
+#from im2col_cython import col2im_6d_cython
 
 # Debug
 #from pudb import set_trace; set_trace()
@@ -385,6 +397,23 @@ def conv_backward_im2col(dout, cache):
     return dx, dw, db
 
 
+# TODO : There is an issue here when calling as_strided()
+#Traceback (most recent call last):
+#  File "tests/test_convnet.py", line 106, in test_loss_3layer_conv
+#    loss, grads = model_3l.loss(X,y)
+#  File "/home/kreshnik/dev/machine-learning/python/classifiers/convnet.py", line 138, in loss
+#    conv_layer, cache_conv_layer = layers.conv_relu_pool_forward(x, w, b, conv_param, pool_param)
+#  File "/home/kreshnik/dev/machine-learning/python/layers/layers.py", line 609, in conv_relu_pool_forward
+#    a, conv_cache = conv_forward_strides(x, w, b, conv_param)
+#  File "/home/kreshnik/dev/machine-learning/python/layers/layers.py", line 425, in conv_forward_strides
+#    strides=strides)
+#  File "/usr/lib64/python3.6/site-packages/numpy/lib/stride_tricks.py", line 102, in as_strided
+#    array = np.asarray(DummyArray(interface, base=x))
+#  File "/usr/lib64/python3.6/site-packages/numpy/core/numeric.py", line 531, in asarray
+#    return array(a, dtype, copy=False, order=order)
+#TypeError: 'float' object cannot be interpreted as an integer
+#
+
 def conv_forward_strides(x, w, b, conv_param):
     N, C, H, W = x.shape
     F, _, HH, WW = w.shape
@@ -395,6 +424,7 @@ def conv_forward_strides(x, w, b, conv_param):
     assert (H + 2 * pad - HH) % stride == 0, 'Height does not align'
 
     x_padded = np.pad(x, ((0,0), (0,0), (pad,pad), (pad,pad)), mode='constant')
+    #x_padded = x_padded.astype(np.int32)
 
     # Compute output dimensions
     H += 2 * pad
@@ -405,6 +435,7 @@ def conv_forward_strides(x, w, b, conv_param):
     shape = (C, HH, WW, N, out_h, out_w)
     strides = (H * W, W, 1, C * H * W, stride * W, stride)
     strides = x.itemsize * np.array(strides)
+    #strides = strides.astype(np.int32)
 
     x_stride = np.lib.stride_tricks.as_strided(x_padded,
                                                shape=shape,
