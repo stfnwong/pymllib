@@ -60,7 +60,7 @@ class TestConvNet(unittest.TestCase):
                                   [[ 2.36270298,  2.36904306],
                                    [ 2.38090835,  2.38247847]]]]])
         out_error = error.rel_error(out, correct_out)
-        print("Error : %f " % out_error)
+        print("out_error : %.9f " % out_error)
         self.assertLessEqual(out_error, self.eps)
 
         print("======== TestConvNet.test_conv_forward_naive: <END> ")
@@ -84,9 +84,9 @@ class TestConvNet(unittest.TestCase):
         dw_error = error.rel_error(dw, dw_num)
         db_error = error.rel_error(db, db_num)
 
-        print("dx_error : %f" % dx_error)
-        print("dw_error : %f" % dw_error)
-        print("db_error : %f" % db_error)
+        print("dx_error : %.9f" % dx_error)
+        print("dw_error : %.9f" % dw_error)
+        print("db_error : %.9f" % db_error)
 
         self.assertLessEqual(dx_error, self.eps)
         self.assertLessEqual(dw_error, self.eps)

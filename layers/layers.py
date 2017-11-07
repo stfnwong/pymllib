@@ -4,24 +4,27 @@ Functional implementation of layers in neural network. These are based on the
 layers in Caffe.
 """
 
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
+#import os
+#import sys
+#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
 
-import numpy as np
-import im2col
 try:
-    from im2col_cython import *
+    # Need absolute path here
+    #import im2col_cython as ic
+    from .im2col_cython import col2im_cython, im2col_cython
+    from .im2col_cython import col2im_6d_cython
 except ImportError:
     print("Failed to import im2col_cython. Ensure that setup.py has")
     print("been run with build_ext --inplace.")
     print("eg: python3 setup.py build_ext --inplace")
 
-from im2col import *
+import im2col
+import numpy as np
+#from im2col import *
 #from im2col_cython import col2im_6d_cython
 
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 def affine_forward(X, w, b):
     """

@@ -8,7 +8,7 @@ Run python3 setup.py build_ext --inplace
 """
 
 extensions = [
-    Extension('layers.im2col_cython', ['layers/im2col_cython.pyx'],
+    Extension('layers.im2col_cython', ['im2col_cython.pyx'],
               include_dirs = [numpy.get_include()]
               ),
 ]
