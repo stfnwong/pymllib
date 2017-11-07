@@ -13,9 +13,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../c
 
 import matplotlib.pyplot as plt
 import numpy as np
-import autoencoder
-
 import unittest
+
+import data_utils
+import autoencoder
+import solver
+
 
 def load_data(data_dir, verbose=False):
 
@@ -75,7 +78,9 @@ class TestAutoencoder(unittest.TestCase):
     """
 
     def setUp(self):
+        self.data_dir = 'datasets/cifar-10-batches-py'
         self.verbose = True
+        self.eps = 1e-6
 
     def test_autoencoder_loss(self):
         print("\n======== TestAutoencoder.test_autoencoder_loss:")
@@ -84,18 +89,30 @@ class TestAutoencoder(unittest.TestCase):
 
         small_data = {
             'X_train': dataset['X_train'][:num_train],
-            'y_train': dataset['y_train'][:num_train],
+            'y_train': dataset['X_train'][:num_train],
             'X_val':   dataset['X_val'][:num_train],
-            'y_val':   dataset['y_val'][:num_train]
+            'y_val':   dataset['X_val'][:num_train]
         }
+        # Reshape some of the data in the small training set
+        y_train_shape = (small_data['y_train'].shape[0], np.prod(small_data['y_train'].shape[1:]))
+        y_val_shape = (small_data['y_val'].shape[0], np.prod(small_data['y_val'].shape[1:]))
+        small_data['y_train'] = np.reshape(small_data['y_train'], y_train_shape)
+        small_data['y_val'] = np.reshape(small_data['y_val'], y_val_shape)
+
+        if self.verbose:
+            print("Small data set")
+            for k, v in small_data.items():
+                print("%s : %s : " % (k, v.shape))
+
         #input_dim = small_data['X_train'].shape[0]
         input_dim = 3 * 32 * 32
-        hidden_dims = [int(input_dim / 8)]
+        hidden_dims = [int(input_dim / 4)]
         weight_scale = 0.079564
         learning_rate = 0.003775        # experimentally derived
+        reg = 1.0
 
         # Get an autoencoder
-        auto = autoencoder.Autoencoder(
+        auto_model = autoencoder.Autoencoder(
             input_dim=input_dim,
             hidden_dims=hidden_dims,
             reg=reg,
@@ -103,15 +120,15 @@ class TestAutoencoder(unittest.TestCase):
             verbose=self.verbose)
 
         if self.verbose:
-            print(auto)
+            print(auto_model)
         # Get a solver
-        auto_solver = solver.Solver(model,
-                                     small_data,
-                                     print_every=10,
-                                     num_epochs=30,
-                                     batch_size=50,     # previously 25
-                                     update_rule='sgd',
-                                     optim_config={'learning_rate': learning_rate})
+        auto_solver = solver.Solver(auto_model,
+                                    small_data,
+                                    print_every=10,
+                                    num_epochs=30,
+                                    batch_size=50,     # previously 25
+                                    update_rule='sgd',
+                                    optim_config={'learning_rate': learning_rate})
         auto_solver.train()
 
         print("======== TestAutoencoder.test_autoencoder_loss: <END> ")

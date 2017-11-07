@@ -83,8 +83,6 @@ class FCNet(object):
 
     def __str__(self):
         s = []
-        # TODO : How do we know what the type of the layer is when the weight
-        # information and the activation are separated?
         for l in range(self.num_layers):
             wl = self.params['W' + str(l+1)]
             bl = self.params['b' + str(l+1)]
@@ -257,7 +255,6 @@ class FCNet(object):
         #    grads.update(dbeta_list)
 
         return loss, grads
-
 
 
 class FCNetObject(object):
