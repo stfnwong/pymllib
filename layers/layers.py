@@ -271,10 +271,8 @@ def conv_forward_naive(X, w, b, conv_param):
     # Add padding to each image
     x_pad = np.pad(X, ((0,0), (0,0), (P,P), (P,P)), 'constant')
     # Size of the output
-    Hh = 1 + (H + 2 * P - HH) / S
-    Hw = 1 + (W + 2 * P - WW) / S
-    Hh = int(Hh)
-    Hw = int(Hw)
+    Hh = int(1 + (H + 2 * P - HH) / S)
+    Hw = int(1 + (W + 2 * P - WW) / S)
     out = np.zeros((N, F, Hh, Hw))
 
     for n in range(N):      # Iterate over images
@@ -360,8 +358,8 @@ def conv_forward_im2col(x, w, b, conv_param):
     assert (W + 2 * pad - filter_w) % stride == 0, 'Width does not align'
     assert (H + 2 * pad - filter_h) % stride == 0, 'Height does not align'
     # Create output
-    out_height = 1 + (H + 2 * pad - filter_h) / stride
-    out_width = 1 + (W + 2 * pad - filter_w) / stride
+    out_height =int(1 + (H + 2 * pad - filter_h) / stride)
+    out_width = int(1 + (W + 2 * pad - filter_w) / stride)
     out = np.zeros((N, num_filters, out_height, out_width), dtype=x.dtype)
 
     x_cols = im2col_cython(x, w.shape[2], w.shape[3], pad, stride)
@@ -418,8 +416,6 @@ def conv_forward_strides(x, w, b, conv_param):
     shape = (C, HH, WW, N, out_h, out_w)
     strides = (H * W, W, 1, C * H * W, stride * W, stride)
     strides = x.itemsize * np.array(strides)
-    #strides = strides.astype(np.int32)
-    # Debug
     x_stride = np.lib.stride_tricks.as_strided(x_padded,
                                                shape=shape,
                                                strides=strides)
@@ -430,7 +426,6 @@ def conv_forward_strides(x, w, b, conv_param):
     # reshape the output
     res.shape = (F, N, out_h, out_w)
     out = res.transpose(1, 0, 2, 3)
-
     # Return a contiguous array.
     out = np.ascontiguousarray(out)
 
@@ -499,7 +494,7 @@ def max_pool_forward_im2col(x, pool_param):
     assert (W - pool_w) % stride == 0, "Invalid width"
 
     out_height = int(1 + (H - pool_h) / stride)
-    out_width = int(1 + (W - pool_w) / stride)
+    out_width =  int(1 + (W - pool_w) / stride)
 
     x_split = x.reshape(N * C, 1, H, W)
     x_cols = im2col(x_split, pool_h, pool_w, padding=0, stride=stride)
