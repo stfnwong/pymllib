@@ -195,3 +195,7 @@ class ThreeLayerConvNet(object):
 
 
 
+#class ConvNet(object):
+
+
+

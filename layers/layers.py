@@ -397,23 +397,6 @@ def conv_backward_im2col(dout, cache):
     return dx, dw, db
 
 
-# TODO : There is an issue here when calling as_strided()
-#Traceback (most recent call last):
-#  File "tests/test_convnet.py", line 106, in test_loss_3layer_conv
-#    loss, grads = model_3l.loss(X,y)
-#  File "/home/kreshnik/dev/machine-learning/python/classifiers/convnet.py", line 138, in loss
-#    conv_layer, cache_conv_layer = layers.conv_relu_pool_forward(x, w, b, conv_param, pool_param)
-#  File "/home/kreshnik/dev/machine-learning/python/layers/layers.py", line 609, in conv_relu_pool_forward
-#    a, conv_cache = conv_forward_strides(x, w, b, conv_param)
-#  File "/home/kreshnik/dev/machine-learning/python/layers/layers.py", line 425, in conv_forward_strides
-#    strides=strides)
-#  File "/usr/lib64/python3.6/site-packages/numpy/lib/stride_tricks.py", line 102, in as_strided
-#    array = np.asarray(DummyArray(interface, base=x))
-#  File "/usr/lib64/python3.6/site-packages/numpy/core/numeric.py", line 531, in asarray
-#    return array(a, dtype, copy=False, order=order)
-#TypeError: 'float' object cannot be interpreted as an integer
-#
-
 def conv_forward_strides(x, w, b, conv_param):
     N, C, H, W = x.shape
     F, _, HH, WW = w.shape
@@ -429,14 +412,14 @@ def conv_forward_strides(x, w, b, conv_param):
     # Compute output dimensions
     H += 2 * pad
     W += 2 * pad
-    out_h = 1 + (H - HH) / stride
-    out_w = 1 + (W - WW) / stride
+    out_h = int(1 + (H - HH) / stride)
+    out_w = int(1 + (W - WW) / stride)
     # Perform im2col operation
     shape = (C, HH, WW, N, out_h, out_w)
     strides = (H * W, W, 1, C * H * W, stride * W, stride)
     strides = x.itemsize * np.array(strides)
     #strides = strides.astype(np.int32)
-
+    # Debug
     x_stride = np.lib.stride_tricks.as_strided(x_padded,
                                                shape=shape,
                                                strides=strides)
