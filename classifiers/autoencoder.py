@@ -5,12 +5,22 @@ Attempt to use an fcnet as an autoencoder
 Stefan Wong 2017
 """
 
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
+import numpy as np
+import layers
+import data_utils
 
+
+# TODO : Write the loss function for sparse autoencoder
 def sparse_autoencoder_loss(scores, y):
     pass
 
 class Autoencoder(object):
-    def __init__(self, hidden_dims, input_dim, num_classes=10,
+    def __init__(self, hidden_dims, input_dim,
                  dropout=0, use_batchnorm=False, reg=0.0,
                  weight_scale=1e-2, dtype=np.float32, seed=None,
                  verbose=False):
@@ -24,13 +34,13 @@ class Autoencoder(object):
         self.params = {}
 
         # Init the params of the network into the dictionary self.params
-        dims = [input_dim] + hidden_dims + [num_classes]
-        Ws = {'W' + str(i+1) : weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
-        bs = {'b' + str(i+1) : np.zeros(dims[i+1]) for i in range(len(dims)-1)}
+        dims = [input_dim] + hidden_dims + [input_dim]
+        Ws = {'W' + str(i+1): weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
+        bs = {'b' + str(i+1): np.zeros(dims[i+1]) for i in range(len(dims)-1)}
         self.params.update(bs)
         self.params.update(Ws)
 
-        # Cast params
+        # Cast params to correct data type
         if self.verbose:
             print("Casting parameers to type %s" % self.dtype)
         for k,v in self.params.items():
