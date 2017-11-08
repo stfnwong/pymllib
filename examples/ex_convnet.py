@@ -180,7 +180,7 @@ def LLayerConv():
     filter_size = 3
     num_filters = [16, 32, 64, 128]
     hidden_dim = [256, 256]
-    num_epochs = 50
+    num_epochs = 10
 
     # Get a convnet
     # TODO: more flexible convnet
