@@ -6,17 +6,28 @@ a re-factor of the CS231n exercise
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../classifiers')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+print(sys.path)
+#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
+#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
+#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../classifiers')))
+
 import numpy as np
-import data_utils
-import check_gradient
-import error
-import layers
-import solver
-import convnet
+from pymllib.utils import data_utils
+from pymllib.utils import check_gradient
+from pymllib.utils import error
+from pymllib.layers import layers
+#from pymllib.solver import solver
+from pymllib.classifiers import convnet
+
+# ==== OLD IMPORTS
+#import numpy as np
+#import pymllib.utils.data_utils as data_utils
+#import pymllib.utils.check_gradient as check_gradient
+#import pymllib.utils.error as error
+#import pymllib.layers as layers
+#import pymllib.solver as solver
+#import pymllib.convnet as convnet
 
 import unittest
 # Debug
