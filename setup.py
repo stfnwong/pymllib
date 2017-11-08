@@ -17,5 +17,7 @@ setup(
     packages=['pymllib', 'tests'],
     ext_modules = cythonize(extensions),
 )
+# TODO : These are just lifted from the ARL repo.... but I wonder
+# how can these variables be used here....
 #    test_suite='tests',
 #    tests_require=['pytest'],

@@ -5,16 +5,13 @@ TEST_GRADIENT_CHECK
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import unittest
 import numpy as np
-
-import layers
-import check_gradient
-import error
+import pymllib.layers.layers as layers
+import pymllib.utils.check_gradient as check_gradient
+import pymllib.utils.error as error
 
 # Debug
 #from pudb import set_trace; set_trace()

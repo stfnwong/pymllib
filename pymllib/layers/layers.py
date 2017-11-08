@@ -4,27 +4,19 @@ Functional implementation of layers in neural network. These are based on the
 layers in Caffe.
 """
 
-#import os
-#import sys
-#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
-
 try:
-    # Need absolute path here
-    #import im2col_cython as ic
-    from .im2col_cython import col2im_cython, im2col_cython
-    from .im2col_cython import col2im_6d_cython
+    from pymllib.layers.im2col_cython import col2im_cython, im2col_cython
+    from pymllib.layers.im2col_cython import col2im_6d_cython
 except ImportError:
     print("Failed to import im2col_cython. Ensure that setup.py has")
     print("been run with build_ext --inplace.")
     print("eg: python3 setup.py build_ext --inplace")
 
-import im2col
+import pymllib.layers.im2col
 import numpy as np
-#from im2col import *
-#from im2col_cython import col2im_6d_cython
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 def affine_forward(X, w, b):
     """
@@ -41,6 +33,7 @@ def affine_forward(X, w, b):
 
     return out, cache
 
+
 def affine_backward(dout, cache):
     """
     Compute the backward pass for an affine layer
@@ -52,6 +45,7 @@ def affine_backward(dout, cache):
 
     return dx, dw, db
 
+
 def relu_forward(X):
     """
     Computes the forward pass for a layer of rectified linear units
@@ -60,6 +54,7 @@ def relu_forward(X):
     cache = X
 
     return out, cache
+
 
 def relu_backward(dout, cache):
     """
@@ -197,8 +192,6 @@ def batchnorm_backward(dout, cache):
 
     return dx, dgamma, dbeta
 
-# TODO : Alternative function?
-
 
 # ==== Convenience layers
 def affine_relu_forward(X, w, b):
@@ -222,7 +215,7 @@ def affine_relu_backward(dout, cache):
 
     return dx, dw, db
 
-# TODO ; Specialty layers
+
 def affine_norm_relu_forward(X, v, b, gamma, beta, bn_param):
     """
     Performs an affine transform followed by a ReLU
@@ -345,6 +338,7 @@ def conv_backward_naive(dout, cache):
                             dx[nprime, :, i, j] += dout[nprime, f, k, l] * w_masked
 
     return dx, dw, db
+
 
 # ======== FAST CONV LAYERS ======== #
 def conv_forward_im2col(x, w, b, conv_param):
@@ -625,7 +619,6 @@ def conv_relu_pool_backward(dout, cache):
     return dx, dw, db
 
 
-
 # Sigmoid functions
 def sigmoid_forward(X, w, b):
     """
@@ -657,7 +650,6 @@ def sigmoid_backward(dout, cache):
     #dw = np.dot(X.reshape(X.shape[0], np.prod(X.shape[1:])).T, ddot)
 
     return dx, dw, db
-
 
 
 # ===== LAYER OBJECT ===== #

@@ -10,22 +10,19 @@ Stefan Wong 2017
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../classifiers')))
-
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import matplotlib.pyplot as plt
 import numpy as np
-import data_utils
-import check_gradient
-import error
-import layers
-import fcnet
-import twolayer_modular as twol
-import solver
-
 import unittest
+
+# Library imports
+import pymllib.util.data_utils
+import pymllib.util.check_gradient
+import pymllib.util.error
+import pymllib.layers.layers
+import pymllib.classifiers.fcnet
+#import pymllib.solver.solver
+
 # Debug
 from pudb import set_trace; set_trace()
 
@@ -45,6 +42,7 @@ def load_data(data_dir, verbose=False):
 
     return dataset
 
+
 def get_figure_handles():
     fig = plt.figure()
     ax = []
@@ -53,6 +51,7 @@ def get_figure_handles():
         ax.append(sub_ax)
 
     return fig, ax
+
 
 # Show the solver output
 def plot_test_result(ax, solver_dict, num_epochs=None):
@@ -481,8 +480,6 @@ class TestFCNetDropout(unittest.TestCase):
 
 
         print("======== TestFCNetDropout.test_fcnet_3layer_dropout: <END> ")
-
-
 
 
 class TestFCNetObject(unittest.TestCase):
