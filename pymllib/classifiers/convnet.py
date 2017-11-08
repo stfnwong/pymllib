@@ -7,17 +7,10 @@ Some basic convolutional networks
 import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
-#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
-#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
-#import numpy as np
-#import layers
-#import data_utils
 
 import numpy as np
 import pymllib.layers.layers as layers
 import pymllib.utils.data_utils as data_utils
-
 
 # Debug
 #from pudb import set_trace; set_trace()
@@ -166,7 +159,6 @@ class ThreeLayerConvNet(object):
         # ===============================
         # BACKWARD PASS
         # ===============================
-
         data_loss, dscores = layers.softmax_loss(scores, y)
         reg_loss = 0.5 * self.reg * np.sum(W1**2)
         reg_loss = 0.5 * self.reg * np.sum(W2**2)
@@ -174,27 +166,29 @@ class ThreeLayerConvNet(object):
         loss = data_loss + reg_loss
 
         # backprop into output layer
-        dx3, dw3, db3 = layers.affine_backward(dscores, cache_scores)
-        dw3 += self.reg * W3
+        dx3, dW3, db3 = layers.affine_backward(dscores, cache_scores)
+        dW3 += self.reg * W3
 
         # backprop into first fc layer
-        dx2, dw2, db2 = layers.affine_relu_backward(dx3, cache_hidden_layer)
-        dw2 += self.reg * W2
+        dx2, dW2, db2 = layers.affine_relu_backward(dx3, cache_hidden_layer)
+        dW2 += self.reg * W2
 
         # Backprop into conv layer
         dx2 = dx2.reshape(N, F, Hp, Wp)           # Note - don't forget to reshape here...
-        dx, dw1, db1 = layers.conv_relu_pool_backward(dx2, cache_conv_layer)
-        dw1 += self.reg * W1
+        dx, dW1, db1 = layers.conv_relu_pool_backward(dx2, cache_conv_layer)
+        dW1 += self.reg * W1
 
         grads.update({
-            'W1': W1,
-            'W2': W2,
-            'W3': W3,
-            'b1': b1,
-            'b2': b2,
-            'b3': b3})
+            'W1': dW1,
+            'W2': dW2,
+            'W3': dW3,
+            'b1': db1,
+            'b2': db2,
+            'b3': db3})
 
         # TODO: batchnorm stuff
+        for k, v in grads.items():
+            print("%s : max = %f, min = %f" % (k, np.max(v), np.min(v)))
 
         return loss, grads
 

@@ -202,7 +202,7 @@ class TestConvNet(unittest.TestCase):
         print("======== TestConvNet.test_gradient_check_conv: <END> ")
 
     def test_overfit_3layer(self):
-        print("\n======== TestConvNet.test_gradient_check_conv:")
+        print("\n======== TestConvNet.test_overfit_3layer:")
         dataset = load_data(self.data_dir, self.verbose)
         num_train = 100
 
@@ -213,15 +213,15 @@ class TestConvNet(unittest.TestCase):
             'y_val':   dataset['y_val'][:num_train]
         }
         input_dim = (3, 32, 32)
-        hidden_dims = [100, 100, 100, 100]
         weight_scale = 1e-2
-        learning_rate = 1e-2
+        learning_rate = 1e-3
         num_epochs = 20
         batch_size = 50
         update_rule='adam'
 
         # Get a model
-        model = convnet.ThreeLayerConvNet(weight_scale=weight_scale)
+        model = convnet.ThreeLayerConvNet(weight_scale=weight_scale,
+                                          reg=0.0)
         if self.verbose:
             print(model)
         # Get a solver
@@ -231,7 +231,7 @@ class TestConvNet(unittest.TestCase):
                                     batch_size=batch_size,
                                     update_rule=update_rule,
                                     optim_config={'learning_rate': learning_rate},
-                                    print_every=100,
+                                    print_every=10,
                                     verbose=self.verbose)
         conv_solver.train()
         conv_dict = {"convnet": conv_solver}
@@ -243,67 +243,8 @@ class TestConvNet(unittest.TestCase):
             fig.tight_layout()
             plt.show()
 
-        print("======== TestConvNet.test_gradient_check_conv: <END> ")
+        print("======== TestConvNet.test_overfit_3layer: <END> ")
 
-    def test_cifar10_epoch(self):
-        print("\n======== TestConvNet.test_cifar10_epoch:")
-        dataset = load_data(self.data_dir, self.verbose)
-        num_train = 100
-
-        #small_data = {
-        #    'X_train': dataset['X_train'][:num_train],
-        #    'y_train': dataset['y_train'][:num_train],
-        #    'X_val':   dataset['X_val'][:num_train],
-        #    'y_val':   dataset['y_val'][:num_train]
-        #}
-        input_dim = (3, 32, 32)
-        hidden_dims = 500
-        weight_scale = 1e-2
-        learning_rate = 1e-3
-        reg = 0.001
-        num_epochs = 1
-        batch_size = 50
-        update_rule='adam'
-
-        model = convnet.ThreeLayerConvNet(weight_scale=weight_scale,
-                                          hidden_dim=500,
-                                          reg=reg)
-        if self.verbose:
-            print(model)
-        conv_solver = solver.Solver(model,
-                                    dataset,
-                                    num_epochs=num_epochs,
-                                    batch_size=batch_size,
-                                    update_rule=update_rule,
-                                    optim_config={'learning_rate': learning_rate},
-                                    verbose=True,
-                                    print_every=20)
-        conv_solver.train()
-        conv_dict = {'convnet': conv_solver}
-
-        # Plot figures
-        if self.draw_plots is True:
-            fig, ax = get_figure_handles()
-            plot_test_result(ax, conv_dict)
-            fig.set_size_inches(8,8)
-            fig.tight_layout()
-
-            # Visualize grid
-            weight_dict = {'W1': conv_solver.model.params['W1'],
-                           'W2': conv_solver.model.params['W2'],
-                           'W3': conv_solver.model.params['W3']}
-
-            vfig, vax = get_figure_handles()
-
-            plot_3layer_activations(vax, weight_dict)
-            #grid = vis_weights.vis_grid_img(model.params['W1'].transpose(0, 2, 3, 1))
-            #vax.plot(grid.astype('uint8'))
-            #vax.axis('off')
-            #vfig.set_size_inches(5, 5)
-
-            plt.show()
-
-        print("======== TestConvNet.test_cifar10_epoch: <END> ")
 
         # TODO : Next up, spatial batch normalization
 
