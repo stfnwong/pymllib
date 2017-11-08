@@ -16,12 +16,12 @@ import numpy as np
 import unittest
 
 # Library imports
-import pymllib.util.data_utils
-import pymllib.util.check_gradient
-import pymllib.util.error
-import pymllib.layers.layers
-import pymllib.classifiers.fcnet
-#import pymllib.solver.solver
+import pymllib.util.data_utils as data_utils
+#import pymllib.util.check_gradient as check_gradient
+#import pymllib.util.error as error
+#import pymllib.layers.layers as layers
+import pymllib.classifiers.fcnet as fcnet
+import pymllib.solver.solver as solver
 
 # Debug
 from pudb import set_trace; set_trace()
@@ -42,7 +42,7 @@ def load_data(data_dir, verbose=False):
 
     return dataset
 
-
+# Get a new figure and axis to plot into
 def get_figure_handles():
     fig = plt.figure()
     ax = []
@@ -364,6 +364,8 @@ class TestFCNet(unittest.TestCase):
                                         batch_size=batch_size,     # previously 25
                                         update_rule=update_rule,
                                         optim_config={'learning_rate': learning_rate})
+            if self.verbose:
+                print(model_solver)
             solvers[update_rule] = model_solver
             model_solver.train()
 

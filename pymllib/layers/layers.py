@@ -240,10 +240,6 @@ def softmax_loss(X, y):
     probs /= np.sum(probs, axis=1, keepdims=True)
     N = X.shape[0]
 
-#    print("probs.shape; (%d, %d)" % (probs.shape[0], probs.shape[1]))
-#    if np.min(probs) < 0.0:
-#        print('min of probs is %f' % np.min(probs))
-#
     #l1 = np.log(np.max(probs[np.arange(N), y], 1e-15))
     l1 = np.log(probs[np.arange(N), y])
     loss = -np.sum(l1) / N
@@ -470,9 +466,6 @@ def max_pool_forward_reshape(x, pool_param):
     out = x_reshaped.max(axis=3).max(axis=4)
     cache = (x, x_reshaped, out)
 
-    print("(max_pool_forward_reshape), out.shape")
-    print(out.shape)
-
     return out, cache
 
 
@@ -556,8 +549,6 @@ def max_pool_backward_reshape(dout, cache):
     out_newaxis = out[:, :, :, np.newaxis, :, np.newaxis]
     mask = (x_reshaped == out_newaxis)
 
-    # TODO : for some reason dout is smaller than I expected....
-    print(dout.shape)
     dout_newaxis = dout[:, :, :, np.newaxis, :, np.newaxis]
     dout_broadcast, _ = np.broadcast_arrays(dout_newaxis, dx_reshaped)
     dx_reshaped[mask] = dout_broadcast[mask]

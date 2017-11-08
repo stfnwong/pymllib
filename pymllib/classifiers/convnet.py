@@ -6,12 +6,18 @@ Some basic convolutional networks
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
+#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
+#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
+#import numpy as np
+#import layers
+#import data_utils
+
 import numpy as np
-import layers
-import data_utils
+import pymllib.layers.layers as layers
+import pymllib.utils.data_utils as data_utils
+
 
 # Debug
 #from pudb import set_trace; set_trace()

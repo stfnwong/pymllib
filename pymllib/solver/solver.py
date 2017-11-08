@@ -8,11 +8,12 @@ Stefan Wong 2017
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
 
-import optim
 import numpy as np
 import pickle
+import pymllib.solver.optim as optim
 
 # Debug
 #from pudb import set_trace; set_trace()
@@ -28,6 +29,11 @@ class Solver(object):
 
         TODO : Rest of docstring
         """
+
+        if model is None:
+            raise ValueError('No model specified')
+        if data is None:
+            raise ValueError('No data specified')
 
         self.model = model
         self.X_train = data['X_train']
@@ -59,6 +65,27 @@ class Solver(object):
             raise ValueError('Invalid update rule "%s"' % (self.update_rule))
         self.update_rule = getattr(optim, self.update_rule)
         self._reset()
+
+    def __str__(self):
+        s = []
+
+        # print the size of the dataset attached to the solver
+        s.append("X_train shape  (%s)" % self.X_train.shape)
+        s.append("y_trian shape  (%s)" % self.y_train.shape)
+        s.append("X_val shape    (%s)" % self.X_val.shape)
+        s.append("y_val shape    (%s)" % self.y_val.shape)
+        # Solver params
+        s.append("update rule  : %s" % self.update_rule)
+        s.append("optim config : %s" % self.optim_config)
+        s.append("lr decay     : %s" % self.lr_decay)
+        s.append("batch size   : %s" % self.batch_size)
+        s.append("num epochs   : %s" % self.num_epochs)
+        # Could have some "super verbose" settings here like print_every, etc
+
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
 
     def _reset(self):
         """

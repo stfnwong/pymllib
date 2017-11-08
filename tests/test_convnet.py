@@ -10,14 +10,21 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import unittest
 import numpy as np
+import matplotlib.pyplot as plt
 from pymllib.utils import data_utils
 from pymllib.utils import check_gradient
 from pymllib.utils import error
 from pymllib.layers import layers
 from pymllib.classifiers import convnet
+import pymllib.solver.solver as solver
+import pymllib.vis.vis_weights as vis_weights
 
 # Debug
 #from pudb import set_trace; set_trace()
+
+# TODO : Once an arbitrary layer convnet is implemented,
+# replace the three layer convnet with the arbitrary convnet
+# implemented with 3 layers
 
 def load_data(data_dir, verbose=False):
 
@@ -28,10 +35,61 @@ def load_data(data_dir, verbose=False):
 
     return dataset
 
+def get_figure_handles():
+    fig = plt.figure()
+    ax = []
+    for i in range(3):
+        sub_ax = fig.add_subplot(3,1,(i+1))
+        ax.append(sub_ax)
+
+    return fig, ax
+
+# Show the solver output
+def plot_test_result(ax, solver_dict, num_epochs=None):
+
+    assert len(ax) == 3, "Need 3 axis"
+
+    for n in range(len(ax)):
+        ax[n].set_xlabel("Epoch")
+        if num_epochs is not None:
+            ax[n].set_xticks(range(num_epochs))
+        if n == 0:
+            ax[n].set_title("Training Loss")
+        elif n == 1:
+            ax[n].set_title("Training Accuracy")
+        elif n == 2:
+            ax[n].set_title("Validation Accuracy")
+
+    # update data
+    for method, solv in solver_dict.items():
+        ax[0].plot(solv.loss_history, 'o', label=method)
+        ax[1].plot(solv.train_acc_history, '-x', label=method)
+        ax[2].plot(solv.val_acc_history, '-x', label=method)
+
+    # Update legend
+    for i in range(len(ax)):
+        ax[i].legend(loc='upper right', ncol=4)
+
+def plot_3layer_activations(ax, weight_dict):
+
+    assert len(ax) == 3, "Need 3 axis"
+    #assert len(weight_dict.keys()) == 3, "Need 3 sets of weights"
+
+    for n in range(len(ax)):
+        grid = vis_weights.vis_grid_img(weight_dict['W' + str(n+1)].transpose(0, 2, 3, 1))
+        ax[n].imshow(grid.astype('uint8'))
+        title = "W%d" % n+1
+        ax[n].set_title(title)
+
+
+
 class TestConvNet(unittest.TestCase):
 
     def setUp(self):
+        self.data_dir = 'datasets/cifar-10-batches-py'
         self.eps = 1e-7
+        self.verbose = True
+        self.draw_plots = True
 
     def test_conv_forward_naive(self):
         print("\n======== TestConvNet.test_conv_forward_naive:")
@@ -108,6 +166,146 @@ class TestConvNet(unittest.TestCase):
 
         print("======== TestConvNet.test_loss_3layer_conv: <END> ")
 
+
+    def test_gradient_check_conv(self):
+        print("\n======== TestConvNet.test_gradient_check_conv:")
+
+        num_inputs = 2
+        input_dim = (3, 10, 10)
+        reg = 0.0
+        num_classes = 10
+
+        X = np.random.randn(num_inputs, *input_dim)
+        y = np.random.randint(num_classes, size=num_inputs)
+
+        model = convnet.ThreeLayerConvNet(num_filters=3,
+                                          filter_size=3,
+                                          input_dim=input_dim,
+                                          hidden_dim=7,
+                                          reg=reg,
+                                          dtype=np.float32)
+        loss, grads = model.loss(X, y)
+        for p in sorted(grads):
+            f = lambda _: model.loss(X, y)[0]
+            param_grad_num = check_gradient.eval_numerical_gradient(f, model.params[p], verbose=False, h=1e-6)
+            err = error.rel_error(param_grad_num, grads[p])
+            print("%s max relative error: %e" % (p, err))
+
+        # This is in a separate pass so that we can see all errors
+        # printed to console before we invoke the assertions
+        for p in sorted(grads):
+            f = lambda _: model.loss(X, y)[0]
+            param_grad_num = check_gradient.eval_numerical_gradient(f, model.params[p], verbose=False, h=1e-6)
+            err = error.rel_error(param_grad_num, grads[p])
+            self.assertLessEqual(err, self.eps)
+
+        print("======== TestConvNet.test_gradient_check_conv: <END> ")
+
+    def test_overfit_3layer(self):
+        print("\n======== TestConvNet.test_gradient_check_conv:")
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 100
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        input_dim = (3, 32, 32)
+        hidden_dims = [100, 100, 100, 100]
+        weight_scale = 1e-2
+        learning_rate = 1e-2
+        num_epochs = 20
+        batch_size = 50
+        update_rule='adam'
+
+        # Get a model
+        model = convnet.ThreeLayerConvNet(weight_scale=weight_scale)
+        if self.verbose:
+            print(model)
+        # Get a solver
+        conv_solver = solver.Solver(model,
+                                    small_data,
+                                    num_epochs=num_epochs,
+                                    batch_size=batch_size,
+                                    update_rule=update_rule,
+                                    optim_config={'learning_rate': learning_rate},
+                                    print_every=100,
+                                    verbose=self.verbose)
+        conv_solver.train()
+        conv_dict = {"convnet": conv_solver}
+        # Plot figures
+        if self.draw_plots is True:
+            fig, ax = get_figure_handles()
+            plot_test_result(ax, conv_dict)
+            fig.set_size_inches(8,8)
+            fig.tight_layout()
+            plt.show()
+
+        print("======== TestConvNet.test_gradient_check_conv: <END> ")
+
+    def test_cifar10_epoch(self):
+        print("\n======== TestConvNet.test_cifar10_epoch:")
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 100
+
+        #small_data = {
+        #    'X_train': dataset['X_train'][:num_train],
+        #    'y_train': dataset['y_train'][:num_train],
+        #    'X_val':   dataset['X_val'][:num_train],
+        #    'y_val':   dataset['y_val'][:num_train]
+        #}
+        input_dim = (3, 32, 32)
+        hidden_dims = 500
+        weight_scale = 1e-2
+        learning_rate = 1e-3
+        reg = 0.001
+        num_epochs = 1
+        batch_size = 50
+        update_rule='adam'
+
+        model = convnet.ThreeLayerConvNet(weight_scale=weight_scale,
+                                          hidden_dim=500,
+                                          reg=reg)
+        if self.verbose:
+            print(model)
+        conv_solver = solver.Solver(model,
+                                    dataset,
+                                    num_epochs=num_epochs,
+                                    batch_size=batch_size,
+                                    update_rule=update_rule,
+                                    optim_config={'learning_rate': learning_rate},
+                                    verbose=True,
+                                    print_every=20)
+        conv_solver.train()
+        conv_dict = {'convnet': conv_solver}
+
+        # Plot figures
+        if self.draw_plots is True:
+            fig, ax = get_figure_handles()
+            plot_test_result(ax, conv_dict)
+            fig.set_size_inches(8,8)
+            fig.tight_layout()
+
+            # Visualize grid
+            weight_dict = {'W1': conv_solver.model.params['W1'],
+                           'W2': conv_solver.model.params['W2'],
+                           'W3': conv_solver.model.params['W3']}
+
+            vfig, vax = get_figure_handles()
+
+            plot_3layer_activations(vax, weight_dict)
+            #grid = vis_weights.vis_grid_img(model.params['W1'].transpose(0, 2, 3, 1))
+            #vax.plot(grid.astype('uint8'))
+            #vax.axis('off')
+            #vfig.set_size_inches(5, 5)
+
+            plt.show()
+
+        print("======== TestConvNet.test_cifar10_epoch: <END> ")
+
+        # TODO : Next up, spatial batch normalization
 
 class TestConvImgProc(unittest.TestCase):
 
