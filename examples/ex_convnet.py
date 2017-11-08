@@ -87,7 +87,7 @@ def plot_3layer_activations(ax, weight_dict):
         ax[n].set_title(title)
 
 # Get the conv layers out of the model
-def get_conv_layers(model):
+def get_conv_layers(model, verbose=False):
 
     weight_dict = {}
     for k, v in model.params.items():
@@ -95,12 +95,16 @@ def get_conv_layers(model):
             if len(model.params[k].shape) == 4:
                 weight_dict[k] = model.params[k]
 
+    if verbose is True:
+        for k, v in weight_dict.items():
+            print("%s : %s" % (k, v.shape))
+
     return weight_dict
 
 
 def ThreeLayerNet():
     verbose = True
-    save_convnet = False
+    save_convnet = True
     load_convnet = False
     data_dir = 'datasets/cifar-10-batches-py'
     convnet_path = 'examples/convnet_expr.pkl'
@@ -178,7 +182,8 @@ def LLayerConv():
     weight_scale = 1e-2
     reg = 1e-3
     filter_size = 7
-    num_filters = [16, 32, 64, 128]
+    #num_filters = [16, 32, 64, 128]
+    num_filters = [32, 32, 32, 32]
     hidden_dim = [256, 256]
     num_epochs = 10
 
@@ -221,4 +226,6 @@ def LLayerConv():
 
 
 if __name__ == "__main__":
-    LLayerConv()
+    #LLayerConv()
+    ThreeLayerNet()
+
