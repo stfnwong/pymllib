@@ -177,10 +177,10 @@ def LLayerConv():
     input_dim = (3, 32, 32)
     weight_scale = 1e-2
     reg = 1e-3
-    filter_size = 3
+    filter_size = 7
     num_filters = [16, 32, 64, 128]
     hidden_dim = [256, 256]
-    num_epochs = 50
+    num_epochs = 10
 
     # Get a convnet
     # TODO: more flexible convnet
@@ -189,7 +189,8 @@ def LLayerConv():
                                       num_filters=num_filters,
                                       weight_scale=weight_scale,
                                       reg=reg,
-                                      filter_size=filter_size)
+                                      filter_size=filter_size,
+                                      verbose=verbose)
     if verbose:
         print(conv_model)
     # Get a solver
