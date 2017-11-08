@@ -86,8 +86,19 @@ def plot_3layer_activations(ax, weight_dict):
         title = "W" + str(n+1)
         ax[n].set_title(title)
 
+# Get the conv layers out of the model
+def get_conv_layers(model):
 
-def main():
+    weight_dict = {}
+    for k, v in model.params.items():
+        if k[:1] == 'W':
+            if len(model.params[k].shape) == 4:
+                weight_dict[k] = model.params[k]
+
+    return weight_dict
+
+
+def ThreeLayerNet():
     verbose = True
     save_convnet = False
     load_convnet = False
@@ -115,16 +126,10 @@ def main():
                                 optim_config={'learning_rate': 1e-3},
                                 verbose=verbose,
                                 print_every=50)
-    # TODO : Maybe it should be possible to have an empty solver into which we
-    # load data....
-    if load_convnet:
+    if load_convnet:        # FIXME : load data.
         print("Loading convnet from file %s" % convnet_path)
         conv_solver.load(convnet_path)
 
-    # TODL string formatting is not good here...
-    #if verbose:
-    #    print(conv_solver)
-    # Ready to train
     if load_convnet is False:
         conv_solver.train()
 
@@ -148,15 +153,71 @@ def main():
 
     fig, ax = get_one_figure_handle()
     grid = vis_weights.vis_grid_img(weight_dict['W1'].transpose(0, 2, 3, 1))
-    ax.imshow(grid.astype('uint8'))
-    #fig.axis('off')
+    ax.imshow(grid)
     fig.set_size_inches(5,5)
+
+    # The training loss, accuracy, etc
+    tfig, tax = get_figure_handles()
+    solver_dict = {'convnet': conv_solver}
+    plot_test_result(tax, solver_dict, num_epochs=None)
     plt.show()
-    #fig, ax = get_figure_handles()
-    #plot_3layer_activations(ax, weight_dict)
-    #plt.show()
 
     print("done")
 
+def LLayerConv():
+    verbose = True
+    save_convnet = False
+    load_convnet = False
+    data_dir = 'datasets/cifar-10-batches-py'
+    convnet_path = 'examples/convnet_expr.pkl'
+
+    # Get data
+    data = load_data(data_dir, verbose)
+    # Set params
+    input_dim = (3, 32, 32)
+    weight_scale = 1e-2
+    reg = 1e-3
+    filter_size = 3
+    num_filters = [16, 32, 64, 128]
+    hidden_dim = [256, 256]
+    num_epochs = 50
+
+    # Get a convnet
+    # TODO: more flexible convnet
+    conv_model = convnet.ConvNetLayer(input_dim=input_dim,
+                                      hidden_dims=hidden_dim,
+                                      num_filters=num_filters,
+                                      weight_scale=weight_scale,
+                                      reg=reg,
+                                      filter_size=filter_size)
+    if verbose:
+        print(conv_model)
+    # Get a solver
+    conv_solver = solver.Solver(conv_model, data,
+                                num_epochs=num_epochs,
+                                batch_size=50,
+                                update_rule='adam',
+                                optim_config={'learning_rate': 1e-3},
+                                verbose=verbose,
+                                print_every=50)
+    conv_solver.train()
+    # Plot results
+    #fig, ax = get_one_figure_handle()
+    #grid = vis_weights.vis_grid_img(weight_dict['W1'].transpose(0, 2, 3, 1))
+    #ax.imshow(grid)
+    #fig.set_size_inches(5,5)
+    # save the data
+    solver_file = "examples/conv_solver_%d_epochs.pkl" % num_epochs
+    conv_solver.save(solver_file)
+
+    # The training loss, accuracy, etc
+    tfig, tax = get_figure_handles()
+    solver_dict = {'convnet': conv_solver}
+    plot_test_result(tax, solver_dict, num_epochs=num_epochs)
+    plt.show()
+
+    print("done")
+
+
 if __name__ == "__main__":
-    main()
+    LLayerConv()

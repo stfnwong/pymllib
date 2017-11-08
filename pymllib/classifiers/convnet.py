@@ -15,6 +15,236 @@ import pymllib.utils.data_utils as data_utils
 # Debug
 #from pudb import set_trace; set_trace()
 
+class ConvNetLayer(object):
+    """
+    An L-layer convolutional network with the following architecture
+
+    [conv-relu-pool2x2] X L - [affine - relu] x M - affine - softmax
+
+    The network operates on minibatches of data that have shape (N, C, H, W)
+    consisting of N images, each with height H and width W and with C input
+    channels
+    """
+
+    def __init__(self, input_dim=(3, 32, 32), num_filters=[16, 32],
+                 filter_size=3, hidden_dims=[100, 100], num_classes=10,
+                 weight_scale=1e-3, reg=0.0, dtype=np.float32, use_batchnorm=False,
+                 verbose=False):
+        """
+        Init a new network
+        """
+
+        self.verbose = verbose
+        self.use_batchnorm = use_batchnorm
+        self.reg = reg
+        self.weight_scale = weight_scale
+        self.dtype = dtype
+        self.bn_params = {}
+        self.filter_size = filter_size
+        self.L = len(num_filters)
+        self.M = len(hidden_dims)
+
+        # Internal parameter dict
+        self.params = {}
+
+        # Size of the input
+        Cinput, Hinput, Winput = input_dim
+        stride_conv = 1
+
+        # Init the weights for the conv layers
+        F = [Cinput] + num_filters
+        for i in range(self.L):
+            idx = i + 1
+            W = self.weight_scale * np.random.randn(F[i+1], F[i], self.filter_size, self.filter_size)
+            b = np.zeros(F[i+1])
+            self.params.update({'W' + str(idx): W,
+                                'b' + str(idx): b})
+            # TODO: Insert batchnorm here
+
+        # Init the weights for the affine relu layers
+        # Start with the size of the last activation
+        Hconv, Wconv = self._size_conv(stride_conv, self.filter_size, Hinput, Winput, self.L)
+        dims = [Hconv * Wconv * F[-1]] + hidden_dims
+        for i in range(self.M):
+            idx = self.L + i + 1
+            W = self.weight_scale * np.random.randn(dims[i], dims[i+1])
+            b = np.zeros(dims[i + 1])
+            self.params.update({'W' + str(idx): W,
+                                'b' + str(idx): b})
+
+        # Scoring layer
+        W = self.weight_scale * np.random.randn(dims[-1], num_classes)
+        b = np.zeros(num_classes)
+        idx = self.L + self.M + 1
+        self.params.update({'W' + str(idx): W,
+                            'b' + str(idx): b})
+
+        # Cast parameters to correct type
+        for k, v in self.params.items():
+            self.params[k] = v.astype(self.dtype)
+
+    def _size_conv(self, stride_conv, filter_size, H, W, n_conv):
+        P = int((filter_size - 1)/ 2)
+        Hc = int(1+ (H + 2 * P - filter_size) / stride_conv)
+        Wc = int(1+ (W + 2 * P - filter_size) / stride_conv)
+        wpool = 2
+        hpool = 2
+        spool = 2   # stride of pool
+        Hp = int(1 + (Hc - hpool) / spool)
+        Wp = int(1 + (Wc - hpool) / spool)
+
+        if n_conv == 1:
+            return Hp, Wp
+        else:
+            # recursively sub-divide
+            H = Hp
+            W = Wp
+            return self._size_conv(stride_conv, filter_size, H, W, n_conv-1)
+
+    # TODO : string
+
+    def loss(self, X, y=None):
+        """
+        Evaluate loss and gradient for the convnet
+        """
+
+        X = X.astype(self.dtype)
+        N = X.shape[0]
+        if y is None:
+            mode = 'test'
+        else:
+            mode = 'train'
+
+        # Layer parameters
+        conv_param = {'stride': 1, 'pad': int((self.filter_size - 1) / 2)}
+        pool_param = {'pool_height': 2, 'pool_width': 2,  'stride': 2}
+
+        # TODO : Batchnorm will go here
+        scores = None
+
+        blocks = {}
+        blocks['h0'] = X
+        # ===============================
+        # FORWARD PASS
+        # ===============================
+
+        # Forward into conv block
+        for l in range(self.L):
+            idx = l + 1
+            W = self.params['W' + str(idx)]
+            b = self.params['b' + str(idx)]
+            h = blocks['h' + str(idx-1)]
+
+            # TODO: batchnorm would go here
+            h, cache_h = layers.conv_relu_pool_forward(h, W, b, conv_param, pool_param)
+            blocks['h' + str(idx)] = h
+            blocks['cache_h' + str(idx)] = cache_h
+
+        # Forward into linear blocks
+        for l in range(self.M):
+            idx = self.L + l + 1
+            h = blocks['h' + str(idx-1)]
+            if l == 0:
+                h = h.reshape(N, np.prod(h.shape[1:]))
+
+            W = self.params['W' + str(idx)]
+            b = self.params['b' + str(idx)]
+            # TODO : batchnorm would go here
+            h, cache_h = layers.affine_relu_forward(h, W, b)
+            blocks['h' + str(idx)] = h
+            blocks['cache_h' + str(idx)] = cache_h
+
+        # Forward into the score
+        idx = self.L + self.M + 1
+        W = self.params['W' + str(idx)]
+        b = self.params['b' + str(idx)]
+        h = blocks['h' + str(idx-1)]
+        h, cache_h = layers.affine_forward(h, W, b)
+        blocks['h' + str(idx)] = h
+        blocks['cache_h' + str(idx)] = cache_h
+
+        scores = blocks['h' + str(idx)]
+
+        if y is None:
+            return scores
+
+        loss = 0.0
+        grads = {}
+        # Compute the loss
+        data_loss, dscores = layers.softmax_loss(scores, y)
+        reg_loss = 0.0
+        for k in self.params.keys():
+            if k[0] == 'W':
+                for w in self.params[k]:
+                    reg_loss += 0.5 * self.reg * np.sum(w * w)
+        loss = data_loss + reg_loss
+
+        # ===============================
+        # BACKWARD PASS
+        # ===============================
+        idx = self.L + self.M + 1
+        dh = dscores
+        h_cache = blocks['cache_h' + str(idx)]
+        dh, dW, db = layers.affine_backward(dh, h_cache)
+        blocks['dh' + str(idx-1)] = dh
+        blocks['dW' + str(idx)] = dW
+        blocks['db' + str(idx)] = db
+
+        # Backprop into the linear layers
+        for l in range(self.M)[::-1]:
+            idx = self.L + l + 1
+            dh = blocks['dh' + str(idx)]
+            h_cache = blocks['cache_h' + str(idx)]
+            # TODO : batchnorm goes here
+            dh, dW, db = layers.affine_relu_backward(dh, h_cache)
+            blocks['dh' + str(idx-1)] = dh
+            blocks['dW' + str(idx)] = dW
+            blocks['db' + str(idx)] = db
+
+        # Backprop into conv blocks
+        for l in range(self.L)[::-1]:
+            idx = l + 1
+            dh = blocks['dh' + str(idx)]
+            h_cache = blocks['cache_h' + str(idx)]
+            if l == max(range(self.L)[::-1]):
+                dh = dh.reshape(*blocks['h' + str(idx)].shape)
+            # TODO : batchnorm goes here
+            dh, dW, db = layers.conv_relu_pool_backward(dh, h_cache)
+            blocks['dh' + str(idx-1)] = dh
+            blocks['dW' + str(idx)] = dW
+            blocks['db' + str(idx)] = db
+
+        # Add reg term to W gradients
+        dw_list = {}
+        for key, val in blocks.items():
+            if key[:2] == 'dW':
+                dw_list[key[1:]] = val + self.reg * self.params[key[1:]]
+
+        db_list = {}
+        for key, val in blocks.items():
+            if key[:2] == 'db':
+                db_list[key[1:]] = val
+
+        ## TODO : This is a hack
+        #dgamma_list = {}
+        #for key, val in hidden.items():
+        #    if key[:6] == 'dgamma':
+        #        dgamma_list[key[1:]] = val
+
+        ## TODO : This is a hack
+        #dbeta_list = {}
+        #for key, val in hidden.items():
+        #    if key[:5] == 'dbeta':
+        #        dbeta_list[key[1:]] = val
+
+        grads = {}
+        grads.update(dw_list)
+        grads.update(db_list)
+
+
+        return loss, grads
+
+
 class ThreeLayerConvNet(object):
     """
     A three layer convolutional network with the following architecture
@@ -186,16 +416,4 @@ class ThreeLayerConvNet(object):
             'b2': db2,
             'b3': db3})
 
-        # TODO: batchnorm stuff
-        for k, v in grads.items():
-            print("%s : max = %f, min = %f" % (k, np.max(v), np.min(v)))
-
         return loss, grads
-
-
-
-
-#class ConvNet(object):
-
-
-

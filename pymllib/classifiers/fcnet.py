@@ -185,9 +185,9 @@ class FCNet(object):
         # Compute loss
         data_loss, dscores = layers.softmax_loss(scores, y)
         reg_loss = 0
-        for f in self.params.keys():
-            if f[0] == 'W':
-                for w in self.params[f]:
+        for k in self.params.keys():
+            if k[0] == 'W':
+                for w in self.params[k]:
                     reg_loss += 0.5 * self.reg * np.sum(w * w)
 
         loss = data_loss + reg_loss

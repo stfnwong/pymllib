@@ -31,9 +31,12 @@ class Solver(object):
         """
 
         if model is None:
-            raise ValueError('No model specified')
-        if data is None:
-            raise ValueError('No data specified')
+            # assume we are loading from file
+            return
+        #if model is None:
+        #    raise ValueError('No model specified')
+        #if data is None:
+        #    raise ValueError('No data specified')
 
         self.model = model
         self.X_train = data['X_train']
