@@ -9,14 +9,13 @@ cimport cython
 
 
 # DTYPE = np.float64
-ctypedef np.float64_t DTYPE_t
+ctypedef np.float32_t DTYPE_t
+#ctypedef np.float64_t DTYPE_t
 # TODO : check how to do fused types in cython...
 
 #ctypedef fused DTYPE_t:
 #    np.float32_t
 #    np.float64_t
-
-
 
 @cython.boundscheck(False)
 cdef int im2col_cython_inner(np.ndarray[DTYPE_t, ndim=2] cols,
