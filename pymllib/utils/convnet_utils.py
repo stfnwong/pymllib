@@ -17,3 +17,10 @@ def get_conv_layer_dict(model, verbose=False):
             print("%s : %s" % (k, v.shape))
 
     return conv_layers
+
+def print_conv_sizes(param_dict):
+
+    for k, v in param_dict.items():
+        if k[:1] == 'W':
+            if len(model.params[k].shape) == 4:
+                print("%s : %s " % (k, v.shape))
