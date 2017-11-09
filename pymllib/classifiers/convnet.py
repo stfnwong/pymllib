@@ -43,6 +43,7 @@ class ConvNetLayer(object):
         self.filter_size = filter_size
         self.L = len(num_filters)
         self.M = len(hidden_dims)
+        self.num_layers = self.L + self.M + 1
 
         # Internal parameter dict
         self.params = {}
@@ -272,6 +273,7 @@ class ThreeLayerConvNet(object):
         self.weight_scale = weight_scale
         self.bn_params = {}
         self.params = {}
+        self.num_layers = 3     # For verbose mode in ex_convnet
 
         # Init weights and biases for three-layer convnet
         C, W, H = input_dim

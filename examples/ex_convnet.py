@@ -19,6 +19,7 @@ import pymllib.vis.vis_weights as vis_weights
 # Debug
 from pudb import set_trace; set_trace()
 
+show_plots = False
 
 def load_data(data_dir, verbose=False):
 
@@ -102,12 +103,11 @@ def get_conv_layers(model, verbose=False):
     return weight_dict
 
 
-def ThreeLayerNet():
-    verbose = True
+def ThreeLayerNet(verbose=True, show_plots=False):
     save_convnet = True
     load_convnet = False
     data_dir = 'datasets/cifar-10-batches-py'
-    convnet_path = 'examples/convnet_expr.pkl'
+    convnet_path = 'examples/convnet_1conv_expr.pkl'
 
     # Get data
     data = load_data(data_dir, verbose)
@@ -135,6 +135,8 @@ def ThreeLayerNet():
         conv_solver.load(convnet_path)
 
     if load_convnet is False:
+        if verbose is True:
+            print("Training %d layer net" % conv_model.num_layers)
         conv_solver.train()
 
     if save_convnet:
@@ -155,25 +157,26 @@ def ThreeLayerNet():
     for k, v in weight_dict.items():
         print("%s : max = %f, min = %f" % (k, np.max(v), np.min(v)))
 
-    fig, ax = get_one_figure_handle()
-    grid = vis_weights.vis_grid_img(weight_dict['W1'].transpose(0, 2, 3, 1))
-    ax.imshow(grid)
-    fig.set_size_inches(5,5)
 
-    # The training loss, accuracy, etc
-    tfig, tax = get_figure_handles()
-    solver_dict = {'convnet': conv_solver}
-    plot_test_result(tax, solver_dict, num_epochs=None)
-    plt.show()
+    if show_plots is True:
+        fig, ax = get_one_figure_handle()
+        grid = vis_weights.vis_grid_img(weight_dict['W1'].transpose(0, 2, 3, 1))
+        ax.imshow(grid)
+        fig.set_size_inches(5,5)
+
+        # The training loss, accuracy, etc
+        tfig, tax = get_figure_handles()
+        solver_dict = {'convnet': conv_solver}
+        plot_test_result(tax, solver_dict, num_epochs=None)
+        plt.show()
 
     print("done")
 
-def LLayerConv():
-    verbose = True
+def LLayerConv(verbose=True, show_plots=False):
     save_convnet = False
     load_convnet = False
     data_dir = 'datasets/cifar-10-batches-py'
-    convnet_path = 'examples/convnet_expr.pkl'
+    convnet_path = 'examples/convnet_llayer_expr.pkl'
 
     # Get data
     data = load_data(data_dir, verbose)
@@ -206,6 +209,8 @@ def LLayerConv():
                                 optim_config={'learning_rate': 1e-3},
                                 verbose=verbose,
                                 print_every=50)
+    if verbose is True:
+        print("Training %d layer net" % conv_model.num_layers)
     conv_solver.train()
     # Plot results
     #fig, ax = get_one_figure_handle()
@@ -216,16 +221,17 @@ def LLayerConv():
     solver_file = "examples/conv_solver_%d_epochs.pkl" % num_epochs
     conv_solver.save(solver_file)
 
-    # The training loss, accuracy, etc
-    tfig, tax = get_figure_handles()
-    solver_dict = {'convnet': conv_solver}
-    plot_test_result(tax, solver_dict, num_epochs=num_epochs)
-    plt.show()
+    if show_plots is True:
+        # The training loss, accuracy, etc
+        tfig, tax = get_figure_handles()
+        solver_dict = {'convnet': conv_solver}
+        plot_test_result(tax, solver_dict, num_epochs=num_epochs)
+        plt.show()
 
     print("done")
 
 
 if __name__ == "__main__":
-    #LLayerConv()
     ThreeLayerNet()
+    LLayerConv()
 
