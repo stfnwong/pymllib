@@ -122,7 +122,6 @@ class ConvNetLayer(object):
 
         # TODO : Batchnorm will go here
         scores = None
-
         blocks = {}
         blocks['h0'] = X
         # ===============================

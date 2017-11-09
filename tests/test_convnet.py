@@ -172,7 +172,6 @@ class TestConvNet(unittest.TestCase):
 
         num_inputs = 2
         input_dim = (3, 32, 32)
-        reg = 0.0
         num_classes = 10
 
         X = np.random.randn(num_inputs, *input_dim)
@@ -208,7 +207,6 @@ class TestConvNet(unittest.TestCase):
             'X_val':   dataset['X_val'][:num_train],
             'y_val':   dataset['y_val'][:num_train]
         }
-        input_dim = (3, 32, 32)
         weight_scale = 1e-2
         learning_rate = 1e-3
         num_epochs = 20
@@ -216,8 +214,10 @@ class TestConvNet(unittest.TestCase):
         update_rule='adam'
 
         # Get a model
-        model = convnet.ThreeLayerConvNet(weight_scale=weight_scale,
-                                          reg=0.0)
+        model = convnet.ConvNetLayer(weight_scale=weight_scale,
+                                     num_filters=[32],
+                                     hidden_dims=[100],
+                                     reg=0.0)
         if self.verbose:
             print(model)
         # Get a solver
@@ -234,7 +234,7 @@ class TestConvNet(unittest.TestCase):
         # Plot figures
         if self.draw_plots is True:
             fig, ax = get_figure_handles()
-            plot_test_result(ax, conv_dict)
+            plot_test_result(ax, conv_dict, num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()
