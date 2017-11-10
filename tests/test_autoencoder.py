@@ -1,24 +1,26 @@
 """
 TEST_AUTOENCODER
+<<<<<<< HEAD
 
 Stefan Wong 2017
+=======
+>>>>>>> 7e4f28342c8b18c3a11a4f85efcab5ad5028f3b3
 """
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../classifiers')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import matplotlib.pyplot as plt
 import numpy as np
 import unittest
 
-import data_utils
-import autoencoder
-import solver
+import pymllib.utils.data_utils as data_utils
+import pymllib.classifiers.autoencoder as autoencoder
+import pymllib.solver.solver as solver
 
+# Debug
+from pudb import set_trace; set_trace()
 
 def load_data(data_dir, verbose=False):
 
@@ -132,8 +134,6 @@ class TestAutoencoder(unittest.TestCase):
         auto_solver.train()
 
         print("======== TestAutoencoder.test_autoencoder_loss: <END> ")
-
-
 
 if __name__ == "__main__":
     unittest.main()

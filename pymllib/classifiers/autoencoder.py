@@ -7,12 +7,11 @@ Stefan Wong 2017
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
-import layers
-import data_utils
+
+import pymllib.layers.layers as layers
+import pymllib.utils.data_utils as data_utils
 
 # Debug
 from pudb import set_trace; set_trace()
@@ -217,13 +216,11 @@ class Autoencoder(object):
             if key[:2] == 'db':
                 db_list[key[1:]] = val
 
-        # TODO : This is a hack
         dgamma_list = {}
         for key, val in hidden.items():
             if key[:6] == 'dgamma':
                 dgamma_list[key[1:]] = val
 
-        # TODO : This is a hack
         dbeta_list = {}
         for key, val in hidden.items():
             if key[:5] == 'dbeta':
@@ -234,10 +231,5 @@ class Autoencoder(object):
         grads.update(db_list)
         grads.update(dgamma_list)
         grads.update(dbeta_list)
-
-        #if dgamma_list is not None:
-        #    grads.update(dgamma_list)
-        #if dbeta_list is not None:
-        #    grads.update(dbeta_list)
 
         return loss, grads
