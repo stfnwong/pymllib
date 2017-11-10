@@ -8,11 +8,12 @@ Stefan Wong 2017
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
 
-import optim
 import numpy as np
 import pickle
+import pymllib.solver.optim as optim
 
 # Debug
 #from pudb import set_trace; set_trace()
@@ -29,12 +30,6 @@ class Solver(object):
         TODO : Rest of docstring
         """
 
-        self.model = model
-        self.X_train = data['X_train']
-        self.y_train = data['y_train']
-        self.X_val = data['X_val']
-        self.y_val = data['y_val']
-
         # Unpack keyword args
         self.update_rule = kwargs.pop('update_rule', 'sgd')
         self.optim_config = kwargs.pop('optim_config', {})
@@ -48,6 +43,22 @@ class Solver(object):
         self.verbose = kwargs.pop('verbose', True)
         self.checkpoint_dir = kwargs.pop('checkpoint_dir', 'checkpoint')
 
+        if model is None:
+            # assume we are loading from file
+            self.model = None
+            self.X_train = None
+            self.y_train = None
+            self.X_val = None
+            self.y_val = None
+
+            return
+
+        self.model = model
+        self.X_train = data['X_train']
+        self.y_train = data['y_train']
+        self.X_val = data['X_val']
+        self.y_val = data['y_val']
+
         # Make sure there are no additional arguments
         if len(kwargs) > 0:
             extra = ''.join('"%s"' % k for k in kwargs.keys())
@@ -59,6 +70,27 @@ class Solver(object):
             raise ValueError('Invalid update rule "%s"' % (self.update_rule))
         self.update_rule = getattr(optim, self.update_rule)
         self._reset()
+
+    def __str__(self):
+        s = []
+
+        # print the size of the dataset attached to the solver
+        s.append("X_train shape  (%s)" % self.X_train.shape)
+        s.append("y_trian shape  (%s)" % self.y_train.shape)
+        s.append("X_val shape    (%s)" % self.X_val.shape)
+        s.append("y_val shape    (%s)" % self.y_val.shape)
+        # Solver params
+        s.append("update rule  : %s" % self.update_rule)
+        s.append("optim config : %s" % self.optim_config)
+        s.append("lr decay     : %s" % self.lr_decay)
+        s.append("batch size   : %s" % self.batch_size)
+        s.append("num epochs   : %s" % self.num_epochs)
+        # Could have some "super verbose" settings here like print_every, etc
+
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
 
     def _reset(self):
         """

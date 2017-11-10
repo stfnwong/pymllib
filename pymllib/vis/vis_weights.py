@@ -46,7 +46,6 @@ def vis_grid_tensor(Xs, ubound=255.0, padding=1):
 
     return grid
 
-
 def vis_grid_img(Xs):
     """
     Visualize a grid of images
@@ -68,7 +67,6 @@ def vis_grid_img(Xs):
     G = (G - gmin) / (gmax - gmin)
 
     return G
-
 
 def vis_nn(rows):
     """
