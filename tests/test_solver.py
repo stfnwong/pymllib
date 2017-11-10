@@ -5,23 +5,19 @@ Test the solver object and the various optimization functions
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../classifiers')))
-
-import matplotlib.pyplot as plt
-import numpy as np
-import error
-import data_utils
-# Units under test
-import solver
-import optim
-import fcnet
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import unittest
-# Debug
-from pudb import set_trace; set_trace()
+import matplotlib.pyplot as plt
+import numpy as np
+import pymllib.utils.error as error
+import pymllib.utils.data_utils as data_utils
+import pymllib.solver.solver as solver
+import pymllib.solver.optim as optim
+import pymllib.classifiers.fcnet as fcnet
 
+# Debug
+#from pudb import set_trace; set_trace()
 
 def get_figure_handles():
     fig = plt.figure()
@@ -31,6 +27,7 @@ def get_figure_handles():
         ax.append(sub_ax)
 
     return fig, ax
+
 
 # Show the solver output
 def plot_test_result(ax, solver_dict, num_epochs=None):
@@ -60,6 +57,7 @@ def plot_test_result(ax, solver_dict, num_epochs=None):
     # Note: outside the function we set
     # fig.set_size_inches(8,8)
     # fig.tight_layout()
+
 
 def load_data(data_dir, verbose=False):
 
@@ -186,7 +184,6 @@ class TestSolver(unittest.TestCase):
         self.assertLessEqual(m_error, self.eps)
 
         print("======== TestSolver.test_adam: <END> ")
-
 
 
 class TestSolverFCNet(unittest.TestCase):

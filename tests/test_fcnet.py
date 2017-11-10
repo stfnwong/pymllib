@@ -10,22 +10,19 @@ Stefan Wong 2017
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../layers')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../solver')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../classifiers')))
-
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import matplotlib.pyplot as plt
 import numpy as np
-import data_utils
-import check_gradient
-import error
-import layers
-import fcnet
-import twolayer_modular as twol
-import solver
-
 import unittest
+
+# Library imports
+import pymllib.util.data_utils as data_utils
+#import pymllib.util.check_gradient as check_gradient
+#import pymllib.util.error as error
+#import pymllib.layers.layers as layers
+import pymllib.classifiers.fcnet as fcnet
+import pymllib.solver.solver as solver
+
 # Debug
 from pudb import set_trace; set_trace()
 
@@ -45,6 +42,7 @@ def load_data(data_dir, verbose=False):
 
     return dataset
 
+# Get a new figure and axis to plot into
 def get_figure_handles():
     fig = plt.figure()
     ax = []
@@ -53,6 +51,7 @@ def get_figure_handles():
         ax.append(sub_ax)
 
     return fig, ax
+
 
 # Show the solver output
 def plot_test_result(ax, solver_dict, num_epochs=None):
@@ -365,6 +364,8 @@ class TestFCNet(unittest.TestCase):
                                         batch_size=batch_size,     # previously 25
                                         update_rule=update_rule,
                                         optim_config={'learning_rate': learning_rate})
+            if self.verbose:
+                print(model_solver)
             solvers[update_rule] = model_solver
             model_solver.train()
 
@@ -481,8 +482,6 @@ class TestFCNetDropout(unittest.TestCase):
 
 
         print("======== TestFCNetDropout.test_fcnet_3layer_dropout: <END> ")
-
-
 
 
 class TestFCNetObject(unittest.TestCase):
