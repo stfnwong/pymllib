@@ -217,6 +217,7 @@ class TestConvNet(unittest.TestCase):
         model = convnet.ConvNetLayer(weight_scale=weight_scale,
                                      num_filters=[32],
                                      hidden_dims=[100],
+                                     use_batchnorm=True,
                                      reg=0.0)
         if self.verbose:
             print(model)

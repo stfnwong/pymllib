@@ -192,6 +192,65 @@ def batchnorm_backward(dout, cache):
 
     return dx, dgamma, dbeta
 
+def spatial_batchnorm_forward(x, gamma, beta, bn_param):
+
+    out = None
+    cache = None
+    N, C, H, W = x.shape
+    mode = bn_param['mode']
+    eps = bn_param.get('eps', 1e-5)
+    momentum = bn_param.get('momentum', 0.9)
+
+    running_mean = bn_param.get('running_mean', np.zeros(C, dtype=x.dtype))
+    running_var = bn_param.get('running_var', np.zeros(C, dtype=x.dtype))
+
+    if mode == 'train':
+        # Find the average for each channel
+        mu = (1.0 / (N * H * W) * np.sum(x, axis=(0, 2, 3))).reshape(1, C, 1, 1)
+        var = (1.0 / (N * H * W) * np.sum((x - mu)**2, axis=(0, 2, 3))).reshape(1, C, 1, 1)
+
+        xhat = (x - mu) / np.sqrt(var + eps)
+        out = gamma.reshape(1, C, 1, 1) * xhat + beta.reshape(1, C, 1, 1)
+
+        running_mean = momentum * running_mean + (1.0 - momentum) * np.squeeze(mu)
+        running_var = momentum * running_var + (1.0 - momentum) * np.squeeze(var)
+
+        bn_param['running_mean'] = running_mean
+        bn_param['running_var'] = running_var
+        cache = (mu, var, x, xhat, gamma, beta, bn_param)
+
+    elif mode == 'test':
+        mu = running_mean.reshape(1, C, 1, 1)
+        var = running_var.reshape(1, C, 1, 1)
+
+        xhat = (x - mu) / np.sqrt(var + eps)
+        out = gamma.reshape(1, C, 1, 1) * xhat + beta.reshape(1, C, 1, 1)
+        cache = (mu, var, x, xhat, gamma, beta, bn_param)
+
+    else:
+        raise ValueError("Invalid forward batchnorm mode %s" % mode)
+
+    return out, cache
+
+
+def spatial_batchnorm_backward(dout, cache):
+
+    mu, var, x, xhat, gamma, beta, bn_param = cache
+    N, C, H, W = x.shape
+    mode = bn_param['mode']
+    eps = bn_param.get('eps', 1e-5)
+
+    gamma = gamma.reshape(1, C, 1, 1)
+    beta = beta.reshape(1, C, 1, 1)
+    dbeta = np.sum(dout, axis=(0, 2, 3))
+    dgamma = np.sum(dout * xhat, axis=(0, 2, 3))
+
+    Nt = N * H * W
+    # TODO : Split this into smaller parts...
+    dx = (1.0 / Nt) * gamma * (var + eps)**(-1.0  / 2.0) * (Nt * dout - np.sum(dout, axis=(0, 2, 3)).reshape(1, C, 1, 1) -
+     (x - mu) * (var + eps)**(-1.0) * np.sum(dout * (x - mu), axis=(0, 2, 3)).reshape(1, C, 1, 1))
+
+    return dx, dgamma, dbeta
 
 # ==== Convenience layers
 def affine_relu_forward(X, w, b):
@@ -467,7 +526,7 @@ def conv_backward_strides(dout, cache):
 def conv_norm_relu_pool_forward(x, w, b, conv_param, pool_param, gamma, beta, bn_param):
 
     conv, conv_cache = conv_forward_strides(x, w, b, conv_param)
-    norm, norm_cache = batchnorm_forward(conv, gamma, beta, bn_param)
+    norm, norm_cache = spatial_batchnorm_forward(conv, gamma, beta, bn_param)
     out, relu_cache = relu_forward(norm)
 
     cache = (conv_cache, norm_cache, relu_cache)
@@ -479,7 +538,7 @@ def conv_norm_relu_pool_backward(dout, cache):
     conv_cache, norm_cache, relu_cache = cache
 
     drelu = relu_backward(dout, relu_cache)
-    dnorm, dgamma, dbeta = batchnorm_backward(drelu, norm_cache)
+    dnorm, dgamma, dbeta = spatial_batchnorm_backward(drelu, norm_cache)
     dx, dw, db = conv_backward_strides(dnorm, conv_cache)
 
     return dx, dw, db, dgamma, dbeta

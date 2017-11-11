@@ -67,7 +67,7 @@ class ConvNetLayer(object):
                 gamma = np.zeros(F[i + 1])
                 beta = np.zeros(F[i + 1])
                 self.bn_params.update({
-                    'bn_params' + str(idx): bn_param})
+                    'bn_param' + str(idx): bn_param})
                 self.params.update({
                     'gamma' + str(idx): gamma,
                     'beta' + str(idx): beta})
@@ -89,7 +89,7 @@ class ConvNetLayer(object):
                 gamma = np.ones(dims[i + 1])
                 beta = np.ones(dims[i + 1])
                 self.bn_params.update({
-                    'bn_params' + str(idx): bn_param})
+                    'bn_param' + str(idx): bn_param})
                 self.params.update({
                     'gamma' + str(idx): gamma,
                     'beta' + str(idx): beta})
@@ -143,7 +143,7 @@ class ConvNetLayer(object):
 
         if self.use_batchnorm:
             for k, bn in self.bn_params.items():
-                bn_param[mode] = mode
+                bn[mode] = mode
 
         scores = None
         blocks = {}
@@ -163,7 +163,7 @@ class ConvNetLayer(object):
                 beta = self.params['beta' + str(idx)]
                 gamma = self.params['gamma' + str(idx)]
                 bn_param = self.bn_params['bn_param' + str(idx)]
-                h, cache_h = layers.conv_norm_relu_pool_forward(h, w, b,
+                h, cache_h = layers.conv_norm_relu_pool_forward(h, W, b,
                                                                 conv_param, pool_param,
                                                                 gamma, beta, bn_param)
             else:
@@ -185,7 +185,7 @@ class ConvNetLayer(object):
                 beta = self.params['beta' + str(idx)]
                 gamma = self.params['gamma' + str(idx)]
                 bn_param = self.bn_params['bn_param' + str(idx)]
-                h, cache_h = layers.affine_norm_relu_forward(h, w, b,
+                h, cache_h = layers.affine_norm_relu_forward(h, W, b,
                                                              gamma, beta, bn_param)
             else:
                 h, cache_h = layers.affine_relu_forward(h, W, b)
@@ -274,13 +274,13 @@ class ConvNetLayer(object):
 
         ## TODO : This is a hack
         dgamma_list = {}
-        for key, val in hidden.items():
+        for key, val in blocks.items():
             if key[:6] == 'dgamma':
                 dgamma_list[key[1:]] = val
 
         # TODO : This is a hack
         dbeta_list = {}
-        for key, val in hidden.items():
+        for key, val in blocks.items():
             if key[:5] == 'dbeta':
                 dbeta_list[key[1:]] = val
 
