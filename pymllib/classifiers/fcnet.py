@@ -65,7 +65,7 @@ class FCNet(object):
         # of the first batch normalization layer, self.bn_params[1] to the
         # forward pass of the second batch norm layer, and so on
         if self.use_batchnorm:
-            self.bn_params = {'bn_params' + str(i+1) : {'mode' : 'train',
+            self.bn_params = {'bn_param' + str(i+1) : {'mode' : 'train',
                                                         'running_mean' : np.zeros(dims[i+1]),
                                                         'running_var'  : np.zeros(dims[i+1])}
                               for i in range(len(dims)-2) }
@@ -82,10 +82,13 @@ class FCNet(object):
         for k, v in self.params.items():
             self.params[k] = v.astype(self.dtype)
 
+        # Debug
+        if self.use_batchnorm:
+            for k in self.bn_params.keys():
+                print(k)
+
     def __str__(self):
         s = []
-        # TODO : How do we know what the type of the layer is when the weight
-        # information and the activation are separated?
         for l in range(self.num_layers):
             wl = self.params['W' + str(l+1)]
             bl = self.params['b' + str(l+1)]

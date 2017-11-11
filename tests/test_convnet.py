@@ -370,7 +370,7 @@ class Test3LayerConvNet(unittest.TestCase):
     def test_overfit_3layer(self):
         print("\n======== Test3LayerConvNet.test_overfit_3layer:")
         dataset = load_data(self.data_dir, self.verbose)
-        num_train = 100
+        num_train = 500
 
         small_data = {
             'X_train': dataset['X_train'][:num_train],
@@ -379,8 +379,8 @@ class Test3LayerConvNet(unittest.TestCase):
             'y_val':   dataset['y_val'][:num_train]
         }
         input_dim = (3, 32, 32)
-        weight_scale = 1e-2
-        learning_rate = 1e-3
+        weight_scale = 0.07
+        learning_rate = 0.007
         num_epochs = 20
         batch_size = 50
         update_rule='adam'

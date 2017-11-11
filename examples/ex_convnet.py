@@ -172,26 +172,30 @@ def ThreeLayerNet(verbose=True, show_plots=False):
 
     print("done")
 
-def LLayerConv(verbose=True, show_plots=False):
-    save_convnet = False
-    load_convnet = False
+def LLayerConv(verbose=True, show_plots=False, solver_filename=None):
     data_dir = 'datasets/cifar-10-batches-py'
-    convnet_path = 'examples/convnet_llayer_expr.pkl'
 
     # Get data
-    data = load_data(data_dir, verbose)
+    num_train = 80
+    dataset = load_data(data_dir, verbose)
+    train_data = {
+        'X_train': dataset['X_train'][:num_train],
+        'y_train': dataset['y_train'][:num_train],
+        'X_val':   dataset['X_val'][:num_train],
+        'y_val':   dataset['y_val'][:num_train]
+    }
     # Set params
     input_dim = (3, 32, 32)
-    weight_scale = 1e-2
-    reg = 1e-3
-    filter_size = 7
-    #num_filters = [16, 32, 64, 128]
-    num_filters = [32, 32, 32, 32]
-    hidden_dim = [256, 256]
-    num_epochs = 10
+    weight_scale = 0.06
+    learning_rate = 0.077
+    #reg = 1e-2
+    reg = 0.0
+    filter_size = 3
+    num_filters = [16, 32, 64]
+    hidden_dim = [256, 128]
+    num_epochs = 100
 
     # Get a convnet
-    # TODO: more flexible convnet
     conv_model = convnet.ConvNetLayer(input_dim=input_dim,
                                       hidden_dims=hidden_dim,
                                       num_filters=num_filters,
@@ -202,24 +206,19 @@ def LLayerConv(verbose=True, show_plots=False):
     if verbose:
         print(conv_model)
     # Get a solver
-    conv_solver = solver.Solver(conv_model, data,
+    conv_solver = solver.Solver(conv_model, train_data,
                                 num_epochs=num_epochs,
-                                batch_size=50,
+                                batch_size=10,
                                 update_rule='adam',
-                                optim_config={'learning_rate': 1e-3},
+                                optim_config={'learning_rate': learning_rate},
                                 verbose=verbose,
-                                print_every=50)
+                                print_every=10,
+                                checkpoint_name='conv3fc2-check',
+                                checkpoint_dir='examples')
     if verbose is True:
         print("Training %d layer net" % conv_model.num_layers)
     conv_solver.train()
-    # Plot results
-    #fig, ax = get_one_figure_handle()
-    #grid = vis_weights.vis_grid_img(weight_dict['W1'].transpose(0, 2, 3, 1))
-    #ax.imshow(grid)
-    #fig.set_size_inches(5,5)
-    # save the data
-    solver_file = "examples/conv_solver_%d_epochs.pkl" % num_epochs
-    conv_solver.save(solver_file)
+    conv_solver.save(solver_filename)
 
     if show_plots is True:
         # The training loss, accuracy, etc
@@ -232,6 +231,7 @@ def LLayerConv(verbose=True, show_plots=False):
 
 
 if __name__ == "__main__":
-    ThreeLayerNet()
-    LLayerConv()
+    fname = "conv2fc2-40-epoch.pkl"
+    #ThreeLayerNet()
+    LLayerConv(solver_filename=fname)
 

@@ -216,7 +216,7 @@ def affine_relu_backward(dout, cache):
     return dx, dw, db
 
 
-def affine_norm_relu_forward(X, v, b, gamma, beta, bn_param):
+def affine_norm_relu_forward(X, w, b, gamma, beta, bn_param):
     """
     Performs an affine transform followed by a ReLU
 
@@ -231,6 +231,22 @@ def affine_norm_relu_forward(X, v, b, gamma, beta, bn_param):
             Parameters to the batchnorm layer
     """
 
+    h, h_cache = affine_forward(X, w, b)
+    hnorm, hnorm_cache = batchnorm_forward(h, gamma, beta, bn_param)
+    hnormrelu, relu_cache = relu_forward(hnorm)
+    cache = (h_cache, hnorm_cache, relu_cache)
+
+    return hnormrelu, cache
+
+
+def affine_norm_relu_backward(dout, cache):
+    h_cache, hnorm_cache, relu_cache = cache
+
+    dnormrelu = relu_backward(dout, relu_cache)
+    dnorm, dgamma, dbeta = batchnorm_backward(dnormrelu, hnorm_cache)
+    dx, dw, db = affine_backward(dnorm, h_cache)
+
+    return dx, dw, db, dgamma, dbeta
 
 def softmax_loss(X, y):
     """
@@ -364,6 +380,7 @@ def conv_forward_im2col(x, w, b, conv_param):
 
     return out, cache
 
+
 def conv_backward_im2col(dout, cache):
     """
     A fast implementation of the backward pass for a convolutional layer
@@ -446,6 +463,26 @@ def conv_backward_strides(dout, cache):
 
     return dx, dw, db
 
+
+def conv_norm_relu_pool_forward(x, w, b, conv_param, pool_param, gamma, beta, bn_param):
+
+    conv, conv_cache = conv_forward_strides(x, w, b, conv_param)
+    norm, norm_cache = batchnorm_forward(conv, gamma, beta, bn_param)
+    out, relu_cache = relu_forward(norm)
+
+    cache = (conv_cache, norm_cache, relu_cache)
+
+    return out, cache
+
+def conv_norm_relu_pool_backward(dout, cache):
+
+    conv_cache, norm_cache, relu_cache = cache
+
+    drelu = relu_backward(dout, relu_cache)
+    dnorm, dgamma, dbeta = batchnorm_backward(drelu, norm_cache)
+    dx, dw, db = conv_backward_strides(dnorm, conv_cache)
+
+    return dx, dw, db, dgamma, dbeta
 
 # Util layer forward passes
 def max_pool_forward_reshape(x, pool_param):
