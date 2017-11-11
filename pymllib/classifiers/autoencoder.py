@@ -24,38 +24,49 @@ def half_square_loss(X, y):
     probs /= np.sum(probs, axis=1, keepdims=True)
     N = X.shape[0]
 
-    loss = np.sum(np.abs(X - y), axis=1, keepdims=True)
+    s = np.sum(np.abs(X - y), axis=1, keepdims=True)
     loss = (0.5 * (s**2)) / N
 
     # activations (a) are X here
-    dx = 0      # shut linter up
-    p = probs.copy()
-    #np.sum(p - y) *
+    dx = np.abs(X - y)
 
     return loss, dx
 
+def sparse_autoencoder_loss(X, y, rho, beta=1.0, sparsity=0.05):
 
-def auto_loss(X, y, rho, beta=1.0, sparsity=0.05):
-
-    N = X.shape[0]
-    eps = 1e-8
-    probs = np.exp(X - np.max(X, axis=1, keepdims=True))
-    probs /= np.sum(probs, axis=1, keepdims=True)
-    #loss = np.sum(np.abs(X - y), axis=1, keepdims=True)
-    loss = np.sum(np.abs(X - y))
-    loss /= N
-
-    # Sparsity penalty
+    hs_loss, hs_dx = half_square_loss(X, y)
+    # Apply sparsity penalty
     s1 = sparsity
     s2 = (1.0 - sparsity)
     p_loss = np.sum(s1 * np.log(s1 / rho) + s2 * np.log(s2 / (1 - rho)), axis=0)
     #p_loss = np.sum(s1 * np.log(s1 / rho) + s2 * np.log(s2 / (1 - rho)), axis=0, keepdims=True)
     # final loss
-    loss += beta * p_loss
-    dx = np.abs(X - y)
+    loss = hs_loss + (beta * p_loss)
+
+    return loss, hs_dx
 
 
-    return loss, dx
+#def auto_loss(X, y, rho, beta=1.0, sparsity=0.05):
+#
+#    N = X.shape[0]
+#    eps = 1e-8
+#    probs = np.exp(X - np.max(X, axis=1, keepdims=True))
+#    probs /= np.sum(probs, axis=1, keepdims=True)
+#    #loss = np.sum(np.abs(X - y), axis=1, keepdims=True)
+#    loss = np.sum(np.abs(X - y))
+#    loss /= N
+#
+#    # Sparsity penalty
+#    s1 = sparsity
+#    s2 = (1.0 - sparsity)
+#    p_loss = np.sum(s1 * np.log(s1 / rho) + s2 * np.log(s2 / (1 - rho)), axis=0)
+#    #p_loss = np.sum(s1 * np.log(s1 / rho) + s2 * np.log(s2 / (1 - rho)), axis=0, keepdims=True)
+#    # final loss
+#    loss += beta * p_loss
+#    dx = np.abs(X - y)
+#
+#
+#    return loss, dx
 
 def auto_affine_backward(dout, cache, rho, beta=1.0, s=0.05):
     """
@@ -69,10 +80,7 @@ def auto_affine_backward(dout, cache, rho, beta=1.0, s=0.05):
 
     return dx, dw, db
 
-#def sparse_autoencoder_loss(X, y, beta, rho):
-#
-#    hs_loss, hs_dx = half_square_loss(X, y)
-#
+
 
 class Autoencoder(object):
     def __init__(self, hidden_dims, input_dim,
@@ -174,7 +182,7 @@ class Autoencoder(object):
         # Here we don't want to use the softmax loss, rather
         #data_loss, dscores = sparse_autoencoder_loss(scores, y)
         rho = hidden['rho' + str(self.num_layers-1)]
-        data_loss, dscores = auto_loss(scores, y, rho)                # TODO: <- Add rho here...
+        data_loss, dscores = half_square_loss(scores, y, rho)                # TODO: <- Add rho here...
         reg_loss = 0
         for f in self.params.keys():
             if f[0] == 'W':
