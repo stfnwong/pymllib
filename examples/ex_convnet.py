@@ -176,7 +176,7 @@ def LLayerConv(verbose=True, show_plots=False, solver_filename=None):
     data_dir = 'datasets/cifar-10-batches-py'
 
     # Get data
-    num_train = 80
+    num_train = 1000
     dataset = load_data(data_dir, verbose)
     train_data = {
         'X_train': dataset['X_train'][:num_train],
@@ -187,10 +187,10 @@ def LLayerConv(verbose=True, show_plots=False, solver_filename=None):
     # Set params
     input_dim = (3, 32, 32)
     weight_scale = 0.06
-    learning_rate = 0.077
+    learning_rate = 0.07
     #reg = 1e-2
-    reg = 0.0
-    filter_size = 3
+    reg = 0.05
+    filter_size = 5
     num_filters = [16, 32, 64]
     hidden_dim = [256, 128]
     num_epochs = 100
