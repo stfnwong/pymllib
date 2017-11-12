@@ -5,7 +5,12 @@ Visualize a solution parameters.
 Stefan Wong 2017
 """
 
-#import numpy as np
+
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+import pymllib.vis.vis_weights as vis_weights
 
 def plot_solver_compare(ax, solver_dict, num_epochs=None):
     """
@@ -65,3 +70,17 @@ def plot_solver(ax, solv, num_epochs=None, method=None):
     # Update legend
     for i in range(len(ax)):
         ax[i].legend(loc='upper right', ncol=4)
+
+def plot_model_first_layer(ax, model, fname):
+
+    for k, v in model.params.items():
+        # We just do first layer for now
+        if k[:2] == 'W1':
+            w1 = v
+
+    grid = vis_weights.vis_grid_img(w1.transpose(0, 2, 3, 1))
+    ax.imshow(grid)
+    #ax.axis('off')
+
+
+

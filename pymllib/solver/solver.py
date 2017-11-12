@@ -183,7 +183,28 @@ class Solver(object):
         with open(filename, 'wb') as fp:
             pickle.dump(checkpoint, fp)
 
-    # TODO: should there be a _load_checkpoint()?
+    def load_checkpoint(self, fname):
+
+        if self.verbose:
+            print("Loading checkpoint from file %s" % fname)
+
+        with open(fname, 'rb') as fp:
+            cpoint_data = pickle.load(fp)
+            self.model = cpoint_data['model']
+            self.update_rule = cpoint_data['update_rule']
+            self.lr_decay = cpoint_data['lr_decay']
+            self.optim_config = cpoint_data['optim_config']
+            self.batch_size = cpoint_data['batch_size']
+            self.epoch = cpoint_data['epoch']
+            self.loss_history = cpoint_data['loss_history']
+            self.train_acc_history = cpoint_data['train_acc_history']
+            self.val_acc_history = cpoint_data['val_acc_history']
+            # Fill in gaps (TODO : update the save/load so that they are
+            # symmetrical?
+            self.num_epochs = 0
+            self.print_every = 0
+            # TODO : may as well break the filename apart and store the
+            # checkpoint directory and name in the object...
 
     def save(self, filename):
         params = self._get_solver_params()
