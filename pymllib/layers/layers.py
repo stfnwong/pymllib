@@ -527,17 +527,19 @@ def conv_norm_relu_pool_forward(x, w, b, conv_param, pool_param, gamma, beta, bn
 
     conv, conv_cache = conv_forward_strides(x, w, b, conv_param)
     norm, norm_cache = spatial_batchnorm_forward(conv, gamma, beta, bn_param)
-    out, relu_cache = relu_forward(norm)
+    relu, relu_cache = relu_forward(norm)
+    out, pool_cache  = max_pool_forward_fast(relu, pool_param)
 
-    cache = (conv_cache, norm_cache, relu_cache)
+    cache = (conv_cache, norm_cache, relu_cache, pool_cache)
 
     return out, cache
 
 def conv_norm_relu_pool_backward(dout, cache):
 
-    conv_cache, norm_cache, relu_cache = cache
+    conv_cache, norm_cache, relu_cache, pool_cache = cache
 
-    drelu = relu_backward(dout, relu_cache)
+    dpool = max_pool_backward_fast(dout, pool_cache)
+    drelu = relu_backward(dpool, relu_cache)
     dnorm, dgamma, dbeta = spatial_batchnorm_backward(drelu, norm_cache)
     dx, dw, db = conv_backward_strides(dnorm, conv_cache)
 

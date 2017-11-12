@@ -202,6 +202,7 @@ def LLayerConv(verbose=True, show_plots=False, solver_filename=None):
                                       weight_scale=weight_scale,
                                       reg=reg,
                                       filter_size=filter_size,
+                                      use_batchnorm=True,
                                       verbose=verbose)
     if verbose:
         print(conv_model)

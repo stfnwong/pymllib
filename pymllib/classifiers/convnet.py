@@ -13,7 +13,19 @@ import pymllib.layers.layers as layers
 import pymllib.utils.data_utils as data_utils
 
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
+
+
+# TODO : these are only required for debugging, remove them
+def print_h_sizes(blocks):
+    for k, v, in blocks.items():
+        if k[:1] == 'h':
+            print("%s : %s " % (str(k), str(v.shape)))
+
+def print_layers(params, layer_type='W'):
+    for k, v in params.items():
+        if k[:1] == layer_type:
+            print("%s : %s " % (str(k), str(v.shape)))
 
 class ConvNetLayer(object):
     """
@@ -54,6 +66,7 @@ class ConvNetLayer(object):
 
         # Init the weights for the conv layers
         F = [Cinput] + num_filters
+        print("Debug : F = %s" % str(F))
         for i in range(self.L):
             idx = i + 1
             W = self.weight_scale * np.random.randn(F[i+1], F[i], self.filter_size, self.filter_size)
@@ -62,8 +75,8 @@ class ConvNetLayer(object):
                                 'b' + str(idx): b})
             if self.use_batchnorm:
                 bn_param = {'mode': 'train',
-                            'running_mean': np.zeros(F[i +1 ]),
-                            'running_var': np.zeros(F[i + 1])}
+                            'running_mean': np.zeros(F[i+1]),
+                            'running_var':  np.zeros(F[i+1])}
                 gamma = np.zeros(F[i + 1])
                 beta = np.zeros(F[i + 1])
                 self.bn_params.update({
@@ -109,11 +122,11 @@ class ConvNetLayer(object):
         P = int((filter_size - 1)/ 2)
         Hc = int(1+ (H + 2 * P - filter_size) / stride_conv)
         Wc = int(1+ (W + 2 * P - filter_size) / stride_conv)
-        wpool = 2
-        hpool = 2
+        wpool = 2   # width
+        hpool = 2   # height
         spool = 2   # stride of pool
         Hp = int(1 + (Hc - hpool) / spool)
-        Wp = int(1 + (Wc - hpool) / spool)
+        Wp = int(1 + (Wc - wpool) / spool)
 
         if n_conv == 1:
             return Hp, Wp
@@ -123,7 +136,21 @@ class ConvNetLayer(object):
             W = Wp
             return self._size_conv(stride_conv, filter_size, H, W, n_conv-1)
 
-    # TODO : string
+    def __str__(self):
+        s = []
+        s.append("%d layer network\n" % self.num_layers)
+        for k, v in self.params.items():
+            if k[:1] == 'W':
+                w = self.params[k]
+                if len(w.shape) == 4:       # conv layer
+                    s.append("\t(%d) Conv layer : %s \n" % (int(k[1:]), str(w.shape)))
+                else:
+                    s.append("\t(%d) FC Layer   : %s \n" % (int(k[1:]), str(w.shape)))
+
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
 
     def loss(self, X, y=None):
         """
@@ -236,7 +263,7 @@ class ConvNetLayer(object):
             if self.use_batchnorm:
                 dh, dW, db, dgamma, dbeta = layers.affine_norm_relu_backward(dh, h_cache)
                 blocks['dgamma' + str(idx)] = dgamma
-                blocks['dbeta' + str(idx_)] = dbeta
+                blocks['dbeta' + str(idx)] = dbeta
             else:
                 dh, dW, db = layers.affine_relu_backward(dh, h_cache)
             blocks['dh' + str(idx-1)] = dh
