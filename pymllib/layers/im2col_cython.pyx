@@ -7,7 +7,6 @@ import numpy as np
 cimport numpy as np
 cimport cython
 
-
 # DTYPE = np.float64
 ctypedef np.float32_t DTYPE_t
 #ctypedef np.float64_t DTYPE_t

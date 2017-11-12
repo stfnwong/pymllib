@@ -16,7 +16,7 @@ import numpy as np
 import unittest
 
 # Library imports
-import pymllib.util.data_utils as data_utils
+import pymllib.utils.data_utils as data_utils
 #import pymllib.util.check_gradient as check_gradient
 #import pymllib.util.error as error
 #import pymllib.layers.layers as layers
@@ -379,6 +379,61 @@ class TestFCNet(unittest.TestCase):
 
         print("======== TestFCNet.test_fcnet_6layer_overfit: <END> ")
 
+    def test_batchnorm(self):
+        print("\n======== TestFCNet.test_batchnorm :")
+
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 10
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        input_dim = 32 * 32 * 3
+        hidden_dims = [100, 100, 100, 100, 100, 100]
+        weight_scale = 2e-2
+        learning_rate = 1e-3
+        num_epochs=30
+        update_rule='adam'
+        #weight_scale = 0.079564
+        #learning_rate = 0.003775
+
+        bn_model = fcnet.FCNet(input_dim=input_dim,
+                               hidden_dims=hidden_dims,
+                               weight_scale=weight_scale,
+                               use_batchnorm=True)
+        bn_solver = solver.Solver(bn_model,
+                                  small_data,
+                                  num_epochs=num_epochs,
+                                  update_rule=update_rule,
+                                  optim_config={'learning_rate': learning_rate},
+                                  verbose=True,
+                                  print_every=200)
+        print("Training with batchnorm")
+        bn_solver.train()
+        fc_model = fcnet.FCNet(input_dim=input_dim,
+                               hidden_dims=hidden_dims,
+                               weight_scale=weight_scale,
+                               use_batchnorm=False)
+
+        fc_solver = solver.Solver(fc_model,
+                                  small_data,
+                                  num_epochs=num_epochs,
+                                  update_rule=update_rule,
+                                  optim_config={'learning_rate': learning_rate},
+                                  verbose=True,
+                                  print_every=200)
+        print("Training without batchnorm")
+        fc_solver.train()
+
+
+
+
+
+
+        print("======== TestFCNet.test_batchnorm: <END> ")
+
 
 class TestFCNetDropout(unittest.TestCase):
     def setUp(self):
@@ -477,11 +532,10 @@ class TestFCNetDropout(unittest.TestCase):
             plt.ylabel('Training loss')
             plt.show()
 
-
-
-
-
         print("======== TestFCNetDropout.test_fcnet_3layer_dropout: <END> ")
+
+
+
 
 
 class TestFCNetObject(unittest.TestCase):

@@ -30,20 +30,6 @@ class Solver(object):
         TODO : Rest of docstring
         """
 
-        if model is None:
-            # assume we are loading from file
-            return
-        #if model is None:
-        #    raise ValueError('No model specified')
-        #if data is None:
-        #    raise ValueError('No data specified')
-
-        self.model = model
-        self.X_train = data['X_train']
-        self.y_train = data['y_train']
-        self.X_val = data['X_val']
-        self.y_val = data['y_val']
-
         # Unpack keyword args
         self.update_rule = kwargs.pop('update_rule', 'sgd')
         self.optim_config = kwargs.pop('optim_config', {})
@@ -56,6 +42,22 @@ class Solver(object):
         self.print_every = kwargs.pop('print_every', 10)
         self.verbose = kwargs.pop('verbose', True)
         self.checkpoint_dir = kwargs.pop('checkpoint_dir', 'checkpoint')
+
+        if model is None:
+            # assume we are loading from file
+            self.model = None
+            self.X_train = None
+            self.y_train = None
+            self.X_val = None
+            self.y_val = None
+
+            return
+
+        self.model = model
+        self.X_train = data['X_train']
+        self.y_train = data['y_train']
+        self.X_val = data['X_val']
+        self.y_val = data['y_val']
 
         # Make sure there are no additional arguments
         if len(kwargs) > 0:
