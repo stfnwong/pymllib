@@ -192,6 +192,65 @@ def batchnorm_backward(dout, cache):
 
     return dx, dgamma, dbeta
 
+def spatial_batchnorm_forward(x, gamma, beta, bn_param):
+
+    out = None
+    cache = None
+    N, C, H, W = x.shape
+    mode = bn_param['mode']
+    eps = bn_param.get('eps', 1e-5)
+    momentum = bn_param.get('momentum', 0.9)
+
+    running_mean = bn_param.get('running_mean', np.zeros(C, dtype=x.dtype))
+    running_var = bn_param.get('running_var', np.zeros(C, dtype=x.dtype))
+
+    if mode == 'train':
+        # Find the average for each channel
+        mu = (1.0 / (N * H * W) * np.sum(x, axis=(0, 2, 3))).reshape(1, C, 1, 1)
+        var = (1.0 / (N * H * W) * np.sum((x - mu)**2, axis=(0, 2, 3))).reshape(1, C, 1, 1)
+
+        xhat = (x - mu) / np.sqrt(var + eps)
+        out = gamma.reshape(1, C, 1, 1) * xhat + beta.reshape(1, C, 1, 1)
+
+        running_mean = momentum * running_mean + (1.0 - momentum) * np.squeeze(mu)
+        running_var = momentum * running_var + (1.0 - momentum) * np.squeeze(var)
+
+        bn_param['running_mean'] = running_mean
+        bn_param['running_var'] = running_var
+        cache = (mu, var, x, xhat, gamma, beta, bn_param)
+
+    elif mode == 'test':
+        mu = running_mean.reshape(1, C, 1, 1)
+        var = running_var.reshape(1, C, 1, 1)
+
+        xhat = (x - mu) / np.sqrt(var + eps)
+        out = gamma.reshape(1, C, 1, 1) * xhat + beta.reshape(1, C, 1, 1)
+        cache = (mu, var, x, xhat, gamma, beta, bn_param)
+
+    else:
+        raise ValueError("Invalid forward batchnorm mode %s" % mode)
+
+    return out, cache
+
+
+def spatial_batchnorm_backward(dout, cache):
+
+    mu, var, x, xhat, gamma, beta, bn_param = cache
+    N, C, H, W = x.shape
+    mode = bn_param['mode']
+    eps = bn_param.get('eps', 1e-5)
+
+    gamma = gamma.reshape(1, C, 1, 1)
+    beta = beta.reshape(1, C, 1, 1)
+    dbeta = np.sum(dout, axis=(0, 2, 3))
+    dgamma = np.sum(dout * xhat, axis=(0, 2, 3))
+
+    Nt = N * H * W
+    # TODO : Split this into smaller parts...
+    dx = (1.0 / Nt) * gamma * (var + eps)**(-1.0  / 2.0) * (Nt * dout - np.sum(dout, axis=(0, 2, 3)).reshape(1, C, 1, 1) -
+     (x - mu) * (var + eps)**(-1.0) * np.sum(dout * (x - mu), axis=(0, 2, 3)).reshape(1, C, 1, 1))
+
+    return dx, dgamma, dbeta
 
 # ==== Convenience layers
 def affine_relu_forward(X, w, b):
@@ -216,7 +275,7 @@ def affine_relu_backward(dout, cache):
     return dx, dw, db
 
 
-def affine_norm_relu_forward(X, v, b, gamma, beta, bn_param):
+def affine_norm_relu_forward(X, w, b, gamma, beta, bn_param):
     """
     Performs an affine transform followed by a ReLU
 
@@ -231,6 +290,22 @@ def affine_norm_relu_forward(X, v, b, gamma, beta, bn_param):
             Parameters to the batchnorm layer
     """
 
+    h, h_cache = affine_forward(X, w, b)
+    hnorm, hnorm_cache = batchnorm_forward(h, gamma, beta, bn_param)
+    hnormrelu, relu_cache = relu_forward(hnorm)
+    cache = (h_cache, hnorm_cache, relu_cache)
+
+    return hnormrelu, cache
+
+
+def affine_norm_relu_backward(dout, cache):
+    h_cache, hnorm_cache, relu_cache = cache
+
+    dnormrelu = relu_backward(dout, relu_cache)
+    dnorm, dgamma, dbeta = batchnorm_backward(dnormrelu, hnorm_cache)
+    dx, dw, db = affine_backward(dnorm, h_cache)
+
+    return dx, dw, db, dgamma, dbeta
 
 def softmax_loss(X, y):
     """
@@ -364,6 +439,7 @@ def conv_forward_im2col(x, w, b, conv_param):
 
     return out, cache
 
+
 def conv_backward_im2col(dout, cache):
     """
     A fast implementation of the backward pass for a convolutional layer
@@ -446,6 +522,28 @@ def conv_backward_strides(dout, cache):
 
     return dx, dw, db
 
+
+def conv_norm_relu_pool_forward(x, w, b, conv_param, pool_param, gamma, beta, bn_param):
+
+    conv, conv_cache = conv_forward_strides(x, w, b, conv_param)
+    norm, norm_cache = spatial_batchnorm_forward(conv, gamma, beta, bn_param)
+    relu, relu_cache = relu_forward(norm)
+    out, pool_cache  = max_pool_forward_fast(relu, pool_param)
+
+    cache = (conv_cache, norm_cache, relu_cache, pool_cache)
+
+    return out, cache
+
+def conv_norm_relu_pool_backward(dout, cache):
+
+    conv_cache, norm_cache, relu_cache, pool_cache = cache
+
+    dpool = max_pool_backward_fast(dout, pool_cache)
+    drelu = relu_backward(dpool, relu_cache)
+    dnorm, dgamma, dbeta = spatial_batchnorm_backward(drelu, norm_cache)
+    dx, dw, db = conv_backward_strides(dnorm, conv_cache)
+
+    return dx, dw, db, dgamma, dbeta
 
 # Util layer forward passes
 def max_pool_forward_reshape(x, pool_param):
