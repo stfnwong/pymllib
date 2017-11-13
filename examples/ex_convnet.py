@@ -124,11 +124,13 @@ def ThreeLayerNet(verbose=True, show_plots=False):
         print(conv_model)
     # Get a solver
     conv_solver = solver.Solver(conv_model, data,
-                                num_epochs=1,
+                                num_epochs=20,
                                 batch_size=50,
                                 update_rule='adam',
                                 optim_config={'learning_rate': 1e-3},
                                 verbose=verbose,
+                                checkpoint_dir='examples',
+                                checkpoint_name='3ln',
                                 print_every=50)
     if load_convnet:        # FIXME : load data.
         print("Loading convnet from file %s" % convnet_path)
@@ -235,6 +237,6 @@ def LLayerConv(verbose=True, show_plots=False):
 
 
 if __name__ == "__main__":
-    #ThreeLayerNet()
-    LLayerConv()
+    ThreeLayerNet()
+    #LLayerConv()
 
