@@ -80,12 +80,12 @@ class Solver(object):
         #s.append("X_val shape    (%s)" % str(self.X_val.shape))
         #s.append("y_val shape    (%s)" % str(self.y_val.shape))
         # Solver params
-        s.append("update rule  : %s" % str(self.update_rule))
-        s.append("optim config : %s" % str(self.optim_config))
-        s.append("lr decay     : %s" % str(self.lr_decay))
-        s.append("batch size   : %s" % str(self.batch_size))
-        s.append("num epochs   : %s" % str(self.num_epochs))
-        s.append("print every  : %d" % self.print_every)
+        s.append("update rule  : %s\n" % str(self.update_rule))
+        s.append("optim config : %s\n" % str(self.optim_config))
+        s.append("lr decay     : %s\n" % str(self.lr_decay))
+        s.append("batch size   : %s\n" % str(self.batch_size))
+        s.append("num epochs   : %s\n" % str(self.num_epochs))
+        s.append("print every  : %d\n" % self.print_every)
 
         return ''.join(s)
 

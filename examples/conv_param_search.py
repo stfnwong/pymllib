@@ -140,8 +140,10 @@ class ConvParamSearch(object):
                                       print_every=self.solver_print_every,
                                       checkpoint_name=self.solver_checkpoint_name,
                                       checkpoint_dir=self.solver_checkpoint_dir)
+            if self.verbose:
+                print('Training with lr = %f, ws = %f, reg = %f' % (learning_rate, weight_scale, reg))
             if self.verbose and self.solver_checkpoint_name is not None:
-                print("Saving solver checkpoints to file %s/%s", (self.solver_checkpoint_dir, self.solver_checkpoint_name))
+                print("Saving solver checkpoints to file %s/%s" % (self.solver_checkpoint_dir, self.solver_checkpoint_name))
             self.solv.train()
             n += 1
             if max(self.model.train_acc_history) >= 1.0:
@@ -164,10 +166,12 @@ if __name__ == "__main__":
     searcher = ConvParamSearch(lr_range=[-6, -1],
                                ws_range=[-5, -1],
                                reg_range=[-3, -1],
-                               solver_checkpoint_name='conv4_fc2',
-                               solver_checkpoint_dir='examples',
-                               model_num_filters=[16, 32, 64, 128],
-                               model_hidden_dims=[256, 256],
+                               checkpoint_name='conv4_fc2',
+                               checkpoint_dir='examples',
+                               update_rule='sgd',
+                               num_epochs=200,
+                               num_filters=[16, 32, 64, 128],
+                               hidden_dims=[256, 256],
                                num_train=800,
                                verbose=True)
     print(searcher)
