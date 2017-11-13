@@ -17,7 +17,7 @@ import pymllib.utils.data_utils as data_utils
 import pymllib.vis.vis_weights as vis_weights
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 show_plots = False
 
@@ -182,11 +182,12 @@ def LLayerConv(verbose=True, show_plots=False):
     data = load_data(data_dir, verbose)
     # Set params
     input_dim = (3, 32, 32)
-    weight_scale = 1e-2
+    weight_scale = 0.03
+    learning_rate = 0.002
     reg = 1e-3
     filter_size = 7
     #num_filters = [16, 32, 64, 128]
-    num_filters = [32, 32, 32, 32]
+    num_filters = [32, 32]
     hidden_dim = [256, 256]
     num_epochs = 10
 
@@ -206,9 +207,11 @@ def LLayerConv(verbose=True, show_plots=False):
                                 num_epochs=num_epochs,
                                 batch_size=50,
                                 update_rule='adam',
-                                optim_config={'learning_rate': 1e-3},
+                                optim_config={'learning_rate': learning_rate},
                                 verbose=verbose,
-                                print_every=50)
+                                print_every=50,
+                                checkpoint_name='c2-32-32-f2-256-256',
+                                checkpoint_dir='examples')
     if verbose is True:
         print("Training %d layer net" % conv_model.num_layers)
     conv_solver.train()
@@ -232,6 +235,6 @@ def LLayerConv(verbose=True, show_plots=False):
 
 
 if __name__ == "__main__":
-    ThreeLayerNet()
+    #ThreeLayerNet()
     LLayerConv()
 

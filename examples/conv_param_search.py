@@ -64,6 +64,11 @@ def find_params(data, checkpoint_name=None, verbose=True):
     print("Best weight scale is %f" % ws)
 
 
+"""
+Found parameters after 1260 epochs total (42 searches of 30 epochs each)
+Best learning rate is 0.002009
+Best weight scale is 0.034513
+"""
 if __name__ == "__main__":
 
     verbose = True
