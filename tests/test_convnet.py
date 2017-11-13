@@ -89,7 +89,7 @@ class TestConvNet(unittest.TestCase):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.eps = 1e-7
         self.verbose = True
-        self.draw_plots = True
+        self.draw_plots = False
 
     def test_conv_forward_naive(self):
         print("\n======== TestConvNet.test_conv_forward_naive:")
@@ -252,6 +252,67 @@ class TestConvNet(unittest.TestCase):
 
         # TODO : Next up, spatial batch normalization
 
+    def test_conv_4layer_param_search(self):
+        print("\n======== TestConvNet.test_conv_4layer_param_search :")
+
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 50
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        #input_dim = small_data['X_train'].shape[0]
+        input_dim = (3, 32, 32)
+        num_epochs = 20
+
+        param_search = True
+        num_searches = 0
+        while param_search:
+            weight_scale = 10 ** (np.random.uniform(-6, -1))
+            learning_rate = 10 ** (np.random.uniform(-4, -1))
+            model = convnet.ConvNetLayer(input_dim=input_dim,
+                            hidden_dims=[256, 256],
+                            num_filters = [16, 32, 64, 128],
+                            weight_scale=weight_scale,
+                            dtype=np.float32)
+            if self.verbose:
+                print(model)
+            model_solver = solver.Solver(model,
+                                        small_data,
+                                        print_every=10,
+                                        num_epochs=num_epochs,
+                                        batch_size=50,     # previously 25
+                                        update_rule='sgd',
+                                        optim_config={'learning_rate': learning_rate})
+            model_solver.train()
+            num_searches += 1
+            if max(model_solver.train_acc_history) >= 1.0:
+                param_search = False
+                lr = learning_rate
+                ws = weight_scale
+                print("Found parameters after %d epochs total (%d searches of %d epochs each)" % (num_searches * num_epochs, num_searches, num_epochs))
+
+        print("Best learning rate is %f" % lr)
+        print("Best weight scale is %f" % ws)
+
+        save_solver = True
+        if save_solver is True:
+            solver_fname = "conv-lr-%f-ws-%f.pkl" % (lr, ws)
+            model_solver.save(solver_fname)
+
+        # Plot results
+        if self.draw_plots:
+            title = "Training loss history (5 layers) with lr=%f, ws=%f" % (lr, ws)
+            plt.plot(model_solver.loss_history, 'o')
+            plt.title(title)
+            plt.xlabel('Iteration')
+            plt.ylabel('Training loss')
+            plt.show()
+
+        print("======== TestConvNet.test_conv_4layer_param_search: <END> ")
 
 
 """

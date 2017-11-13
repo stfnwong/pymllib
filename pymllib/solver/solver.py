@@ -43,7 +43,7 @@ class Solver(object):
         self.verbose = kwargs.pop('verbose', True)
         self.checkpoint_dir = kwargs.pop('checkpoint_dir', 'checkpoint')
 
-        if model is None:
+        if model is None or data is None:
             # assume we are loading from file
             self.model = None
             self.X_train = None
@@ -75,17 +75,17 @@ class Solver(object):
         s = []
 
         # print the size of the dataset attached to the solver
-        s.append("X_train shape  (%s)" % self.X_train.shape)
-        s.append("y_trian shape  (%s)" % self.y_train.shape)
-        s.append("X_val shape    (%s)" % self.X_val.shape)
-        s.append("y_val shape    (%s)" % self.y_val.shape)
+        #s.append("X_train shape  (%s)" % str(self.X_train.shape))
+        #s.append("y_trian shape  (%s)" % str(self.y_train.shape))
+        #s.append("X_val shape    (%s)" % str(self.X_val.shape))
+        #s.append("y_val shape    (%s)" % str(self.y_val.shape))
         # Solver params
-        s.append("update rule  : %s" % self.update_rule)
-        s.append("optim config : %s" % self.optim_config)
-        s.append("lr decay     : %s" % self.lr_decay)
-        s.append("batch size   : %s" % self.batch_size)
-        s.append("num epochs   : %s" % self.num_epochs)
-        # Could have some "super verbose" settings here like print_every, etc
+        s.append("update rule  : %s" % str(self.update_rule))
+        s.append("optim config : %s" % str(self.optim_config))
+        s.append("lr decay     : %s" % str(self.lr_decay))
+        s.append("batch size   : %s" % str(self.batch_size))
+        s.append("num epochs   : %s" % str(self.num_epochs))
+        s.append("print every  : %d" % self.print_every)
 
         return ''.join(s)
 
