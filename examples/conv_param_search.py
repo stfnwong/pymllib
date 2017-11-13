@@ -30,7 +30,7 @@ class ConvParamSearch(object):
         self.dataset = None
         self.train_data = None
         # Search params
-        self.max_searches = kwargs.pop('max_searches', 1e6)
+        self.max_searches = kwargs.pop('max_searches', 1e3)
         self.num_train = kwargs.pop('num_train', 500)
         self.ws_range = kwargs.pop('ws_range', [-6, 1])
         self.lr_range = kwargs.pop('lr_range', [-5, 1])
@@ -40,6 +40,7 @@ class ConvParamSearch(object):
         self.model_hidden_dims = kwargs.pop('hidden_dims', [256, 100])
         self.model_num_filters = kwargs.pop('num_filters', [16, 32])
         self.model_num_classes = kwargs.pop('num_classes', 10)
+        self.model_use_batchnorm = kwargs.pop('use_batchnorm', True)
         # Solver params
         self.solver_num_epochs = kwargs.pop('num_epochs', 100)
         self.solver_batch_size = kwargs.pop('batch_size', 20)
@@ -125,6 +126,7 @@ class ConvParamSearch(object):
             self.model = convnet.ConvNetLayer(input_dim=self.model_input_dim,
                                               hidden_dims=self.model_hidden_dims,
                                               num_filters=self.model_num_filters,
+                                              use_batchnorm=self.model_use_batchnorm,
                                               reg=reg,
                                               weight_scale=weight_scale,
                                               verbose=self.verbose)
@@ -146,7 +148,8 @@ class ConvParamSearch(object):
                 print("Saving solver checkpoints to file %s/%s" % (self.solver_checkpoint_dir, self.solver_checkpoint_name))
             self.solv.train()
             n += 1
-            if max(self.model.train_acc_history) >= 1.0:
+            # Found correct params
+            if max(self.solv.train_acc_history) >= 1.0:
                 param_search = False
                 self.lr_output = learning_rate
                 self.ws_output = weight_scale
@@ -163,7 +166,7 @@ class ConvParamSearch(object):
 # Basic test
 if __name__ == "__main__":
     data_dir = 'datasets/cifar-10-batches-py'
-    searcher = ConvParamSearch(lr_range=[-6, -1],
+    searcher = ConvParamSearch(lr_range=[-6, -3],
                                ws_range=[-5, -1],
                                reg_range=[-3, -1],
                                checkpoint_name='conv4_fc2',
@@ -171,8 +174,8 @@ if __name__ == "__main__":
                                update_rule='sgd',
                                num_epochs=200,
                                num_filters=[16, 32, 64, 128],
-                               hidden_dims=[256, 256],
-                               num_train=800,
+                               hidden_dims=[500, 500],
+                               num_train=1800,
                                verbose=True)
     print(searcher)
     searcher.load_data(data_dir)
