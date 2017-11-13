@@ -56,7 +56,7 @@ class ConvParamSearch(object):
 
     def __str__(self):
         s = []
-        s.append("Model parameters")
+        s.append("Model parameters\n")
 
         if self.model is None:
             # Make a model to simplify printing
@@ -66,7 +66,8 @@ class ConvParamSearch(object):
         else:
             model = self.model
         s.append(str(model))
-        s.append("Solver parameters")
+        s.append("\n")
+        s.append("Solver parameters\n")
 
         if self.solv is None:
             solv = solver.Solver(model,
@@ -82,6 +83,7 @@ class ConvParamSearch(object):
         else:
             solv = self.solv
         s.append(str(solv))
+        s.append("\n")
 
         return ''.join(s)
 
@@ -138,6 +140,8 @@ class ConvParamSearch(object):
                                       print_every=self.solver_print_every,
                                       checkpoint_name=self.solver_checkpoint_name,
                                       checkpoint_dir=self.solver_checkpoint_dir)
+            if self.verbose and self.solver_checkpoint_name is not None:
+                print("Saving solver checkpoints to file %s/%s", (self.solver_checkpoint_dir, self.solver_checkpoint_name))
             self.solv.train()
             n += 1
             if max(self.model.train_acc_history) >= 1.0:
@@ -160,6 +164,10 @@ if __name__ == "__main__":
     searcher = ConvParamSearch(lr_range=[-6, -1],
                                ws_range=[-5, -1],
                                reg_range=[-3, -1],
+                               solver_checkpoint_name='conv4_fc2',
+                               solver_checkpoint_dir='examples',
+                               model_num_filters=[16, 32, 64, 128],
+                               model_hidden_dims=[256, 256],
                                num_train=800,
                                verbose=True)
     print(searcher)
