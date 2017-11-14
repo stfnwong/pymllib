@@ -20,7 +20,7 @@ from pymllib.classifiers import convnet
 from pymllib.utils import data_utils
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 class ConvParamSearch(object):
     def __init__(self, **kwargs):
@@ -37,8 +37,8 @@ class ConvParamSearch(object):
         self.reg_range = kwargs.pop('reg_range', [-3, 1])
         # Model params
         self.model_input_dim = kwargs.pop('input_dim', (3, 32, 32))
-        self.model_hidden_dims = kwargs.pop('hidden_dims', [256, 100])
-        self.model_num_filters = kwargs.pop('num_filters', [16, 32])
+        self.model_hidden_dims = kwargs.pop('hidden_dims', [512, 512])
+        self.model_num_filters = kwargs.pop('num_filters', [16, 32, 64, 128])
         self.model_num_classes = kwargs.pop('num_classes', 10)
         self.model_use_batchnorm = kwargs.pop('use_batchnorm', True)
         # Solver params
@@ -66,6 +66,7 @@ class ConvParamSearch(object):
                                          num_filters=self.model_num_filters)
         else:
             model = self.model
+
         s.append(str(model))
         s.append("\n")
         s.append("Solver parameters\n")
@@ -111,17 +112,17 @@ class ConvParamSearch(object):
         Attempt to find parameters that allow the network to train
         """
 
-        if self.verbose:
-            print("Searching for learning rates in range  %f - %f" % (10**(self.lr_range[0]), 10**(self.lr_range[1])))
-            print("Searching for weight scales in range   %f - %f" % (10**(self.ws_range[0]), 10**(self.ws_range[1])))
-            print("Searching for regularization in range  %f - %f" % (10**(self.reg_range[0]), 10**(self.reg_range[1])))
-
         param_search = True
         n = 0
         while param_search and n < self.max_searches:
             weight_scale = 10 ** (np.random.uniform(self.ws_range[0], self.ws_range[1]))
             learning_rate = 10 ** (np.random.uniform(self.lr_range[0], self.lr_range[1]))
             reg = 10**(np.random.uniform(self.reg_range[0], self.reg_range[1]))
+
+            if self.verbose:
+                print("Selected weight scale  = %f" % (weight_scale))
+                print("Selected learning rate = %f" % (learning_rate))
+                print("Selected reg strength  = %f" % (reg))
 
             self.model = convnet.ConvNetLayer(input_dim=self.model_input_dim,
                                               hidden_dims=self.model_hidden_dims,
@@ -169,13 +170,11 @@ if __name__ == "__main__":
     searcher = ConvParamSearch(lr_range=[-6, -3],
                                ws_range=[-5, -1],
                                reg_range=[-3, -1],
-                               checkpoint_name='conv4_fc2',
+                               checkpoint_name='c4fc2',
                                checkpoint_dir='examples',
-                               update_rule='sgd',
-                               num_epochs=200,
-                               num_filters=[16, 32, 64, 128],
-                               hidden_dims=[500, 500],
-                               num_train=1800,
+                               num_train=10000,
+                               num_epochs=500,
+                               batch_size=100,
                                verbose=True)
     print(searcher)
     searcher.load_data(data_dir)

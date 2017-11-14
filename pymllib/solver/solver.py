@@ -42,6 +42,10 @@ class Solver(object):
         self.print_every = kwargs.pop('print_every', 10)
         self.verbose = kwargs.pop('verbose', True)
         self.checkpoint_dir = kwargs.pop('checkpoint_dir', 'checkpoint')
+        # The idea here is that if the loss doesn't change by eps for more than
+        # 200 iters we quit
+        self.loss_window_len = kwargs.pop('loss_window_len', 200)
+        self.loss_window_eps = kwargs.pop('loss_window_eps', 1e-5)
 
         if model is None or data is None:
             # assume we are loading from file
@@ -263,6 +267,10 @@ class Solver(object):
         num_train = self.X_train.shape[0]
         iterations_per_epoch = max(num_train / self.batch_size, 1)
         num_iterations = int(self.num_epochs * iterations_per_epoch)
+        if self.loss_window_len > num_iterations:
+            loss_win = num_iterations
+        else:
+            loss_win = self.loss_window_len
 
         for t in range(num_iterations):
             self._step()
@@ -296,6 +304,13 @@ class Solver(object):
                     self.best_params = {}
                     for k, v in self.model.params.items():
                         self.best_params[k] = v.copy()
+            # See if the loss has changed sufficiently
+            if t > loss_win:
+                diff = sum(self.loss_history[-loss_win:]) / loss_win
+                if diff < self.loss_window_eps:
+                    if self.verbose:
+                        print("Difference has changed by less than %f in %d iterations, exiting\n" % (self.loss_window_eps, t))
+                    return
 
         # Swap the best parameters into the model
         self.model.params = self.best_params
