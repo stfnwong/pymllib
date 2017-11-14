@@ -98,6 +98,8 @@ class ConvParamSearch(object):
             for k, v in self.dataset.items():
                 print("%s : %s " % (k, v.shape))
 
+    # TODO : overfit test, etc
+
     def param_search(self):
         """
         PARAM_SEARCH
