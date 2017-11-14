@@ -1,5 +1,5 @@
 """
-EX_CONVNET
+X_CONVNET
 Some examples of things that we can do with convnets
 
 Stefan Wong 2017
@@ -17,7 +17,7 @@ import pymllib.utils.data_utils as data_utils
 import pymllib.vis.vis_weights as vis_weights
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 show_plots = False
 
@@ -124,11 +124,13 @@ def ThreeLayerNet(verbose=True, show_plots=False):
         print(conv_model)
     # Get a solver
     conv_solver = solver.Solver(conv_model, data,
-                                num_epochs=1,
+                                num_epochs=20,
                                 batch_size=50,
                                 update_rule='adam',
                                 optim_config={'learning_rate': 1e-3},
                                 verbose=verbose,
+                                checkpoint_dir='examples',
+                                checkpoint_name='3ln',
                                 print_every=50)
     if load_convnet:        # FIXME : load data.
         print("Loading convnet from file %s" % convnet_path)
@@ -186,14 +188,14 @@ def LLayerConv(verbose=True, show_plots=False, solver_filename=None):
     }
     # Set params
     input_dim = (3, 32, 32)
-    weight_scale = 0.06
-    learning_rate = 0.07
-    #reg = 1e-2
-    reg = 0.05
-    filter_size = 5
-    num_filters = [16, 32, 64]
-    hidden_dim = [256, 128]
-    num_epochs = 100
+    weight_scale = 0.03
+    learning_rate = 0.002
+    reg = 1e-3
+    filter_size = 7
+    #num_filters = [16, 32, 64, 128]
+    num_filters = [32, 32]
+    hidden_dim = [256, 256]
+    num_epochs = 10
 
     # Get a convnet
     conv_model = convnet.ConvNetLayer(input_dim=input_dim,
@@ -213,8 +215,8 @@ def LLayerConv(verbose=True, show_plots=False, solver_filename=None):
                                 update_rule='adam',
                                 optim_config={'learning_rate': learning_rate},
                                 verbose=verbose,
-                                print_every=10,
-                                checkpoint_name='conv3fc2-check',
+                                print_every=50,
+                                checkpoint_name='c2-32-32-f2-256-256',
                                 checkpoint_dir='examples')
     if verbose is True:
         print("Training %d layer net" % conv_model.num_layers)
@@ -235,4 +237,3 @@ if __name__ == "__main__":
     fname = "conv2fc2-40-epoch.pkl"
     #ThreeLayerNet()
     LLayerConv(solver_filename=fname)
-
