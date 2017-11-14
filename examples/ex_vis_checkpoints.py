@@ -13,7 +13,8 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
 
-    cpath = "/home/kreshnik/Documents/compucon/machine-learning/models/conv3fc2-2017-11-12-01"
+    cpath = "/home/kreshnik/Documents/compucon/machine-learning/models/2017-11-13-3ln-01"
+    #cpath = "/home/kreshnik/Documents/compucon/machine-learning/models/conv3fc2-2017-11-12-01"
     #cpath = "/home/kreshnik/Documents/compucon/machine-learning/models/conv4fc2-2017-11-11-02"
 
     # Get a figure and axis
@@ -23,8 +24,8 @@ if __name__ == "__main__":
 
     for n in range(num_checkpoints):
         title = "Layer 1 Weights (epoch %d)" % (n+1)
-        cname = cpath + '/' + "conv3fc2-check_epoch_%d.pkl" % (n+1)
-        #cname = cpath + '/' + "conv4fc2-check_epoch_%d.pkl" % (n+1)
+        #cname = cpath + '/' + "conv3fc2-check_epoch_%d.pkl" % (n+1)
+        cname = cpath + '/' + "3ln_epoch_%d.pkl" % (n+1)
         solv = solver.Solver(None, None)
         solv.load_checkpoint(cname)
         solver_utils.plot_model_first_layer(ax, solv.model, cname)
