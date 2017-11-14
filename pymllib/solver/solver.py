@@ -42,6 +42,11 @@ class Solver(object):
         self.print_every = kwargs.pop('print_every', 10)
         self.verbose = kwargs.pop('verbose', True)
         self.checkpoint_dir = kwargs.pop('checkpoint_dir', 'checkpoint')
+        # The idea here is that if the loss doesn't change by eps for more than
+        # 200 iters we quit
+        self.loss_window_len = kwargs.pop('loss_window_len', 200)
+        self.loss_window_eps = kwargs.pop('loss_window_eps', 1e-3)
+        self.loss_converge_window = kwargs.pop('loss_converge_window', 1e4)
 
         if model is None:
             # assume we are loading from file
@@ -75,10 +80,10 @@ class Solver(object):
         s = []
 
         # print the size of the dataset attached to the solver
-        s.append("X_train shape  (%s)" % self.X_train.shape)
-        s.append("y_trian shape  (%s)" % self.y_train.shape)
-        s.append("X_val shape    (%s)" % self.X_val.shape)
-        s.append("y_val shape    (%s)" % self.y_val.shape)
+        #s.append("X_train shape  (%s)" % str(self.X_train.shape))
+        #s.append("y_train shape  (%s)" % str(self.y_train.shape))
+        #s.append("X_val shape    (%s)" % str(self.X_val.shape))
+        #s.append("y_val shape    (%s)" % str(self.y_val.shape))
         # Solver params
         s.append("update rule  : %s" % self.update_rule)
         s.append("optim config : %s" % self.optim_config)
@@ -284,6 +289,12 @@ class Solver(object):
         num_train = self.X_train.shape[0]
         iterations_per_epoch = max(num_train / self.batch_size, 1)
         num_iterations = int(self.num_epochs * iterations_per_epoch)
+        if self.loss_window_len > num_iterations:
+            loss_win = num_iterations
+        else:
+            loss_win = self.loss_window_len
+        avg_loss = 0.0
+        prev_avg_loss = 0.0
 
         for t in range(num_iterations):
             self._step()
@@ -317,6 +328,18 @@ class Solver(object):
                     self.best_params = {}
                     for k, v in self.model.params.items():
                         self.best_params[k] = v.copy()
+
+            # See if the loss has changed sufficiently
+            if t > loss_win:
+                avg_loss = sum(self.loss_history[-loss_win:]) / loss_win
+                if abs(avg_loss - prev_avg_loss) < self.loss_window_eps:
+                    if self.verbose:
+                        print("Difference has changed by less than %f in %d iterations, exiting\n" % (self.loss_window_eps, t))
+                    return
+                prev_avg_loss = avg_loss
+
+                # TODO : We should also quit if the loss is no better than a random guess
+                # after this time
 
         # Swap the best parameters into the model
         self.model.params = self.best_params
