@@ -188,15 +188,14 @@ def LLayerConv(verbose=True, show_plots=False, solver_filename=None):
     }
     # Set params
     input_dim = (3, 32, 32)
-    weight_scale = 0.03
-    learning_rate = 0.002
-    reg = 1e-3
-    filter_size = 7
-    #num_filters = [16, 32, 64, 128]
-    num_filters = [32, 32]
-    hidden_dim = [256, 256]
-    num_epochs = 10
-
+    weight_scale = 0.06
+    learning_rate = 0.07
+    #reg = 1e-2
+    reg = 0.05
+    filter_size = 5
+    num_filters = [16, 32, 64]
+    hidden_dim = [256, 128]
+    num_epochs = 100
     # Get a convnet
     conv_model = convnet.ConvNetLayer(input_dim=input_dim,
                                       hidden_dims=hidden_dim,
