@@ -247,7 +247,7 @@ def gen_random_data(num_train=8000, num_val=800, num_test=800, num_classes=10, d
 
     return data
 
-def scale_network():
+def scale_network(draw_plots=False):
 
     # Some trial hyperparameters
     reg = 1e-4
@@ -258,7 +258,7 @@ def scale_network():
 
     num_filters = []
     hidden_dims = [256]
-    num_epochs = 50
+    num_epochs = 100
 
     # prep data
     num_train = 5000
@@ -272,39 +272,47 @@ def scale_network():
 
     for s in fsizes:
         num_filters.append(s)
+        if s == 64:
+            hidden_dims.append(hdims)
         model = convnet.ConvNetLayer(hidden_dims=hidden_dims,
                                      num_filters=num_filters,
                                      reg=reg,
                                      weight_scale=ws,
                                      verbose=True)
         print(model)
+        cname = model.__repr__()
+        print("Saving checkpoints to examples/%s.pkl" % cname)
         solv = solver.Solver(model, small_data,
                              optim_config={'learning_rate': lr},
                              update_rule='sgd_momentum',
                              num_epochs=num_epochs,
+                             checkpoint_dir='examples',
+                             checkpoint_name=cname,
                              batch_size=50,
-                             loss_window_len=250)
+                             loss_window_len=400,
+                             loss_window_eps=1e-5)
         solv.train()
 
         # Show results
-        import matplotlib.pyplot as plt
-        fig = plt.figure()
-        ax = []
-        for i in range(3):
-            subax = fig.add_subplot(3, 1, (i+1))
-            ax.append(subax)
+        if draw_plots is True:
+            import matplotlib.pyplot as plt
+            fig = plt.figure()
+            ax = []
+            for i in range(3):
+                subax = fig.add_subplot(3, 1, (i+1))
+                ax.append(subax)
 
-        ax[0].plot(solv.loss_history, 'o')
-        ax[0].set_title("Loss")
-        ax[1].plot(solv.train_acc_history)
-        ax[1].set_title("Training accuracy")
-        ax[2].plot(solv.val_acc_history)
-        ax[2].set_title("Validation accuracy")
+            ax[0].plot(solv.loss_history, 'o')
+            ax[0].set_title("Loss")
+            ax[1].plot(solv.train_acc_history)
+            ax[1].set_title("Training accuracy")
+            ax[2].plot(solv.val_acc_history)
+            ax[2].set_title("Validation accuracy")
 
-        for i in range(3):
-            ax[i].set_xlabel("Epochs")
-            #ax[i].set_xticks(range(num_epochs))
-        plt.show()
+            for i in range(3):
+                ax[i].set_xlabel("Epochs")
+                #ax[i].set_xticks(range(num_epochs))
+            plt.show()
 
 def learn_random_data():
     # Some trial hyperparameters

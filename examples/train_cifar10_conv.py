@@ -41,7 +41,7 @@ def train_cifar10_conv():
     num_filters = [16, 32, 64, 128]
     hidden_dims = [256, 256]
     # Solver hyperparams
-    update_rule = 'adam'
+    update_rule = 'sgd_momentum'
     learning_rate = 1e-3
     num_epochs = 2000
 
@@ -60,11 +60,11 @@ def train_cifar10_conv():
     conv_solver = solver.Solver(conv_model, data,
                                 num_epochs=num_epochs,
                                 batch_size=50,
-                                update_rule='adam',
+                                update_rule=update_rule,
                                 optim_config={'learning_rate': learning_rate},
                                 verbose=verbose,
                                 print_every=50,
-                                checkpoint_name='c4-16-32-64-128-f2-256-256',
+                                checkpoint_name=checkpoint_name,
                                 checkpoint_dir='examples')
     if verbose is True:
         print("Training %d layer net" % conv_model.num_layers)

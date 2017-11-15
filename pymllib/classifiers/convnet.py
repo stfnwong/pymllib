@@ -149,7 +149,25 @@ class ConvNetLayer(object):
         return ''.join(s)
 
     def __repr__(self):
-        return self.__str__()
+
+        s = []
+        conv_layers = []
+        fc_layers = []
+        for k in sorted(self.params.keys()):
+            if k[:1] == 'W':
+                if len(self.params[k].shape) == 4:
+                    conv_layers.append('c%d-' % int(self.params[k].shape[0]))
+                else:
+                    fc_layers.append('fc%d-' % int(self.params[k].shape[1]))
+        s.extend(conv_layers)
+        s.extend(fc_layers)
+        s.extend('net')
+
+        return ''.join(s)
+
+
+    #def __repr__(self):
+    #    return self.__str__()
 
     def loss(self, X, y=None):
         """
