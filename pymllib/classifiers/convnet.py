@@ -66,7 +66,6 @@ class ConvNetLayer(object):
 
         # Init the weights for the conv layers
         F = [Cinput] + num_filters
-        print("Debug : F = %s" % str(F))
         for i in range(self.L):
             idx = i + 1
             W = self.weight_scale * np.random.randn(F[i+1], F[i], self.filter_size, self.filter_size)
