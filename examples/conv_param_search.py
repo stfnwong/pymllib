@@ -32,7 +32,7 @@ class ConvParamSearch(object):
         self.reg_range = kwargs.pop('reg_range', [-3, 1])
         # Model params
         self.model_input_dim = kwargs.pop('input_dim', (3, 32, 32))
-        self.model_hidden_dims = kwargs.pop('hidden_dims', [512, 512])
+        self.model_hidden_dims = kwargs.pop('hidden_dims', [256, 256])
         self.model_num_filters = kwargs.pop('num_filters', [16, 32, 64, 128])
         self.model_num_classes = kwargs.pop('num_classes', 10)
         self.model_use_batchnorm = kwargs.pop('use_batchnorm', True)
@@ -109,10 +109,13 @@ class ConvParamSearch(object):
                                             weight_scale=weight_scale,
                                             verbose=self.verbose)
 
-    def init_solver(self, data, learning_rate=1e-3):
+    def init_solver(self, data, learning_rate=1e-3, num_epochs=None):
+
+        if num_epochs is None:
+            num_epochs = self.solver_num_epochs
         self.solv = solver.Solver(self.model,
                                     data,
-                                    num_epochs=self.solver_num_epochs,
+                                    num_epochs=num_epochs,
                                     batch_size=self.solver_batch_size,
                                     update_rule=self.solver_update_rule,
                                     optim_config={'learning_rate': learning_rate},
@@ -131,6 +134,9 @@ class ConvParamSearch(object):
             if self.verbose:
                 print("Model is not initialized, exiting overfit test\n")
             return
+
+        if self.verbose:
+            print("Ovefitting on sizes %s" % str(overfit_sizes))
 
         for size in overfit_sizes:
             overfit_data = {

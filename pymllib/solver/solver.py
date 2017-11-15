@@ -42,13 +42,8 @@ class Solver(object):
         self.print_every = kwargs.pop('print_every', 10)
         self.verbose = kwargs.pop('verbose', True)
         self.checkpoint_dir = kwargs.pop('checkpoint_dir', 'checkpoint')
-        # The idea here is that if the loss doesn't change by eps for more than
-        # 200 iters we quit
-        self.loss_window_len = kwargs.pop('loss_window_len', 200)
-        self.loss_window_eps = kwargs.pop('loss_window_eps', 1e-3)
-        self.loss_converge_window = kwargs.pop('loss_converge_window', 1e4)
 
-        if model is None:
+        if model is None or data is None:
             # assume we are loading from file
             self.model = None
             self.X_train = None
@@ -78,19 +73,18 @@ class Solver(object):
 
     def __str__(self):
         s = []
-
         # print the size of the dataset attached to the solver
         #s.append("X_train shape  (%s)" % str(self.X_train.shape))
-        #s.append("y_train shape  (%s)" % str(self.y_train.shape))
+        #s.append("y_trian shape  (%s)" % str(self.y_train.shape))
         #s.append("X_val shape    (%s)" % str(self.X_val.shape))
         #s.append("y_val shape    (%s)" % str(self.y_val.shape))
         # Solver params
-        s.append("update rule  : %s" % self.update_rule)
-        s.append("optim config : %s" % self.optim_config)
-        s.append("lr decay     : %s" % self.lr_decay)
-        s.append("batch size   : %s" % self.batch_size)
-        s.append("num epochs   : %s" % self.num_epochs)
-        # Could have some "super verbose" settings here like print_every, etc
+        s.append("update rule  : %s\n" % str(self.update_rule))
+        s.append("optim config : %s\n" % str(self.optim_config))
+        s.append("lr decay     : %s\n" % str(self.lr_decay))
+        s.append("batch size   : %s\n" % str(self.batch_size))
+        s.append("num epochs   : %s\n" % str(self.num_epochs))
+        s.append("print every  : %d\n" % self.print_every)
 
         return ''.join(s)
 
@@ -188,28 +182,7 @@ class Solver(object):
         with open(filename, 'wb') as fp:
             pickle.dump(checkpoint, fp)
 
-    def load_checkpoint(self, fname):
-
-        if self.verbose:
-            print("Loading checkpoint from file %s" % fname)
-
-        with open(fname, 'rb') as fp:
-            cpoint_data = pickle.load(fp)
-            self.model = cpoint_data['model']
-            self.update_rule = cpoint_data['update_rule']
-            self.lr_decay = cpoint_data['lr_decay']
-            self.optim_config = cpoint_data['optim_config']
-            self.batch_size = cpoint_data['batch_size']
-            self.epoch = cpoint_data['epoch']
-            self.loss_history = cpoint_data['loss_history']
-            self.train_acc_history = cpoint_data['train_acc_history']
-            self.val_acc_history = cpoint_data['val_acc_history']
-            # Fill in gaps (TODO : update the save/load so that they are
-            # symmetrical?
-            self.num_epochs = 0
-            self.print_every = 0
-            # TODO : may as well break the filename apart and store the
-            # checkpoint directory and name in the object...
+    # TODO: should there be a _load_checkpoint()?
 
     def save(self, filename):
         params = self._get_solver_params()
@@ -289,12 +262,6 @@ class Solver(object):
         num_train = self.X_train.shape[0]
         iterations_per_epoch = max(num_train / self.batch_size, 1)
         num_iterations = int(self.num_epochs * iterations_per_epoch)
-        if self.loss_window_len > num_iterations:
-            loss_win = num_iterations
-        else:
-            loss_win = self.loss_window_len
-        avg_loss = 0.0
-        prev_avg_loss = 0.0
 
         for t in range(num_iterations):
             self._step()
@@ -328,18 +295,6 @@ class Solver(object):
                     self.best_params = {}
                     for k, v in self.model.params.items():
                         self.best_params[k] = v.copy()
-
-            # See if the loss has changed sufficiently
-            if t > loss_win:
-                avg_loss = sum(self.loss_history[-loss_win:]) / loss_win
-                if abs(avg_loss - prev_avg_loss) < self.loss_window_eps:
-                    if self.verbose:
-                        print("Difference has changed by less than %f in %d iterations, exiting\n" % (self.loss_window_eps, t))
-                    return
-                prev_avg_loss = avg_loss
-
-                # TODO : We should also quit if the loss is no better than a random guess
-                # after this time
 
         # Swap the best parameters into the model
         self.model.params = self.best_params
