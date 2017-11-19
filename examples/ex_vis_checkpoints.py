@@ -8,30 +8,37 @@ import matplotlib.pyplot as plt
 from pymllib.solver import solver
 from pymllib.vis import vis_solver
 
+# Debug
+#from pudb import set_trace; set_trace()
 
-def plot_single(cname):
 
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
+def plot_solver_weights(ax, fname, title=None):
 
-    title = "Layer 1 weights"
+    if title is None:
+        title = "Layer 1 weights"
     solv = solver.Solver(None, None)
-    solv.load_checkpoint(cname)
+    solv.load_checkpoint(fname)
     vis_solver.plot_model_first_layer(ax, solv.model, cname)
     ax.set_title(title)
 
-    # Also plot the training results
-    fig2 = plt.figure()
-    ax2 = [ ]
-    for i in range(3):
-        subax = fig2.add_subplot(3, 1, (i+1))
-        ax2.append(subax)
-    vis_solver.plot_solver(ax2, solv)
-    plt.show()
+
+# TODO : Visualize an animation of the weights from a set of solvers
+def plot_sequence(ax, path, fname, num_checkpoints, prefix=None):        # TODO ; add params
+
+    if type(num_checkpoints) is tuple:
+        if len(num_checkpoints) > 2:
+            raise ValueError("Cannot accept more than 2 limits for num_checkpoints")
+        if num_checkpoints[0] == 0:
+            n_min = 1
+        else:
+            n_min = num_checkpoints[0]
+        n_max = num_checkpoints[1]
+    else:
+        n_min = 1
+        n_max = num_checkpoints
 
 
-
-def vis_weight_sequence(ax, path, fname, num_checkpoints, prefix=None):        # TODO ; add params
+def vis_weight_sequence(ax, path, fname, epoch_num, prefix=None):
     """
     VIS_WEIGHT_SEQUENCE
     Plot a series of weights as an animated sequence from
@@ -46,18 +53,12 @@ def vis_weight_sequence(ax, path, fname, num_checkpoints, prefix=None):        #
             directories, in which case the method iterates over each of them in turn.
         fname:
             The name of a given solver file, without the '_epoch_%d.pkl' suffix
-        num_checkpoints:
-            The number of *.pkl files to read. This may a scalar, in which case the
-            method reads files from  <fname>_epoch_1.pkl to <fname>_epoch_n.pkl where
-            n = num_checkpoints. Alternatively, this argument may be a tuple of (m, n)
-            in which case the method reads files from <fname>_epoch_m.pkl through
-            <fname>_epoch_n.pkl.
+        epoch_num:
+            Which epoch to load.
         prefix:
             A prefix that is prepended to the filename. This allows, for example, a
             group of subfolders to be traversed that all have the same root.
             Default = None
-
-
     """
 
     # Helper function for loading solver objects
@@ -73,34 +74,22 @@ def vis_weight_sequence(ax, path, fname, num_checkpoints, prefix=None):        #
     if type(fname) is not list:
         fname = [fname]
 
-    if type(num_checkpoints) is tuple:
-        if len(num_checkpoints) > 2:
-            raise ValueError("Cannot accept more than 2 limits for num_checkpoints")
-        if num_checkpoints[0] == 0:
-            n_min = 1
-        else:
-            n_min = num_checkpoints[0]
-        n_max = num_checkpoints[1]
-    else:
-        n_min = 1
-        n_max = num_checkpoints
-
-
     # Iterate over all files and generate animations
+    solver_dict = {}
     for p in path:
         for f in fname:
-            for n in range(n_min, n_max):
-                title = "Layer 1 Weights (epoch %d)" % (n+1)
-                epoch_str = '_epoch_%d.pkl' % (n)
-                if prefix is not None:
-                    fname = str(prefix) + '/' + str(p) + '/' + str(f) + str(epoch_str)
-                else:
-                    fname = str(p) + '/' + str(f) + str(epoch_str)
-                solv = load_solver(fname)
-                vis_solver.plot_model_first_layer(ax, solv.model, cname)
-                ax.set_title(title)
-                plt.pause(1)
-                plt.draw()
+            epoch_str = '_epoch_%d.pkl' % epoch_num
+            if prefix is not None:
+                cname = str(prefix) + '/' + str(p) + '/' + str(f) + str(epoch_str)
+            else:
+                cname = str(p) + '/' + str(f) + str(epoch_str)
+            #solv = load_solver(fname)
+            print(fname)
+            solv = solver.Solver(None, None)
+            solv.load_checkpoint(cname)
+            solver_dict[f] = solv
+            #vis_solver.plot_model_first_layer(ax, solv.model, cname)
+    vis_solver.plot_solver_compare(ax, solver_dict)
 
     # At the final checkpoint, plot the overall training results
     # TODO : Move this to another routine one layer up
@@ -113,27 +102,12 @@ def vis_weight_sequence(ax, path, fname, num_checkpoints, prefix=None):        #
     #plt.show()
 
 
-
-
-
 if __name__ == "__main__":
+
+    fig, ax = vis_solver.get_train_fig()
+
     prefix = "/home/kreshnik/Documents/compucon/machine-learning/models"
     cpath = ["conv-net-train-2017-11-15-01", "conv-net-train-2017-11-15-02"]
     cname = ['c16-fc256-fc10-net', 'c16-c32-fc256-fc10-net', 'c16-c32-c64-fc256-fc256-fc10-net', 'c16-c32-c64-c128-fc256-fc256-fc10-net']
-
-
-    solver_dict = {}
-    for p in cpath:
-        for n in cname:
-            cpoint_filename = prefix + '/' + p + '/' + n + '_epoch_100.pkl'
-            solv = load_solver(cpoint_filename)
-            solver_dict[n + p[-1]] = solv
-
-    # Plot solvers against each other
-    fig, ax = vis_solver.get_train_fig()
-    vis_solver.plot_solver_compare(ax, solver_dict)
-    fig.tight_layout()
+    vis_weight_sequence(ax, cpath, cname, 100, prefix)
     plt.show()
-
-    #plot_sequence()
-    #plot_single(cpoint_filename)
