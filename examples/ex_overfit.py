@@ -42,8 +42,9 @@ def overfit():
             'X_val':   dataset['X_val'][:size],
             'y_val':   dataset['y_val'][:size]
         }
-        model = convnet.ConvNetLayer(hidden_dims=[256, 256],
-                                     num_filters=[16, 32, 64],
+        model = convnet.ConvNetLayer(hidden_dims=[256],
+                                     num_filters=[16],
+                                     filter_size=5,
                                      reg=reg,
                                      weight_scale=weight_scale)
         solv = solver.Solver(model,
