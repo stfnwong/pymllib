@@ -13,7 +13,19 @@ import pymllib.layers.layers as layers
 import pymllib.utils.data_utils as data_utils
 
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
+
+
+# TODO : these are only required for debugging, remove them
+def print_h_sizes(blocks):
+    for k, v, in blocks.items():
+        if k[:1] == 'h':
+            print("%s : %s " % (str(k), str(v.shape)))
+
+def print_layers(params, layer_type='W'):
+    for k, v in params.items():
+        if k[:1] == layer_type:
+            print("%s : %s " % (str(k), str(v.shape)))
 
 
 # TODO : these are only required for debugging, remove them
@@ -150,7 +162,21 @@ class ConvNetLayer(object):
         return ''.join(s)
 
     def __repr__(self):
-        return self.__str__()
+        s = []
+        conv_layers = []
+        fc_layers = []
+        for k in sorted(self.params.keys()):
+            if k[:1] == 'W':
+                if len(self.params[k].shape) == 4:
+                    conv_layers.append('c%d-' % int(self.params[k].shape[0]))
+                else:
+                    fc_layers.append('fc%d-' % int(self.params[k].shape[1]))
+        s.extend(conv_layers)
+        s.extend(fc_layers)
+        s.extend('f%d' % self.filter_size)
+        s.extend('net')
+
+        return ''.join(s)
 
     def loss(self, X, y=None):
         """
@@ -398,25 +424,7 @@ class ThreeLayerConvNet(object):
             'b2': b2,
             'b3': b3})
 
-        if self.use_batchnorm:
-            bn_param1 = {'mode': 'train',
-                         'running_mean': np.zeros(F),
-                         'running_var': np.zeros(F)}
-            gamma1 = np.ones(F)
-            beta1 = np.zeros(F)
-
-            bn_param2 = {'mode': 'train',
-                         'running_mean': np.zeros(F),
-                         'running_var': np.zeros(F)}
-            gamma2 = np.ones(F)
-            beta2 = np.zeros(F)
-
-            self.bn_params.update({'bn_param1': bn_param1,
-                                   'bn_param2': bn_param2})
-            self.params.update({'beta1': beta1,
-                                'beta2': beta2,
-                                'gamma1': gamma1,
-                                'gamma2': gamma2})
+        # TODO : batchnorm params
 
         # Convert datatype
         for k, v in self.params.items():
@@ -433,22 +441,14 @@ class ThreeLayerConvNet(object):
         else:
             mode = 'train'
 
-        if self.use_batchnorm:
-            for k, v in self.bn_params.items():
-                v[mode] = mode
+        # TODO: Batchnorm here
 
         N = X.shape[0]
         W1, b1 = self.params['W1'], self.params['b1']
         W2, b2 = self.params['W2'], self.params['b2']
         W3, b3 = self.params['W3'], self.params['b3']
 
-        if self.use_batchnorm:
-            bn_param1 = self.bn_params['bn_param1']
-            beta1 = self.params['beta1']
-            gamma1 = self.params['gamma1']
-            bn_param2 = self.bn_params['bn_param2']
-            beta2 = self.params['beta2']
-            gamma2 = self.params['gamma2']
+        # TODO : more batchnorm stuff here
 
         fsize = W1.shape[2]
         conv_param = {'stride': 1,
@@ -465,15 +465,8 @@ class ThreeLayerConvNet(object):
         w = W1
         b = b1
         # Forward into the conv layer
-        if self.use_batchnorm:
-            beta = beta1
-            gamma = gamma1
-            bn_param = bn_param1
-            conv_layer, cache_conv_layer = layers.conv_norm_relu_pool(
-                x, w, b, conv_param, pool_param, gamma, beta, bn_param)
-        else:
-            conv_layer, cache_conv_layer = layers.conv_relu_pool_forward(
-                x, w, b, conv_param, pool_param)
+        # TODO : batchnorm
+        conv_layer, cache_conv_layer = layers.conv_relu_pool_forward(x, w, b, conv_param, pool_param)
 
         N, F, Hp, Wp = conv_layer.shape     # Shape of output
 
@@ -481,14 +474,7 @@ class ThreeLayerConvNet(object):
         x = conv_layer.reshape((N, F, Hp * Wp))
         w = W2
         b = b2
-        if self.use_batchnorm:
-            beta = beta2
-            gamma = gamma2
-            bn_param = bn_param2
-            hidden_layer, cache_hidden_layer = layers.affine_norm_relu_forward(
-                x, w, b, gamma, beta, bn_param)
-        else:
-            hidden_layer, cache_hidden_layer = layers.affine_relu_forward(x, w, b)
+        hidden_layer, cache_hidden_layer = layers.affine_relu_forward(x, w, b)
         N, Hh = hidden_layer.shape
 
         # Forward into linear output layer
@@ -516,19 +502,12 @@ class ThreeLayerConvNet(object):
         dW3 += self.reg * W3
 
         # backprop into first fc layer
-        if self.use_batchnorm:
-            dx2, dW2, db2, dgamma2, dbeta2 = layers.affine_norm_relu_backward(dx3, cache_hidden_layer)
-        else:
-            dx2, dW2, db2 = layers.affine_relu_backward(dx3, cache_hidden_layer)
+        dx2, dW2, db2 = layers.affine_relu_backward(dx3, cache_hidden_layer)
         dW2 += self.reg * W2
 
         # Backprop into conv layer
         dx2 = dx2.reshape(N, F, Hp, Wp)           # Note - don't forget to reshape here...
-        if self.use_batchnorm:
-            dx, dW1, db1, dgamma1, dbeta1 = layers.conv_norm_relu_pool_backward(
-                dx2, cache_conv_layer)
-        else:
-            dx, dW1, db1 = layers.conv_relu_pool_backward(dx2, cache_conv_layer)
+        dx, dW1, db1 = layers.conv_relu_pool_backward(dx2, cache_conv_layer)
         dW1 += self.reg * W1
 
         grads.update({
@@ -538,11 +517,5 @@ class ThreeLayerConvNet(object):
             'b1': db1,
             'b2': db2,
             'b3': db3})
-
-        if self.use_batchnorm:
-            grads.update({'beta1': dbeta1,
-                          'beta2': dbeta2,
-                          'gamma1': dgamma1,
-                          'gamma2': dgamma2})
 
         return loss, grads
