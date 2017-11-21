@@ -123,7 +123,6 @@ class Solver(object):
         """
         Make a single gradient update
         """
-
         num_train = self.X_train.shape[0]
         batch_mask = np.random.choice(num_train, self.batch_size)
         X_batch = self.X_train[batch_mask]
@@ -143,39 +142,31 @@ class Solver(object):
 
     def _get_checkpoint(self):
         checkpoint = {
+            # Model data
             'model': self.model,
+            # Solver params
             'update_rule': self.update_rule,
             'lr_decay': self.lr_decay,
             'optim_config': self.optim_config,
             'batch_size': self.batch_size,
-            #'num_train_samples': self.num_train_samples,
-            #'num_val_samples': self.num_val_samples,
             'epoch': self.epoch,
+            'num_epochs': self.num_epochs,
+            # Solution data
             'loss_history': self.loss_history,
             'train_acc_history': self.train_acc_history,
             'val_acc_history': self.val_acc_history,
+            # Loss window
+            'enable_loss_window': self.enable_loss_window,
+            'loss_window_len': self.loss_window_len,
+            'loss_window_eps': self.loss_window_eps,
+            'loss_converge_window': self.loss_converge_window,
+            # Checkpoint info
+            'checkpoint_name': self.checkpoint_name,
+            'checkpoint_dir': self.checkpoint_dir
         }
 
         return checkpoint
 
-    def _get_solver_params(self):
-        params = {
-            'model': self.model,
-            'update_rule': self.update_rule,
-            'lr_decay': self.lr_decay,
-            'optim_config': self.optim_config,
-            'batch_size': self.batch_size,
-            'num_epochs': self.num_epochs,
-            'print_every': self.print_every,
-            #'num_train_samples': self.num_train_samples,
-            #'num_val_samples': self.num_val_samples,
-            'epoch': self.epoch,
-            'loss_history': self.loss_history,
-            'train_acc_history': self.train_acc_history,
-            'val_acc_history': self.val_acc_history,
-        }
-
-        return params
 
     def _save_checkpoint(self):
         """
@@ -192,62 +183,40 @@ class Solver(object):
         with open(filename, 'wb') as fp:
             pickle.dump(checkpoint, fp)
 
-    def load_checkpoint(self, fname):
+    def save(self, filename):
+        """
+        Save the solver object to a given filename. This method has the
+        same function as _save_checkpoint other than the fact that its
+        exposed to the caller.
+        """
 
-        if self.verbose:
-            print("Loading checkpoint from file %s" % fname)
+        checkpoint = self._get_checkpoint()
+        with open(filename, 'wb') as fp:
+            pickle.dump(checkpoint, fp)
+
+    def load_checkpoint(self, fname):
 
         with open(fname, 'rb') as fp:
             cpoint_data = pickle.load(fp)
-            self.model = cpoint_data['model']
-            self.update_rule = cpoint_data['update_rule']
-            self.lr_decay = cpoint_data['lr_decay']
-            self.optim_config = cpoint_data['optim_config']
-            self.batch_size = cpoint_data['batch_size']
-            self.epoch = cpoint_data['epoch']
-            self.loss_history = cpoint_data['loss_history']
-            self.train_acc_history = cpoint_data['train_acc_history']
-            self.val_acc_history = cpoint_data['val_acc_history']
-            # Fill in gaps (TODO : update the save/load so that they are
-            # symmetrical?
-            self.num_epochs = 0
-            self.print_every = 0
-            # TODO : may as well break the filename apart and store the
-            # checkpoint directory and name in the object...
 
-    def save(self, filename):
-        params = self._get_solver_params()
-
-        if self.verbose:
-            print("Saving model to file %s" % filename)
-        with open(filename, 'wb') as fp:
-            pickle.dump(params, fp)
-
-    def load(self, filename):
-        """
-        Load an entire model from disk
-        """
-
-        if self.verbose:
-            print("Loading model from file %s" % filename)
-
-        with open(filename, 'rb') as fp:
-            model_data = pickle.load(fp)
-            # Copy the params to this object
-            self.model = model_data['model']
-            self.update_rule = model_data['update_rule']
-            self.lr_decay = model_data['lr_decay']
-            self.optim_confi = model_data['optim_config']
-            self.batch_size = model_data['batch_size']
-            self.num_epochs = model_data['num_epochs']
-            self.print_every = model_data['print_every']
-            #self.num_train_samples = model_data['num_train_samples']
-            #self.num_val_samples = model_data['num_val_samples']
-            self.epoch = model_data['epoch']
-            self.loss_history = model_data['loss_history']
-            self.train_acc_history = model_data['train_acc_history']
-            self.val_acc_history = model_data['val_acc_history']
-
+        # Model data
+        self.model = cpoint_data['model']
+        # Solver params
+        self.update_rule = cpoint_data['update_rule']
+        self.lr_decay = cpoint_data['lr_decay']
+        self.optim_config = cpoint_data['optim_config']
+        self.batch_size = cpoint_data['batch_size']
+        self.epoch = cpoint_data['epoch']
+        self.num_epochs = cpoint_data['num_epochs']
+        # Solution data
+        self.loss_history = cpoint_data['loss_history']
+        self.train_acc_history = cpoint_data['train_acc_history']
+        self.val_acc_history = cpoint_data['val_acc_history']
+        # Loss window
+        self.enable_loss_window = cpoint_data['enable_loss_window']
+        self.loss_window_len = cpoint_data['loss_window_len']
+        self.loss_window_eps = cpoint_data['loss_window_eps']
+        self.loss_converge_window = cpoint_data['loss_converge_window']
 
     def check_accuracy(self, X, y, num_samples=None, batch_size=100):
         """
