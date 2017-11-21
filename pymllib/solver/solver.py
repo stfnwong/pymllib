@@ -60,6 +60,7 @@ class Solver(object):
             return
 
         self.model = model
+        s.append("Solver parameters:\n")
         self.X_train = data['X_train']
         self.y_train = data['y_train']
         self.X_val = data['X_val']
@@ -79,12 +80,15 @@ class Solver(object):
 
     def __str__(self):
         s = []
-        # print the size of the dataset attached to the solver
-        #s.append("X_train shape  (%s)" % str(self.X_train.shape))
-        #s.append("y_trian shape  (%s)" % str(self.y_train.shape))
-        #s.append("X_val shape    (%s)" % str(self.X_val.shape))
-        #s.append("y_val shape    (%s)" % str(self.y_val.shape))
+        if data is not None:
+            # print the size of the dataset attached to the solver
+            s.append("Data shape:\n")
+            s.append("X_train shape  (%s)\n" % str(self.X_train.shape))
+            s.append("y_trian shape  (%s)\n" % str(self.y_train.shape))
+            s.append("X_val shape    (%s)\n" % str(self.X_val.shape))
+            s.append("y_val shape    (%s)\n" % str(self.y_val.shape))
         # Solver params
+        s.append("Solver parameters:\n")
         s.append("update rule  : %s\n" % str(self.update_rule))
         s.append("optim config : %s\n" % str(self.optim_config))
         s.append("lr decay     : %s\n" % str(self.lr_decay))
@@ -188,7 +192,28 @@ class Solver(object):
         with open(filename, 'wb') as fp:
             pickle.dump(checkpoint, fp)
 
-    # TODO: should there be a _load_checkpoint()?
+    def load_checkpoint(self, fname):
+
+        if self.verbose:
+            print("Loading checkpoint from file %s" % fname)
+
+        with open(fname, 'rb') as fp:
+            cpoint_data = pickle.load(fp)
+            self.model = cpoint_data['model']
+            self.update_rule = cpoint_data['update_rule']
+            self.lr_decay = cpoint_data['lr_decay']
+            self.optim_config = cpoint_data['optim_config']
+            self.batch_size = cpoint_data['batch_size']
+            self.epoch = cpoint_data['epoch']
+            self.loss_history = cpoint_data['loss_history']
+            self.train_acc_history = cpoint_data['train_acc_history']
+            self.val_acc_history = cpoint_data['val_acc_history']
+            # Fill in gaps (TODO : update the save/load so that they are
+            # symmetrical?
+            self.num_epochs = 0
+            self.print_every = 0
+            # TODO : may as well break the filename apart and store the
+            # checkpoint directory and name in the object...
 
     def save(self, filename):
         params = self._get_solver_params()
