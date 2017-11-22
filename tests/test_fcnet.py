@@ -16,12 +16,10 @@ import numpy as np
 import unittest
 
 # Library imports
-import pymllib.utils.data_utils as data_utils
-#import pymllib.util.check_gradient as check_gradient
-#import pymllib.util.error as error
-#import pymllib.layers.layers as layers
-import pymllib.classifiers.fcnet as fcnet
-import pymllib.solver.solver as solver
+from pymllib.utils import data_utils
+from pymllib.classifiers import fcnet
+from pymllib.solver import solver
+from pymllib.vis import vis_solver
 
 # Debug
 from pudb import set_trace; set_trace()
@@ -427,12 +425,52 @@ class TestFCNet(unittest.TestCase):
         print("Training without batchnorm")
         fc_solver.train()
 
-
-
-
-
-
         print("======== TestFCNet.test_batchnorm: <END> ")
+
+    def test_weight_init(self):
+        print("======== TestFCNet.test_weight_init:")
+
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 500
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        input_dim = 32 * 32 * 3
+        hidden_dims = [256, 256]
+        weight_scale = 2e-2
+        learning_rate = 1e-3
+        num_epochs=30
+        batch_size = 50
+        update_rule='adam'
+
+        # In this cut, we test the kwargs
+        model = fcnet.FCNet(input_dim=input_dim,
+                        hidden_dims=hidden_dims,
+                        weight_scale=weight_scale)
+        if self.verbose:
+            print(model)
+        solv = solver.Solver(model,
+                             small_data,
+                             print_every=100,
+                             num_epochs=num_epochs,
+                             batch_size=batch_size,     # previously 25
+                             update_rule=update_rule,
+                             optim_config={'learning_rate': learning_rate})
+        solv.train()
+
+        if self.draw_plot:
+            fig, ax = vis_solver.get_train_fig()
+            vis_solver.plot_solver(ax, solv)
+            plt.show()
+
+
+
+
+
+        print("======== TestFCNet.test_weight_init: <END> ")
 
 
 class TestFCNetDropout(unittest.TestCase):

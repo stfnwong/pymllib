@@ -23,17 +23,27 @@ class FCNet(object):
     """
     TODO: Docstring
     """
-    def __init__(self, hidden_dims, input_dim, num_classes=10,
-                 dropout=0, use_batchnorm=False, reg=0.0,
-                 weight_scale=1e-2, dtype=np.float32, seed=None,
-                 verbose=False):
+    #def __init__(self, hidden_dims, input_dim, num_classes=10,
+    #             dropout=0, use_batchnorm=False, reg=0.0,
+    #             weight_scale=1e-2, dtype=np.float32, seed=None,
+    #             verbose=False):
+    def __init__(self, input_dim, hidden_dims, **kwargs):
 
-        self.verbose = verbose
-        self.use_batchnorm = use_batchnorm
-        self.use_dropout = dropout > 0
-        self.reg = reg
+        # TODO : Update kwargs
+        self.verbose = kwargs.pop('verbose', False)
+        self.use_batchnorm = kwargs.pop('use_batchnorm', False)
+        self.use_xavier = kwargs.pop('use_xavier', False)
+        self.reg = kwargs.pop('reg', 0.0)
+        self.dtype = kwargs.pop('dtype', np.float32)
+        self.weight_scale = kwargs.pop('weight_scale', 1e-2)
         self.num_layers = 1 + len(hidden_dims)
-        self.dtype = dtype
+
+        # Other params
+        seed = kwargs.pop('seed', None)
+        num_classes = kwargs.pop('num_classes', 10)
+        dropout = kwargs.pop('dropout', 0)
+        self.use_dropout = dropout > 0
+        # Dict to store weights, activations, biases, etc
         self.params = {}
 
         # Initialize the parameters of the network, storing all values into a
@@ -43,7 +53,7 @@ class FCNet(object):
             raise ValueError('hidden_dim must be a list')
 
         dims = [input_dim] + hidden_dims + [num_classes]
-        Ws = {'W' + str(i+1) : weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
+        Ws = {'W' + str(i+1) : self.weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
         bs = {'b' + str(i+1) : np.zeros(dims[i+1]) for i in range(len(dims)-1)}
         self.params.update(bs)
         self.params.update(Ws)
@@ -89,15 +99,26 @@ class FCNet(object):
 
     def __str__(self):
         s = []
-        for l in range(self.num_layers):
-            wl = self.params['W' + str(l+1)]
-            bl = self.params['b' + str(l+1)]
-            s.append('Layer %d\n\t W%d: (%d, %d),\t b%d: (%d)\n' % (l+1, l+1, wl.shape[0], wl.shape[1], l+1, bl.shape[0]))
+        s.append('%d layer network\n' % self.num_layers)
+        for k, v in self.params.items():
+            if k[:1] == 'W':
+                w = self.params[k]
+                s.append('\t (%d) : %s\n' % (int(k[1:]), str(w.shape)))
 
         return ''.join(s)
 
     def __repr__(self):
-        return self.__str__()
+        s = []
+        for k in sorted(self.params.keys()):
+            if k[:1] == 'W':
+                s.append('fc%d-' % int(self.params[k].shape[1]))
+        s.append('-net')
+
+        return ''.join(s)
+
+
+    def _weight_init(self, N, X):
+        pass
 
     def loss(self, X, y=None):
         """
