@@ -27,6 +27,18 @@ def print_layers(params, layer_type='W'):
         if k[:1] == layer_type:
             print("%s : %s " % (str(k), str(v.shape)))
 
+
+# TODO : these are only required for debugging, remove them
+def print_h_sizes(blocks):
+    for k, v, in blocks.items():
+        if k[:1] == 'h':
+            print("%s : %s " % (str(k), str(v.shape)))
+
+def print_layers(params, layer_type='W'):
+    for k, v in params.items():
+        if k[:1] == layer_type:
+            print("%s : %s " % (str(k), str(v.shape)))
+
 class ConvNetLayer(object):
     """
     An L-layer convolutional network with the following architecture
@@ -150,7 +162,21 @@ class ConvNetLayer(object):
         return ''.join(s)
 
     def __repr__(self):
-        return self.__str__()
+        s = []
+        conv_layers = []
+        fc_layers = []
+        for k in sorted(self.params.keys()):
+            if k[:1] == 'W':
+                if len(self.params[k].shape) == 4:
+                    conv_layers.append('c%d-' % int(self.params[k].shape[0]))
+                else:
+                    fc_layers.append('fc%d-' % int(self.params[k].shape[1]))
+        s.extend(conv_layers)
+        s.extend(fc_layers)
+        s.extend('f%d' % self.filter_size)
+        s.extend('net')
+
+        return ''.join(s)
 
     def loss(self, X, y=None):
         """

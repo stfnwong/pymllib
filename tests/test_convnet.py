@@ -256,7 +256,7 @@ class TestConvNet(unittest.TestCase):
         print("\n======== TestConvNet.test_conv_4layer_param_search :")
 
         dataset = load_data(self.data_dir, self.verbose)
-        num_train = 50
+        num_train = 100
 
         small_data = {
             'X_train': dataset['X_train'][:num_train],
@@ -266,7 +266,7 @@ class TestConvNet(unittest.TestCase):
         }
         #input_dim = small_data['X_train'].shape[0]
         input_dim = (3, 32, 32)
-        num_epochs = 20
+        num_epochs = 50
 
         param_search = True
         num_searches = 0
@@ -285,7 +285,7 @@ class TestConvNet(unittest.TestCase):
                                         print_every=10,
                                         num_epochs=num_epochs,
                                         batch_size=50,     # previously 25
-                                        update_rule='sgd',
+                                        update_rule='adam',
                                         optim_config={'learning_rate': learning_rate})
             model_solver.train()
             num_searches += 1
