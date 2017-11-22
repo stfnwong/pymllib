@@ -329,27 +329,26 @@ class TestConvNet(unittest.TestCase):
             'y_val':   dataset['y_val'][:num_train]
         }
         input_dim = (3, 32, 32)
-        weight_scale = 0.07
-        learning_rate = 0.007
-        num_epochs = 20
+        hidden_dims = 100
+        #weight_scale = 0.07
+        #learning_rate = 0.007
+        weight_scale = 1e-3
+        learning_rate = 1e-3
+        num_epochs = 30
         batch_size = 50
         update_rule='adam'
 
         xavier_model = convnet.ConvNetLayer(input_dim=input_dim,
-                        hidden_dims=[256,],
+                        hidden_dims=[hidden_dims],
                         num_filters = [32],
                         weight_scale=weight_scale,
-                        update_rule=update_rule,
-                        batch_size=batch_size,
                         user_xavier=True,
                         verbose=True,
                         dtype=np.float32)
 
         gaussian_model = convnet.ConvNetLayer(input_dim=input_dim,
-                        hidden_dims=[256],
+                        hidden_dims=[hidden_dims],
                         num_filters = [32],
-                        update_rule=update_rule,
-                        batch_size=batch_size,
                         use_xavier=False,
                         verbose=True,
                         weight_scale=weight_scale,
@@ -368,8 +367,8 @@ class TestConvNet(unittest.TestCase):
                                         small_data,
                                         print_every=10,
                                         num_epochs=num_epochs,
-                                        batch_size=50,     # previously 25
-                                        update_rule='adam',
+                                        batch_size=batch_size,
+                                        update_rule=update_rule,
                                         optim_config={'learning_rate': learning_rate})
             model_solver.train()
 
