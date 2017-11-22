@@ -18,12 +18,9 @@ from pymllib.utils import data_utils
 #from pudb import set_trace; set_trace()
 
 class ConvParamSearch(object):
-    def __init__(self, **kwargs):
+    def __init__(self, data, model, **kwargs):
         # Reserve names for model and solver
-        self.solv = None
-        self.model = None
-        self.dataset = None
-        self.train_data = None
+
         # Search params
         self.max_searches = kwargs.pop('max_searches', 1e3)
         self.num_train = kwargs.pop('num_train', 500)
@@ -49,6 +46,21 @@ class ConvParamSearch(object):
         self.reg_output = 0.0
         # Other params
         self.verbose = kwargs.pop('verbose', False)
+
+        # Internal params
+        self.solv = None
+        self.train_data = None
+        if data is None or model is None:
+            self.model = None
+            self.dataset = None
+
+            return
+
+        # TODO : Split as per solver?
+        self.model = model
+        self.data = data
+
+
 
     def __str__(self):
         s = []

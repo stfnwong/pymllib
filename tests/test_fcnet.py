@@ -441,17 +441,19 @@ class TestFCNet(unittest.TestCase):
         input_dim = 32 * 32 * 3
         hidden_dims = [100, 100, 100, 100, 100, 100, 100, 100, 100]
         weight_scale = 2e-2
+        reg = 2e-2
         learning_rate = 1e-3
         num_epochs=20
         batch_size = 50
         update_rule='adam'
-        weight_init = ['gauss', 'gauss_sqrt', 'xavier']
+        weight_init = ['gauss', 'gauss_sqrt2', 'xavier']
 
         model_dict = {}
         for w in weight_init:
             model = fcnet.FCNet(input_dim=input_dim,
                             hidden_dims=hidden_dims,
                             weight_scale=weight_scale,
+                            reg=reg,
                             weight_init=w)
             model_dict[w] = model
         solver_dict = {}
@@ -477,10 +479,6 @@ class TestFCNet(unittest.TestCase):
             vis_solver.plot_solver_compare(ax, solver_dict)
             #vis_solver.plot_solver(ax, solv)
             plt.show()
-
-
-
-
 
         print("======== TestFCNet.test_weight_init: <END> ")
 

@@ -127,6 +127,8 @@ class FCNet(object):
             W = self.weight_scale * np.random.randn(N, D)
         elif self.weight_init == 'gauss_sqrt':
             W = self.weight_scale * np.random.randn(N, D) * (1 / np.sqrt(2.0 / (N+D)))
+        elif self.weight_init == 'gauss_sqrt2':
+            W = np.random.randn(N, D) * (1 / np.sqrt(2/(N+D)))
         elif self.weight_init == 'xavier':
             w_lim = 2 / np.sqrt(N + D)
             W = np.random.uniform(low=-w_lim, high=w_lim, size=(N, D))
