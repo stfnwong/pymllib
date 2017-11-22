@@ -42,8 +42,14 @@ class Solver(object):
         self.print_every = kwargs.pop('print_every', 10)
         self.verbose = kwargs.pop('verbose', True)
         self.checkpoint_dir = kwargs.pop('checkpoint_dir', 'checkpoint')
+        # The idea here is that if the loss doesn't change by eps for more than
+        # 500 iters we quit
+        self.enable_loss_window = kwargs.pop('enable_loss_window', False)
+        self.loss_window_len = kwargs.pop('loss_window_len', 500)
+        self.loss_window_eps = kwargs.pop('loss_window_eps', 1e-3)
+        #self.loss_converge_window = kwargs.pop('loss_converge_window', 1e4)
 
-        if model is None:
+        if model is None or data is None:
             # assume we are loading from file
             self.model = None
             self.X_train = None
@@ -54,6 +60,7 @@ class Solver(object):
             return
 
         self.model = model
+        s.append("Solver parameters:\n")
         self.X_train = data['X_train']
         self.y_train = data['y_train']
         self.X_val = data['X_val']
@@ -73,19 +80,26 @@ class Solver(object):
 
     def __str__(self):
         s = []
-
-        # print the size of the dataset attached to the solver
-        s.append("X_train shape  (%s)" % self.X_train.shape)
-        s.append("y_trian shape  (%s)" % self.y_train.shape)
-        s.append("X_val shape    (%s)" % self.X_val.shape)
-        s.append("y_val shape    (%s)" % self.y_val.shape)
+        if self.X_train is not None:
+            # print the size of the dataset attached to the solver
+            s.append("Data shape:\n")
+            s.append("X_train shape  (%s)\n" % str(self.X_train.shape))
+            s.append("y_train shape  (%s)\n" % str(self.y_train.shape))
+            s.append("X_val shape    (%s)\n" % str(self.X_val.shape))
+            s.append("y_val shape    (%s)\n" % str(self.y_val.shape))
         # Solver params
-        s.append("update rule  : %s" % self.update_rule)
-        s.append("optim config : %s" % self.optim_config)
-        s.append("lr decay     : %s" % self.lr_decay)
-        s.append("batch size   : %s" % self.batch_size)
-        s.append("num epochs   : %s" % self.num_epochs)
-        # Could have some "super verbose" settings here like print_every, etc
+        s.append("Solver parameters:\n")
+        s.append("update rule  : %s\n" % str(self.update_rule))
+        s.append("optim config : %s\n" % str(self.optim_config))
+        s.append("lr decay     : %s\n" % str(self.lr_decay))
+        s.append("batch size   : %s\n" % str(self.batch_size))
+        s.append("num epochs   : %s\n" % str(self.num_epochs))
+        s.append("print every  : %d\n" % self.print_every)
+        # Loss window
+        if self.enable_loss_window:
+            s.append("Loss window:\n")
+            s.append("len          : %d\n" % self.loss_window_len)
+            s.append("eps          : %d\n" % self.loss_window_eps)
 
         return ''.join(s)
 
@@ -103,7 +117,6 @@ class Solver(object):
         self.loss_history = []
         self.train_acc_history = []
         self.val_acc_history = []
-
         # Make a deep copy of optim for each parameter
         self.optim_configs = {}
         for p in self.model.params:
@@ -114,7 +127,6 @@ class Solver(object):
         """
         Make a single gradient update
         """
-
         num_train = self.X_train.shape[0]
         batch_mask = np.random.choice(num_train, self.batch_size)
         X_batch = self.X_train[batch_mask]
@@ -134,45 +146,36 @@ class Solver(object):
 
     def _get_checkpoint(self):
         checkpoint = {
+            # Model data
             'model': self.model,
+            # Solver params
             'update_rule': self.update_rule,
             'lr_decay': self.lr_decay,
             'optim_config': self.optim_config,
             'batch_size': self.batch_size,
-            #'num_train_samples': self.num_train_samples,
-            #'num_val_samples': self.num_val_samples,
             'epoch': self.epoch,
+            'num_epochs': self.num_epochs,
+            # Solution data
             'loss_history': self.loss_history,
             'train_acc_history': self.train_acc_history,
             'val_acc_history': self.val_acc_history,
+            # Loss window
+            'enable_loss_window': self.enable_loss_window,
+            'loss_window_len': self.loss_window_len,
+            'loss_window_eps': self.loss_window_eps,
+            #'loss_converge_window': self.loss_converge_window,
+            # Checkpoint info
+            'checkpoint_name': self.checkpoint_name,
+            'checkpoint_dir': self.checkpoint_dir
         }
 
         return checkpoint
 
-    def _get_solver_params(self):
-        params = {
-            'model': self.model,
-            'update_rule': self.update_rule,
-            'lr_decay': self.lr_decay,
-            'optim_config': self.optim_config,
-            'batch_size': self.batch_size,
-            'num_epochs': self.num_epochs,
-            'print_every': self.print_every,
-            #'num_train_samples': self.num_train_samples,
-            #'num_val_samples': self.num_val_samples,
-            'epoch': self.epoch,
-            'loss_history': self.loss_history,
-            'train_acc_history': self.train_acc_history,
-            'val_acc_history': self.val_acc_history,
-        }
-
-        return params
 
     def _save_checkpoint(self):
         """
         Save the current training status
         """
-
         if self.checkpoint_name is None:
             return
 
@@ -183,62 +186,49 @@ class Solver(object):
         with open(filename, 'wb') as fp:
             pickle.dump(checkpoint, fp)
 
-    def load_checkpoint(self, fname):
 
-        if self.verbose:
-            print("Loading checkpoint from file %s" % fname)
+    def save(self, filename):
+        """
+        Save the solver object to a given filename. This method has the
+        same function as _save_checkpoint other than the fact that its
+        exposed to the caller.
+        """
+        checkpoint = self._get_checkpoint()
+        with open(filename, 'wb') as fp:
+            pickle.dump(checkpoint, fp)
+
+
+    def load_checkpoint(self, fname):
+        """
+        LOAD_CHECKPOINT
+        Load a saved checkpoint from disk into a solver object.
+        In the current version of this method defaults are provided for
+        missing attributes. This somewhat obviates the need to have a
+        conversion utility, as the such a utility would be inserting
+        dummy values into attributes that are missing anyway.
+        """
 
         with open(fname, 'rb') as fp:
             cpoint_data = pickle.load(fp)
-            self.model = cpoint_data['model']
-            self.update_rule = cpoint_data['update_rule']
-            self.lr_decay = cpoint_data['lr_decay']
-            self.optim_config = cpoint_data['optim_config']
-            self.batch_size = cpoint_data['batch_size']
-            self.epoch = cpoint_data['epoch']
-            self.loss_history = cpoint_data['loss_history']
-            self.train_acc_history = cpoint_data['train_acc_history']
-            self.val_acc_history = cpoint_data['val_acc_history']
-            # Fill in gaps (TODO : update the save/load so that they are
-            # symmetrical?
-            self.num_epochs = 0
-            self.print_every = 0
-            # TODO : may as well break the filename apart and store the
-            # checkpoint directory and name in the object...
 
-    def save(self, filename):
-        params = self._get_solver_params()
-
-        if self.verbose:
-            print("Saving model to file %s" % filename)
-        with open(filename, 'wb') as fp:
-            pickle.dump(params, fp)
-
-    def load(self, filename):
-        """
-        Load an entire model from disk
-        """
-
-        if self.verbose:
-            print("Loading model from file %s" % filename)
-
-        with open(filename, 'rb') as fp:
-            model_data = pickle.load(fp)
-            # Copy the params to this object
-            self.model = model_data['model']
-            self.update_rule = model_data['update_rule']
-            self.lr_decay = model_data['lr_decay']
-            self.optim_confi = model_data['optim_config']
-            self.batch_size = model_data['batch_size']
-            self.num_epochs = model_data['num_epochs']
-            self.print_every = model_data['print_every']
-            #self.num_train_samples = model_data['num_train_samples']
-            #self.num_val_samples = model_data['num_val_samples']
-            self.epoch = model_data['epoch']
-            self.loss_history = model_data['loss_history']
-            self.train_acc_history = model_data['train_acc_history']
-            self.val_acc_history = model_data['val_acc_history']
-
+        # Model data
+        self.model = cpoint_data.get('model')
+        # Solver params
+        self.update_rule = cpoint_data.get('update_rule')
+        self.lr_decay = cpoint_data.get('lr_decay')
+        self.optim_config = cpoint_data.get('optim_config')
+        self.batch_size = cpoint_data.get('batch_size')
+        self.epoch = cpoint_data.get('epoch')
+        self.num_epochs = cpoint_data.get('num_epochs', 0)
+        # Solution data
+        self.loss_history = cpoint_data.get('loss_history')
+        self.train_acc_history = cpoint_data.get('train_acc_history')
+        self.val_acc_history = cpoint_data.get('val_acc_history')
+        # Loss window
+        self.enable_loss_window = cpoint_data.get('enable_loss_window', False)
+        self.loss_window_len = cpoint_data.get('loss_window_len', 500)
+        self.loss_window_eps = cpoint_data.get('loss_window_eps', 1e-4)
+            #self.loss_converge_window = cpoint_data['loss_converge_window']
 
     def check_accuracy(self, X, y, num_samples=None, batch_size=100):
         """
@@ -285,6 +275,15 @@ class Solver(object):
         iterations_per_epoch = max(num_train / self.batch_size, 1)
         num_iterations = int(self.num_epochs * iterations_per_epoch)
 
+        if self.enable_loss_window:
+            # Setup window to compute minimum loss over
+            if self.loss_window_len > num_iterations:
+                loss_win = num_iterations
+            else:
+                loss_win = self.loss_window_len
+            avg_loss = 0.0
+            prev_avg_loss = 0.0
+
         for t in range(num_iterations):
             self._step()
             # Print training loss
@@ -297,6 +296,10 @@ class Solver(object):
                 self.epoch += 1
                 for k in self.optim_configs:
                     self.optim_configs[k]['learning_rate'] *= self.lr_decay
+
+            # Scale epsilon down as the learning rate goes down
+            if self.enable_loss_window and epoch_end:
+                self.loss_window_eps *= self.lr_decay
 
             # Check train and val accuracy on first iteration, last iteration,
             # and at the end of each epoch
@@ -317,6 +320,16 @@ class Solver(object):
                     self.best_params = {}
                     for k, v in self.model.params.items():
                         self.best_params[k] = v.copy()
+
+            # See if the loss has changes sufficiently
+            if self.enable_loss_window:
+                if t > loss_win:
+                    avg_loss = sum(self.loss_history[-loss_win:]) / loss_win
+                    if abs(avg_loss - prev_avg_loss) < self.loss_window_eps:
+                        if self.verbose:
+                            print("Difference has changed by less than %f in %d iterations, exiting\n" % (self.loss_window_eps, t))
+                        return
+                    prev_avg_loss = avg_loss
 
         # Swap the best parameters into the model
         self.model.params = self.best_params

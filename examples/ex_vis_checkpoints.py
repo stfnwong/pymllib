@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from pymllib.solver import solver
 from pymllib.vis import vis_solver
+from pymllib.utils import solver_utils
 
 # Debug
 #from pudb import set_trace; set_trace()
@@ -37,8 +38,17 @@ def plot_sequence(ax, path, fname, num_checkpoints, prefix=None):        # TODO 
         n_min = 1
         n_max = num_checkpoints
 
+    for n in range(n_min, n_max):
+        if prefix is not None:
+            cname = '%s/%s/%s_epoch_%d.pkl' % (prefix, path, fname, int(n))
+        else:
+            cname = '%s/%s_epoch_%d.pkl' % (path, fname, int(n))
+        solv = solver.Solver(None, None)
+        solv.load_checkpoint(cname)
+        vis_solver.plot_model_first_layer(ax, solv.model, cname)
 
-def vis_weight_sequence(ax, path, fname, epoch_num, prefix=None):
+
+def vis_solver_compare(ax, path, fname, epoch_num, prefix=None):
     """
     VIS_WEIGHT_SEQUENCE
     Plot a series of weights as an animated sequence from
@@ -91,16 +101,30 @@ def vis_weight_sequence(ax, path, fname, epoch_num, prefix=None):
             #vis_solver.plot_model_first_layer(ax, solv.model, cname)
     vis_solver.plot_solver_compare(ax, solver_dict)
 
-    # At the final checkpoint, plot the overall training results
-    # TODO : Move this to another routine one layer up
-    #fig2 = plt.figure()
-    #ax2 = [ ]
-    #for i in range(3):
-    #    subax = fig2.add_subplot(3, 1, (i+1))
-    #    ax2.append(subax)
-    #vis_solver.plot_solver(ax2, solv)
-    #plt.show()
 
+def update_checkpoints(path, fname, num_epochs=100, prefix=None, verbose=False):
+    # Check input arguments
+    if type(path) is not list:
+        path = [path]
+
+    if type(fname) is not list:
+        fname = [fname]
+
+    # Iterate over all files and generate animations
+    for p in path:
+        for f in fname:
+            for n in range(num_epochs):
+                epoch_str = '_epoch_%d.pkl' % n
+                if prefix is not None:
+                    cname = str(prefix) + '/' + str(p) + '/' + str(f) + str(epoch_str)
+                else:
+                    cname = str(p) + '/' + str(f) + str(epoch_str)
+                if verbose is True:
+                    print('Converting file %s' % cname)
+                #solv = load_solver(fname)
+                solv = solver_utils.convert_checkpoint(cname, verbose=verbose)
+                solv.save(cname)
+                #solver_utils.examine_checkpoint(cname)
 
 if __name__ == "__main__":
 
@@ -109,5 +133,6 @@ if __name__ == "__main__":
     prefix = "/home/kreshnik/Documents/compucon/machine-learning/models"
     cpath = ["conv-net-train-2017-11-15-01", "conv-net-train-2017-11-15-02"]
     cname = ['c16-fc256-fc10-net', 'c16-c32-fc256-fc10-net', 'c16-c32-c64-fc256-fc256-fc10-net', 'c16-c32-c64-c128-fc256-fc256-fc10-net']
-    vis_weight_sequence(ax, cpath, cname, 100, prefix)
+    update_checkpoints(cpath, cname, 100, prefix, verbose=True)
+    vis_solver_compare(ax, cpath, cname, 100, prefix)
     plt.show()
