@@ -365,13 +365,16 @@ class TestConvNet(unittest.TestCase):
                                  update_rule=update_rule,
                                  optim_config={'learning_rate': learning_rate})
             solv.train()
+            fname = '%s-solver-%d-epochs.pkl' % (k, int(num_epochs))
+            solv.save(fname)
             skey = '%s-%s' % (m.__repr__(), k)
             solver_dict[skey] = solv
 
         # Plot results
-        fig, ax = vis_solver.get_train_fig()
-        vis_solver.plot_solver_compare(ax, solver_dict)
-        plt.show()
+        if self.draw_plots is True:
+            fig, ax = vis_solver.get_train_fig()
+            vis_solver.plot_solver_compare(ax, solver_dict)
+            plt.show()
 
         print("======== TestConvNet.test_xavier_overfit: <END> ")
 
