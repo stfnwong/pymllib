@@ -47,7 +47,7 @@ class Solver(object):
         self.enable_loss_window = kwargs.pop('enable_loss_window', False)
         self.loss_window_len = kwargs.pop('loss_window_len', 500)
         self.loss_window_eps = kwargs.pop('loss_window_eps', 1e-3)
-        self.loss_converge_window = kwargs.pop('loss_converge_window', 1e4)
+        #self.loss_converge_window = kwargs.pop('loss_converge_window', 1e4)
 
         if model is None or data is None:
             # assume we are loading from file
@@ -80,11 +80,11 @@ class Solver(object):
 
     def __str__(self):
         s = []
-        if data is not None:
+        if self.X_train is not None:
             # print the size of the dataset attached to the solver
             s.append("Data shape:\n")
             s.append("X_train shape  (%s)\n" % str(self.X_train.shape))
-            s.append("y_trian shape  (%s)\n" % str(self.y_train.shape))
+            s.append("y_train shape  (%s)\n" % str(self.y_train.shape))
             s.append("X_val shape    (%s)\n" % str(self.X_val.shape))
             s.append("y_val shape    (%s)\n" % str(self.y_val.shape))
         # Solver params
@@ -95,6 +95,11 @@ class Solver(object):
         s.append("batch size   : %s\n" % str(self.batch_size))
         s.append("num epochs   : %s\n" % str(self.num_epochs))
         s.append("print every  : %d\n" % self.print_every)
+        # Loss window
+        if self.enable_loss_window:
+            s.append("Loss window:\n")
+            s.append("len          : %d\n" % self.loss_window_len)
+            s.append("eps          : %d\n" % self.loss_window_eps)
 
         return ''.join(s)
 
@@ -112,7 +117,6 @@ class Solver(object):
         self.loss_history = []
         self.train_acc_history = []
         self.val_acc_history = []
-
         # Make a deep copy of optim for each parameter
         self.optim_configs = {}
         for p in self.model.params:
@@ -159,7 +163,7 @@ class Solver(object):
             'enable_loss_window': self.enable_loss_window,
             'loss_window_len': self.loss_window_len,
             'loss_window_eps': self.loss_window_eps,
-            'loss_converge_window': self.loss_converge_window,
+            #'loss_converge_window': self.loss_converge_window,
             # Checkpoint info
             'checkpoint_name': self.checkpoint_name,
             'checkpoint_dir': self.checkpoint_dir
@@ -172,7 +176,6 @@ class Solver(object):
         """
         Save the current training status
         """
-
         if self.checkpoint_name is None:
             return
 
@@ -195,28 +198,36 @@ class Solver(object):
             pickle.dump(checkpoint, fp)
 
     def load_checkpoint(self, fname):
+        """
+        LOAD_CHECKPOINT
+        Load a saved checkpoint from disk into a solver object.
+        In the current version of this method defaults are provided for
+        missing attributes. This somewhat obviates the need to have a
+        conversion utility, as the such a utility would be inserting
+        dummy values into attributes that are missing anyway.
+        """
 
         with open(fname, 'rb') as fp:
             cpoint_data = pickle.load(fp)
 
         # Model data
-        self.model = cpoint_data['model']
+        self.model = cpoint_data.get('model')
         # Solver params
-        self.update_rule = cpoint_data['update_rule']
-        self.lr_decay = cpoint_data['lr_decay']
-        self.optim_config = cpoint_data['optim_config']
-        self.batch_size = cpoint_data['batch_size']
-        self.epoch = cpoint_data['epoch']
-        self.num_epochs = cpoint_data['num_epochs']
+        self.update_rule = cpoint_data.get('update_rule')
+        self.lr_decay = cpoint_data.get('lr_decay')
+        self.optim_config = cpoint_data.get('optim_config')
+        self.batch_size = cpoint_data.get('batch_size')
+        self.epoch = cpoint_data.get('epoch')
+        self.num_epochs = cpoint_data.get('num_epochs', 0)
         # Solution data
-        self.loss_history = cpoint_data['loss_history']
-        self.train_acc_history = cpoint_data['train_acc_history']
-        self.val_acc_history = cpoint_data['val_acc_history']
+        self.loss_history = cpoint_data.get('loss_history')
+        self.train_acc_history = cpoint_data.get('train_acc_history')
+        self.val_acc_history = cpoint_data.get('val_acc_history')
         # Loss window
-        self.enable_loss_window = cpoint_data['enable_loss_window']
-        self.loss_window_len = cpoint_data['loss_window_len']
-        self.loss_window_eps = cpoint_data['loss_window_eps']
-        self.loss_converge_window = cpoint_data['loss_converge_window']
+        self.enable_loss_window = cpoint_data.get('enable_loss_window', False)
+        self.loss_window_len = cpoint_data.get('loss_window_len', 500)
+        self.loss_window_eps = cpoint_data.get('loss_window_eps', 1e-4)
+            #self.loss_converge_window = cpoint_data['loss_converge_window']
 
     def check_accuracy(self, X, y, num_samples=None, batch_size=100):
         """

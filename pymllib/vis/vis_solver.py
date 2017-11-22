@@ -94,7 +94,7 @@ def plot_solver(ax, solv, num_epochs=None, method=None):
     for i in range(len(ax)):
         ax[i].legend(loc='upper right', ncol=4)
 
-def plot_model_first_layer(ax, model, fname):
+def plot_model_first_layer(ax, model, title=None):
 
     for k, v in model.params.items():
         # We just do first layer for now
@@ -104,3 +104,7 @@ def plot_model_first_layer(ax, model, fname):
     grid = vis_weights.vis_grid_img(w1.transpose(0, 2, 3, 1))
     ax.imshow(grid)
     ax.axis('off')
+    if title is not None:
+        ax.set_title(title)
+    else:
+        ax.set_title("Layer 1 weights")

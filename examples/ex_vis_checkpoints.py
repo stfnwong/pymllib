@@ -7,12 +7,18 @@ import matplotlib.pyplot as plt
 
 from pymllib.solver import solver
 from pymllib.vis import vis_solver
+from pymllib.utils import solver_utils
 
 # Debug
 #from pudb import set_trace; set_trace()
 
 
-def plot_solver_weights(ax, fname, title=None):
+def ex_plot_solver_weights(ax, fname, title=None):
+    """
+    EX_PLOT_SOLVER_WEIGHTS
+    Example showing how to plot the first layer weights
+    in a solver object
+    """
 
     if title is None:
         title = "Layer 1 weights"
@@ -22,8 +28,12 @@ def plot_solver_weights(ax, fname, title=None):
     ax.set_title(title)
 
 
-# TODO : Visualize an animation of the weights from a set of solvers
-def plot_sequence(ax, path, fname, num_checkpoints, prefix=None):        # TODO ; add params
+def ex_plot_sequence(ax, path, fname, num_checkpoints, prefix=None, step=1, pause_time=0.01):
+    """
+    EX_PLOT_SEQUENCE
+    Example wrapper for vis_solver.plot_model_first_layer showing a possible
+    inner loop for a weight visualization animation
+    """
 
     if type(num_checkpoints) is tuple:
         if len(num_checkpoints) > 2:
@@ -31,19 +41,42 @@ def plot_sequence(ax, path, fname, num_checkpoints, prefix=None):        # TODO 
         if num_checkpoints[0] == 0:
             n_min = 1
         else:
-            n_min = num_checkpoints[0]
-        n_max = num_checkpoints[1]
+            n_min = int(num_checkpoints[0])
+        n_max = int(num_checkpoints[1])
     else:
         n_min = 1
-        n_max = num_checkpoints
+        n_max = int(num_checkpoints)
+
+    # Check input arguments
+    if type(path) is not list:
+        path = [path]
+
+    if type(fname) is not list:
+        fname = [fname]
+
+    # Iterate over all files and generate animations
+    for p in path:
+        for f in fname:
+            for n in range(n_min, n_max, step):
+                if prefix is not None:
+                    cname = '%s/%s/%s_epoch_%d.pkl' % (prefix, p, f, int(n))
+                else:
+                    cname = '%s/%s_epoch_%d.pkl' % (p, f, int(n))
+                solv = solver.Solver(None, None)
+                solv.load_checkpoint(cname)
+                title = '%s (epoch %d)' % (f, n)
+                vis_solver.plot_model_first_layer(ax, solv.model, title=title)
+                plt.pause(pause_time)
+                plt.draw()
 
 
-def vis_weight_sequence(ax, path, fname, epoch_num, prefix=None):
+def ex_vis_solver_compare(ax, path, fname, epoch_num, prefix=None):
     """
-    VIS_WEIGHT_SEQUENCE
-    Plot a series of weights as an animated sequence from
-    a collection of saved solver states. It is the responsibility
-    of the caller to ensure that files exist at the specified paths.
+    EX_VIS_SOLVER_COMPARE
+    Visualize a series of solutions superimposed on a single plot.
+    Each solution checpoint is read in turn an plotted on a single
+    graph. The legend is created using the __repr__() result for each
+    solver object.
 
     Inputs
         ax:
@@ -83,33 +116,21 @@ def vis_weight_sequence(ax, path, fname, epoch_num, prefix=None):
                 cname = str(prefix) + '/' + str(p) + '/' + str(f) + str(epoch_str)
             else:
                 cname = str(p) + '/' + str(f) + str(epoch_str)
-            #solv = load_solver(fname)
-            print(fname)
             solv = solver.Solver(None, None)
             solv.load_checkpoint(cname)
             solver_dict[f] = solv
             #vis_solver.plot_model_first_layer(ax, solv.model, cname)
     vis_solver.plot_solver_compare(ax, solver_dict)
 
-    # At the final checkpoint, plot the overall training results
-    # TODO : Move this to another routine one layer up
-    #fig2 = plt.figure()
-    #ax2 = [ ]
-    #for i in range(3):
-    #    subax = fig2.add_subplot(3, 1, (i+1))
-    #    ax2.append(subax)
-    #vis_solver.plot_solver(ax2, solv)
-    #plt.show()
-
 
 if __name__ == "__main__":
 
-    fig, ax = vis_solver.get_train_fig()
+    solv_fig, solv_ax = vis_solver.get_train_fig()
+    w_fig, w_ax = vis_solver.get_weight_fig()
 
     prefix = "/home/kreshnik/Documents/compucon/machine-learning/models"
-    #cpath = ["conv-net-train-2017-11-15-01", "conv-net-train-2017-11-15-02"]
-    cpath = ['conv-net-train-cifar-stage-200-epoch', 'conv-net-train-cifar-stage-200-epoch-2017-11-10-01']
-    cname = ['c16-c32-fc256-fc10--f3-net', 'c16-c32-c64-fc256-fc256-fc10--f3-net', 'c16-c32-c64-c128-fc256-fc256-fc10--f3-net']
-    #cname = ['c16-fc256-fc10--f3-net', 'c16-c32-fc256-fc10--f3-net', 'c16-c32-c64-fc256-fc256-fc10--f3-net', 'c16-c32-c64-c128-fc256-fc256-fc10--f3-net']
-    vis_weight_sequence(ax, cpath, cname, 50, prefix)
+    cpath = ["conv-net-train-2017-11-15-01", "conv-net-train-2017-11-15-02"]
+    cname = ['c16-fc256-fc10-net', 'c16-c32-fc256-fc10-net', 'c16-c32-c64-fc256-fc256-fc10-net', 'c16-c32-c64-c128-fc256-fc256-fc10-net']
+    ex_vis_solver_compare(solv_ax, cpath, cname, 100, prefix)
+    ex_plot_sequence(w_ax, cpath, cname, (1, 100), prefix=prefix, step=10)
     plt.show()

@@ -10,11 +10,10 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pickle
-import numpy as np
-
 import pymllib.solver.solver as solver
-#import pymllib.utils.solver_utils as solver_utils
 
+# Debug
+#from pudb import set_trace; set_trace()
 
 def examine_checkpoint(fname, verbose=False):
     """
