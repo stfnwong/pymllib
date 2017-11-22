@@ -320,7 +320,7 @@ class TestConvNet(unittest.TestCase):
     def test_xavier_overfit(self):
         print("\n======== TestConvNet.test_xavier_overfit:")
         dataset = load_data(self.data_dir, self.verbose)
-        num_train = 500
+        num_train = 1500
 
         small_data = {
             'X_train': dataset['X_train'][:num_train],
@@ -329,13 +329,13 @@ class TestConvNet(unittest.TestCase):
             'y_val':   dataset['y_val'][:num_train]
         }
         input_dim = (3, 32, 32)
-        hidden_dims = [100]
-        num_filters = [32]
+        hidden_dims = [256, 256]
+        num_filters = [16, 32]
         #weight_scale = 0.07
         #learning_rate = 0.007
         weight_scale = 1e-3
         learning_rate = 1e-3
-        num_epochs = 30
+        num_epochs = 50
         batch_size = 50
         update_rule='adam'
 

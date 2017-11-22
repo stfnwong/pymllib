@@ -75,11 +75,6 @@ class ConvNetLayer(object):
         for i in range(self.L):
             idx = i + 1
             W = self._weight_init(F[i+1], F[i], fsize=self.filter_size)
-            #if self.use_xavier:
-            #    w_lim = np.sqrt(6.0) / np.sqrt(F[i+1] + F[i])
-            #    W = np.random.uniform(low=-w_lim, high=w_lim, size=(F[i+1], F[i]))
-            #else:
-            #    W = self.weight_scale * np.random.randn(F[i+1], F[i], self.filter_size, self.filter_size)
             b = np.zeros(F[i+1])
             self.params.update({'W' + str(idx): W,
                                 'b' + str(idx): b})
@@ -102,11 +97,6 @@ class ConvNetLayer(object):
         for i in range(self.M):
             idx = self.L + i + 1
             W = self._weight_init(dims[i], dims[i+1])
-            #if self.use_xavier:
-            #    w_lim = np.sqrt(6.0) / np.sqrt(dims[i] + dims[i+1])
-            #    W = np.random.uniform(low=-w_lim, high=w_lim, size=(dims[i], dims[i+1]))
-            #else:
-            #    W = self.weight_scale * np.random.randn(dims[i], dims[i+1])
             b = np.zeros(dims[i + 1])
             self.params.update({'W' + str(idx): W,
                                 'b' + str(idx): b})
@@ -123,7 +113,6 @@ class ConvNetLayer(object):
                     'beta' + str(idx): beta})
 
         # Scoring layer
-        # W = self.weight_scale * np.random.randn(dims[-1], num_classes)
         W = self._weight_init(dims[-1], num_classes)
         b = np.zeros(num_classes)
         idx = self.L + self.M + 1
