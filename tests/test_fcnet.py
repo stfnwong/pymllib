@@ -431,7 +431,7 @@ class TestFCNet(unittest.TestCase):
         print("======== TestFCNet.test_weight_init:")
 
         dataset = load_data(self.data_dir, self.verbose)
-        num_train = 500
+        num_train = 1500
         small_data = {
             'X_train': dataset['X_train'][:num_train],
             'y_train': dataset['y_train'][:num_train],
@@ -439,31 +439,43 @@ class TestFCNet(unittest.TestCase):
             'y_val':   dataset['y_val'][:num_train]
         }
         input_dim = 32 * 32 * 3
-        hidden_dims = [256, 256]
+        hidden_dims = [100, 100, 100, 100, 100, 100, 100, 100, 100]
         weight_scale = 2e-2
         learning_rate = 1e-3
-        num_epochs=30
+        num_epochs=20
         batch_size = 50
         update_rule='adam'
+        weight_init = ['gauss', 'gauss_sqrt', 'xavier']
 
-        # In this cut, we test the kwargs
-        model = fcnet.FCNet(input_dim=input_dim,
-                        hidden_dims=hidden_dims,
-                        weight_scale=weight_scale)
-        if self.verbose:
-            print(model)
-        solv = solver.Solver(model,
-                             small_data,
-                             print_every=100,
-                             num_epochs=num_epochs,
-                             batch_size=batch_size,     # previously 25
-                             update_rule=update_rule,
-                             optim_config={'learning_rate': learning_rate})
-        solv.train()
+        model_dict = {}
+        for w in weight_init:
+            model = fcnet.FCNet(input_dim=input_dim,
+                            hidden_dims=hidden_dims,
+                            weight_scale=weight_scale,
+                            weight_init=w)
+            model_dict[w] = model
+        solver_dict = {}
+
+        for k, m in model_dict.items():
+            if self.verbose:
+                print(m)
+
+            solv = solver.Solver(m,
+                                small_data,
+                                print_every=100,
+                                num_epochs=num_epochs,
+                                batch_size=batch_size,     # previously 25
+                                update_rule=update_rule,
+                                optim_config={'learning_rate': learning_rate})
+            solv.train()
+            #skey = '%s-%s' % (m.__repr__(), k)
+            skey = '%s' % k
+            solver_dict[skey] = solv
 
         if self.draw_plot:
             fig, ax = vis_solver.get_train_fig()
-            vis_solver.plot_solver(ax, solv)
+            vis_solver.plot_solver_compare(ax, solver_dict)
+            #vis_solver.plot_solver(ax, solv)
             plt.show()
 
 

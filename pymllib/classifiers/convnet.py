@@ -43,10 +43,10 @@ class ConvNetLayer(object):
         """
 
         # Get kwargs
-
         self.verbose = kwargs.pop('verbose', False)
         self.use_batchnorm = kwargs.pop('use_batchnorm', False)
-        self.use_xavier = kwargs.pop('use_xavier', False)
+        #self.use_xavier = kwargs.pop('use_xavier', False)
+        self.weight_init = kwargs.pop('weight_init', 'gauss')
         # TODO : Dropout?
         self.reg = kwargs.pop('reg', 0.0)
         self.weight_scale = kwargs.pop('weight_scale', 1e-3)
@@ -74,11 +74,12 @@ class ConvNetLayer(object):
         F = [Cinput] + num_filters
         for i in range(self.L):
             idx = i + 1
-            if self.use_xavier:
-                w_lim = np.sqrt(6.0) / np.sqrt(F[i+1] + F[i])
-                W = np.random.uniform(low=-w_lim, high=w_lim, size=(F[i+1], F[i]))
-            else:
-                W = self.weight_scale * np.random.randn(F[i+1], F[i], self.filter_size, self.filter_size)
+            W = self._weight_init(F[i+1], F[i], fsize=self.filter_size)
+            #if self.use_xavier:
+            #    w_lim = np.sqrt(6.0) / np.sqrt(F[i+1] + F[i])
+            #    W = np.random.uniform(low=-w_lim, high=w_lim, size=(F[i+1], F[i]))
+            #else:
+            #    W = self.weight_scale * np.random.randn(F[i+1], F[i], self.filter_size, self.filter_size)
             b = np.zeros(F[i+1])
             self.params.update({'W' + str(idx): W,
                                 'b' + str(idx): b})
@@ -100,11 +101,12 @@ class ConvNetLayer(object):
         dims = [Hconv * Wconv * F[-1]] + hidden_dims
         for i in range(self.M):
             idx = self.L + i + 1
-            if self.use_xavier:
-                w_lim = np.sqrt(6.0) / np.sqrt(dims[i] + dims[i+1])
-                W = np.random.uniform(low=-w_lim, high=w_lim, size=(dims[i], dims[i+1]))
-            else:
-                W = self.weight_scale * np.random.randn(dims[i], dims[i+1])
+            W = self._weight_init(dims[i], dims[i+1])
+            #if self.use_xavier:
+            #    w_lim = np.sqrt(6.0) / np.sqrt(dims[i] + dims[i+1])
+            #    W = np.random.uniform(low=-w_lim, high=w_lim, size=(dims[i], dims[i+1]))
+            #else:
+            #    W = self.weight_scale * np.random.randn(dims[i], dims[i+1])
             b = np.zeros(dims[i + 1])
             self.params.update({'W' + str(idx): W,
                                 'b' + str(idx): b})
@@ -121,7 +123,8 @@ class ConvNetLayer(object):
                     'beta' + str(idx): beta})
 
         # Scoring layer
-        W = self.weight_scale * np.random.randn(dims[-1], num_classes)
+        # W = self.weight_scale * np.random.randn(dims[-1], num_classes)
+        W = self._weight_init(dims[-1], num_classes)
         b = np.zeros(num_classes)
         idx = self.L + self.M + 1
         self.params.update({'W' + str(idx): W,
@@ -152,6 +155,7 @@ class ConvNetLayer(object):
     def __str__(self):
         s = []
         s.append("%d layer network\n" % self.num_layers)
+        s.append('weight init : %s\n' % self.weight_init)
         for k, v in self.params.items():
             if k[:1] == 'W':
                 w = self.params[k]
@@ -178,6 +182,35 @@ class ConvNetLayer(object):
         s.extend('-net')
 
         return ''.join(s)
+
+
+    def _weight_init(self, N, D, fsize=None):
+        """
+        WEIGHT_INIT
+        Set up the weights for a given layer.
+        """
+        if self.weight_init == 'gauss':
+            if fsize is None:
+                W = self.weight_scale * np.random.randn(N, D)
+            else:
+                W = self.weight_scale * np.random.randn(N, D, fsize, fsize)
+        elif self.weight_init == 'gauss_sqrt':
+            if fsize is None:
+                W = self.weight_scale * np.random.randn(N, D) * (1 / np.sqrt(2.0 / (N+D)))
+            else:
+                W = self.weight_scale * np.random.randn(N, D, fsize, fsize) * (1 / np.sqrt(2.0 / (N+D)))
+        elif self.weight_init == 'xavier':
+            w_lim = 2 / np.sqrt(N + D)
+            if fsize is None:
+                wsize = (N, D)
+            else:
+                wsize = (N, D, fsize, fsize)
+            W = np.random.uniform(low=-w_lim, high=w_lim, size=wsize)
+        else:
+            raise ValueError('Invalid weight init method %s' % self.weight_init)
+
+        return W
+
 
     def loss(self, X, y=None):
         """

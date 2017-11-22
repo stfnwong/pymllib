@@ -329,7 +329,8 @@ class TestConvNet(unittest.TestCase):
             'y_val':   dataset['y_val'][:num_train]
         }
         input_dim = (3, 32, 32)
-        hidden_dims = 100
+        hidden_dims = [100]
+        num_filters = [32]
         #weight_scale = 0.07
         #learning_rate = 0.007
         weight_scale = 1e-3
@@ -338,44 +339,34 @@ class TestConvNet(unittest.TestCase):
         batch_size = 50
         update_rule='adam'
 
-        xavier_model = convnet.ConvNetLayer(input_dim=input_dim,
-                        hidden_dims=[hidden_dims],
-                        num_filters = [32],
-                        weight_scale=weight_scale,
-                        user_xavier=True,
-                        verbose=True,
-                        dtype=np.float32)
+        weight_init = ['gauss', 'gauss_sqrt', 'xavier']
+        model_dict = {}
 
-        gaussian_model = convnet.ConvNetLayer(input_dim=input_dim,
-                        hidden_dims=[hidden_dims],
-                        num_filters = [32],
-                        use_xavier=False,
-                        verbose=True,
-                        weight_scale=weight_scale,
-                        dtype=np.float32)
+        for w in weight_init:
+            model = convnet.ConvNetLayer(input_dim=input_dim,
+                            hidden_dims=hidden_dims,
+                            num_filters = num_filters,
+                            weight_scale=weight_scale,
+                            user_xavier=True,
+                            verbose=True,
+                            dtype=np.float32)
+            model_dict[w] = model
 
         solver_dict = {}
-        for i in range(2):
-            if i == 0:
-                model = xavier_model
-            else:
-                model = gaussian_model
 
+        for k, m in model_dict.items():
             if self.verbose:
-                print(model)
-            model_solver = solver.Solver(model,
-                                        small_data,
-                                        print_every=10,
-                                        num_epochs=num_epochs,
-                                        batch_size=batch_size,
-                                        update_rule=update_rule,
-                                        optim_config={'learning_rate': learning_rate})
-            model_solver.train()
-
-            if i == 0:
-                solver_dict['xavier'] = model_solver
-            else:
-                solver_dict['gaussian'] = model_solver
+                print(m)
+            solv = solver.Solver(m,
+                                 small_data,
+                                 print_every=10,
+                                 num_epochs=num_epochs,
+                                 batch_size=batch_size,
+                                 update_rule=update_rule,
+                                 optim_config={'learning_rate': learning_rate})
+            solv.train()
+            skey = '%s-%s' % (m.__repr__(), k)
+            solver_dict[skey] = solv
 
         # Plot results
         fig, ax = vis_solver.get_train_fig()
