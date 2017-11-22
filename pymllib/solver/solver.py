@@ -60,7 +60,6 @@ class Solver(object):
             return
 
         self.model = model
-        s.append("Solver parameters:\n")
         self.X_train = data['X_train']
         self.y_train = data['y_train']
         self.X_val = data['X_val']

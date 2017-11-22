@@ -16,8 +16,11 @@ from pymllib.utils import check_gradient
 from pymllib.utils import error
 from pymllib.layers import layers
 from pymllib.classifiers import convnet
-import pymllib.solver.solver as solver
-import pymllib.vis.vis_weights as vis_weights
+from pymllib.solver import solver
+from pymllib.vis import vis_weights
+from pymllib.vis import vis_solver
+#import pymllib.solver.solver as solver
+#import pymllib.vis.vis_weights as vis_weights
 
 # Debug
 from pudb import set_trace; set_trace()
@@ -314,6 +317,73 @@ class TestConvNet(unittest.TestCase):
 
         print("======== TestConvNet.test_conv_4layer_param_search: <END> ")
 
+    def test_xavier_overfit(self):
+        print("\n======== TestConvNet.test_xavier_overfit:")
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 500
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        input_dim = (3, 32, 32)
+        weight_scale = 0.07
+        learning_rate = 0.007
+        num_epochs = 20
+        batch_size = 50
+        update_rule='adam'
+
+        xavier_model = convnet.ConvNetLayer(input_dim=input_dim,
+                        hidden_dims=[256,],
+                        num_filters = [32],
+                        weight_scale=weight_scale,
+                        update_rule=update_rule,
+                        batch_size=batch_size,
+                        user_xavier=True,
+                        verbose=True,
+                        dtype=np.float32)
+
+        gaussian_model = convnet.ConvNetLayer(input_dim=input_dim,
+                        hidden_dims=[256],
+                        num_filters = [32],
+                        update_rule=update_rule,
+                        batch_size=batch_size,
+                        use_xavier=False,
+                        verbose=True,
+                        weight_scale=weight_scale,
+                        dtype=np.float32)
+
+        solver_dict = {}
+        for i in range(2):
+            if i == 0:
+                model = xavier_model
+            else:
+                model = gaussian_model
+
+            if self.verbose:
+                print(model)
+            model_solver = solver.Solver(model,
+                                        small_data,
+                                        print_every=10,
+                                        num_epochs=num_epochs,
+                                        batch_size=50,     # previously 25
+                                        update_rule='adam',
+                                        optim_config={'learning_rate': learning_rate})
+            model_solver.train()
+
+            if i == 0:
+                solver_dict['xavier'] = model_solver
+            else:
+                solver_dict['gaussian'] = model_solver
+
+        # Plot results
+        fig, ax = vis_solver.get_train_fig()
+        vis_solver.plot_solver_compare(ax, solver_dict)
+        plt.show()
+
+        print("======== TestConvNet.test_xavier_overfit: <END> ")
 
 """
 All the old tests have been temporarily moved here
@@ -483,79 +553,6 @@ class Test3LayerConvNet(unittest.TestCase):
 
         # TODO : Next up, spatial batch normalization
 
-class TestConvImgProc(unittest.TestCase):
-
-    def setUp(self):
-        self.data_dir = 'datasets/'
-
-    def test_conv_filter(self):
-        print("\n======== TestConvImgProc.test_conv_filter:")
-
-        from scipy.misc import imread, imresize
-        import matplotlib.pyplot as plt
-
-        img_filenames = [str(self.data_dir) + 'kitten.jpg', str(self.data_dir) + 'puppy.jpg']
-        kitten = imread(img_filenames[0])
-        puppy = imread(img_filenames[1])
-        # Manipulate dims
-        d = kitten.shape[1] - kitten.shape[0]
-        kitten_cropped = kitten[:, int(d/2) : int(-d/2), :]
-
-        img_size = 200
-        X = np.zeros((2, 3, img_size, img_size))            # Input data
-        X[0, :, :, :] = imresize(puppy, (img_size, img_size)).transpose((2, 0, 1))
-        X[1:,:, :, :] = imresize(kitten_cropped, (img_size, img_size)).transpose((2, 0, 1))
-
-        # Set up convolutional weights holding 2 filters, each 3x3
-        W = np.zeros((2, 3, 3, 3))
-        # The first filter converts the image to grayscale
-        # Set up red, green and blue channels of filter
-        W[0, 0, :, :] = [[0, 0, 0], [0, 0.3, 0], [0, 0, 0]]
-        W[0, 1, :, :] = [[0, 0, 0], [0, 0.6, 0], [0, 0, 0]]
-        W[0, 2, :, :] = [[0, 0, 0], [0, 0.1, 0], [0, 0, 0]]
-        # Second filter detects horizontal edges in the blue channel
-        W[1, 2, :, :] = [[1, 2, 1], [0, 0, 0], [-1, -2, -1]]
-        # Vector of biases. No biases are needed for grayscale filter but for
-        # the edge detection filter we want to add 128 to each output so that
-        # no results are negative
-        b = np.array([0, 128])
-
-        # Compute the result of convolving each input in X with each filter in
-        # W
-        out, _ = layers.conv_forward_naive(X, W, b, {'stride': 1, 'pad': 1})
-
-        # Tiny helper for showing images as uint8's and
-        # removing axis labels
-        def imshow_noax(img, normalize=True):
-            if normalize is True:
-                img_max = np.max(img)
-                img_min = np.min(img)
-                img = 255.0 * (img - img_min) / (img_max - img_min)
-            plt.imshow(img.astype('uint8'))
-            plt.gca().axis('off')
-
-        # Show the original images and the results of the conv operation
-        plt.subplot(2, 3, 1)
-        imshow_noax(puppy, normalize=False)
-        plt.title('Original')
-        plt.subplot(2, 3, 2)
-        imshow_noax(out[0, 0])
-        plt.title('Grayscale')
-        plt.subplot(2, 3, 3)
-        imshow_noax(out[0, 1])
-        plt.title('Horizontal Edges')
-        plt.subplot(2, 3, 4)
-        imshow_noax(kitten_cropped, normalize=False)
-        plt.title('Original')
-        plt.subplot(2, 3, 5)
-        imshow_noax(out[1, 0])
-        plt.title('Grayscale')
-        plt.subplot(2, 3, 6)
-        imshow_noax(out[1, 1])
-        plt.title('Horizontal Edges')
-        plt.show()
-
-        print("======== TestConvImgProc.test_conv_filter: <END> ")
 
 
 if __name__ == "__main__":

@@ -9,26 +9,13 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
-import pymllib.layers.layers as layers
-import pymllib.utils.data_utils as data_utils
+from pymllib.layers import layers
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
-
-# TODO : these are only required for debugging, remove them
-def print_h_sizes(blocks):
-    for k, v, in blocks.items():
-        if k[:1] == 'h':
-            print("%s : %s " % (str(k), str(v.shape)))
-
-def print_layers(params, layer_type='W'):
-    for k, v in params.items():
-        if k[:1] == layer_type:
-            print("%s : %s " % (str(k), str(v.shape)))
-
-
-# TODO : these are only required for debugging, remove them
+# Some helper functions... there are really only for debugging use and
+# should be removed later in this branch
 def print_h_sizes(blocks):
     for k, v, in blocks.items():
         if k[:1] == 'h':
@@ -50,24 +37,31 @@ class ConvNetLayer(object):
     channels
     """
 
-    def __init__(self, input_dim=(3, 32, 32), num_filters=[16, 32],
-                 filter_size=3, hidden_dims=[100, 100], num_classes=10,
-                 weight_scale=1e-3, reg=0.0, dtype=np.float32, use_batchnorm=False,
-                 verbose=False):
+    def __init__(self, **kwargs):
         """
         Init a new network
         """
 
-        self.verbose = verbose
-        self.use_batchnorm = use_batchnorm
-        self.reg = reg
-        self.weight_scale = weight_scale
-        self.dtype = dtype
-        self.bn_params = {}
-        self.filter_size = filter_size
+        # Get kwargs
+
+        self.verbose = kwargs.pop('verbose', False)
+        self.use_batchnorm = kwargs.pop('use_batchnorm', False)
+        self.use_xavier = kwargs.pop('use_xavier', False)
+        # TODO : Dropout?
+        self.reg = kwargs.pop('reg', 0.0)
+        self.weight_scale = kwargs.pop('weight_scale', 1e-3)
+        self.dtype = kwargs.pop('dtype', np.float32)
+        self.filter_size = kwargs.pop('filter_size', 3)
+
+        # Other internal params
+        input_dim = kwargs.pop('input_dim', (3, 32, 32))
+        num_filters = kwargs.pop('num_filters', [16, 32])
+        hidden_dims = kwargs.pop('hidden_dims', [100, 100])
+        num_classes = kwargs.pop('num_classes', 10)
         self.L = len(num_filters)
         self.M = len(hidden_dims)
         self.num_layers = self.L + self.M + 1
+        self.bn_params = {}
 
         # Internal parameter dict
         self.params = {}
@@ -78,10 +72,13 @@ class ConvNetLayer(object):
 
         # Init the weights for the conv layers
         F = [Cinput] + num_filters
-        print("Debug : F = %s" % str(F))
         for i in range(self.L):
             idx = i + 1
-            W = self.weight_scale * np.random.randn(F[i+1], F[i], self.filter_size, self.filter_size)
+            if self.use_xavier:
+                w_lim = np.sqrt(6.0) / np.sqrt(F[i+1] + F[i])
+                W = np.random.uniform(low=-w_lim, high=w_lim, size=(F[i+1], F[i]))
+            else:
+                W = self.weight_scale * np.random.randn(F[i+1], F[i], self.filter_size, self.filter_size)
             b = np.zeros(F[i+1])
             self.params.update({'W' + str(idx): W,
                                 'b' + str(idx): b})
@@ -103,7 +100,11 @@ class ConvNetLayer(object):
         dims = [Hconv * Wconv * F[-1]] + hidden_dims
         for i in range(self.M):
             idx = self.L + i + 1
-            W = self.weight_scale * np.random.randn(dims[i], dims[i+1])
+            if self.use_xavier:
+                w_lim = np.sqrt(6.0) / np.sqrt(dims[i] + dims[i+1])
+                W = np.random.uniform(low=-w_lim, high=w_lim, size=(dims[i], dims[i+1]))
+            else:
+                W = self.weight_scale * np.random.randn(dims[i], dims[i+1])
             b = np.zeros(dims[i + 1])
             self.params.update({'W' + str(idx): W,
                                 'b' + str(idx): b})
@@ -174,7 +175,7 @@ class ConvNetLayer(object):
         s.extend(conv_layers)
         s.extend(fc_layers)
         s.extend('f%d' % self.filter_size)
-        s.extend('net')
+        s.extend('-net')
 
         return ''.join(s)
 
@@ -193,7 +194,6 @@ class ConvNetLayer(object):
         # Layer parameters
         conv_param = {'stride': 1, 'pad': int((self.filter_size - 1) / 2)}
         pool_param = {'pool_height': 2, 'pool_width': 2,  'stride': 2}
-
         if self.use_batchnorm:
             for k, bn in self.bn_params.items():
                 bn[mode] = mode
@@ -483,7 +483,7 @@ class ThreeLayerConvNet(object):
         b = b3
         scores, cache_scores = layers.affine_forward(x, w, b)
 
-        if y is None:
+        if mode == 'test':
             return scores
 
         loss = 0
