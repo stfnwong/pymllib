@@ -38,6 +38,31 @@ def cl_get_device_info(cl_platform):
     return device_list
 
 
+class clKernel(object):
+    def __init__(self):
+        self.source = ''
+        self.filename = ''
+        self.prg = None
+
+    def __str__(self):
+        s = []
+        s.append('Source file : %s\n' % self.filename)
+        # TODO : list the names of all kernel functons that appear
+        # in the compiled source
+
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.filename
+
+    def load_source(self, filename):
+        with open(filename, 'r') as fp:
+            self.source = fp.read()
+        self.filename = filename
+
+    def build(self, ctx):
+        self.prg = cl.Program(ctx, self.source)
+
 # The main reason for making this a class is for pretty print
 class clContext(object):
     def __init__(self, **kwargs):
@@ -45,16 +70,18 @@ class clContext(object):
         self.platform_str = kwargs.pop('platform_str', 'Intel Gen OCL Driver')
         self.device_type = kwargs.pop('device_type', 'GPU')
         self.vendor_str = kwargs.pop('vendor_str', 'Intel')
+        # Debug
+        self.vebose = kwargs.pop('verbose', False)
 
         # Init internals
         self.context = cl.create_some_context()
         self.queue = cl.CommandQueue(self.context)
         self.platform = self._get_platform()
+        self.device = None
+        self.kernels = []
 
         if self.platform is None:
             raise ValueError("Failed to get a valid platform")
-
-        #self.platform_id = None
 
     def __str__(self):
         s = []
@@ -67,8 +94,35 @@ class clContext(object):
             if p.name == self.platform_str:
                 return p    # use this platform
 
-        # There is only one platform
-        if len(platform_list) == 1:
+        # If we can't find our preferred platform then
+        # take the first valid platform we can find
+        if len(platform_list) >= 1:
             return platform_list[0]
 
         return None
+
+    def get_device_list(self):
+        return self.platform.get_devices()
+
+    def select_device(self, device_type='GPU'):
+
+        device_list = self.platform.get_devices()
+
+        for d in device_list:
+            if cl.device_type.to_string(d.name) == device_type:
+                self.device = d
+                return
+        # Couldn't get preferred device, take first device in list
+        self.device = device_list[0]
+        return
+
+    def load_kernel(self, filename):
+        kernel = clKernel()
+        kernel.load_source(filename)
+        self.kernels.append(kernel)
+
+    def build_program(self):
+        # TODO : How to get compiler error messages?
+        for k in self.kernels:
+            k.build(self.context)
+
