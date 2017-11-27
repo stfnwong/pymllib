@@ -9,11 +9,13 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pyopencl as cl
+# Debug
+from pudb import set_trace; set_trace()
 
 
 def cl_load_kernel(filename):
     with open(filename, 'r') as fp:
-        kernel_source = fp.readlines()
+        kernel_source = fp.read().replace('\n', '')
 
     return kernel_source
 
@@ -39,29 +41,49 @@ def cl_get_device_info(cl_platform):
 
 
 class clKernel(object):
+    """
+    clKernel
+
+    Holds a single kernel object extracted from a clProgram
+    """
     def __init__(self):
-        self.source = ''
-        self.filename = ''
-        self.prg = None
+        self.source_file = ''
+        self.name = ''
+        self.kernel = None
 
     def __str__(self):
         s = []
-        s.append('Source file : %s\n' % self.filename)
-        # TODO : list the names of all kernel functons that appear
-        # in the compiled source
+        s.append('Name        : %s\n' % self.name)
+        s.append('Source File : %s\n' % self.source_file)
 
         return ''.join(s)
 
     def __repr__(self):
-        return self.filename
+        return ''.join('%s\n' % self.name)
 
+
+class clProgram(object):
+    def __init__(self):
+        self.prog = None
+        self.options = None
+        self.kernels = {}
+
+    # This function is of dubious value
     def load_source(self, filename):
         with open(filename, 'r') as fp:
-            self.source = fp.read()
-        self.filename = filename
+            source = fp.read().replace('\n', '')
 
-    def build(self, ctx):
-        self.prg = cl.Program(ctx, self.source)
+        return source
+
+    def build(self, ctx, source):
+        self.prog = cl.Program(ctx, source, self.options)
+
+        # TODO : We need to confirm that the program
+        # built correctly, then
+        kernel_list = self.prog.all_kernels()
+        for k in kernel_list:
+            self.kernels[k] = prg.k     # Not sure this is correct....
+
 
 # The main reason for making this a class is for pretty print
 class clContext(object):
@@ -70,51 +92,79 @@ class clContext(object):
         self.platform_str = kwargs.pop('platform_str', 'Intel Gen OCL Driver')
         self.device_type = kwargs.pop('device_type', 'GPU')
         self.vendor_str = kwargs.pop('vendor_str', 'Intel')
+        self.auto_init = kwargs.pop('auto_init', False)
         # Debug
-        self.vebose = kwargs.pop('verbose', False)
+        self.verbose = kwargs.pop('verbose', False)
 
         # Init internals
-        self.context = cl.create_some_context()
-        self.queue = cl.CommandQueue(self.context)
-        self.platform = self._get_platform()
+        #self.context = cl.create_some_context()
+        #self.queue = cl.CommandQueue(self.context)
+        #self.platform = self._get_platform()
+        self.context = None
+        self.queue = None
+        self.platform = None
         self.device = None
         self.kernels = []
-
-        if self.platform is None:
-            raise ValueError("Failed to get a valid platform")
 
     def __str__(self):
         s = []
         return ''.join(s)
 
-    def _get_platform(self):
-        platform_list = cl.get_platforms()
+    def get_platform(self):
 
+        platform_list = cl.get_platforms()
         for p in platform_list:
             if p.name == self.platform_str:
-                return p    # use this platform
+                if self.verbose:
+                    print("Found platform %s" % p.name)
+                return p
 
         # If we can't find our preferred platform then
         # take the first valid platform we can find
         if len(platform_list) >= 1:
+            if self.vebose:
+                print("Could not find preferred platform %s" % self.platform_str)
+                print("Using alternative platform %s" % platform_list[0].name)
             return platform_list[0]
 
         return None
 
-    def get_device_list(self):
-        return self.platform.get_devices()
-
     def select_device(self, device_type='GPU'):
 
         device_list = self.platform.get_devices()
-
         for d in device_list:
-            if cl.device_type.to_string(d.name) == device_type:
-                self.device = d
-                return
+            if cl.device_type.to_string(d.type) == device_type:
+                if self.verbose:
+                    print("Found device %s" % d.name)
+                return d
         # Couldn't get preferred device, take first device in list
-        self.device = device_list[0]
-        return
+        if len(device_list) >= 1:
+            if self.verbose:
+                print("Unable to find device of type %s" % device_type)
+                print("Falling back to device %s" % device_list[0].name)
+            return device_list[0]
+
+        return None
+
+    def init_context(self):
+        """
+        INIT_CONTEXT
+        Set up the OpenCL execution context
+        """
+        self.platform = self.get_platform()
+        if self.platform is None:
+            raise ValueError('Failed to get a valid platform')
+
+        self.device = self.select_device()      # use the default selection for now
+        if self.device is None:
+            raise ValueError('Failed to get a valid device')
+
+        # Create the context object
+        self.context = cl.Context(dev_type=self.device.type)
+        self.queue = cl.CommandQueue(self.context)
+
+
+
 
     def load_kernel(self, filename):
         kernel = clKernel()
@@ -125,4 +175,3 @@ class clContext(object):
         # TODO : How to get compiler error messages?
         for k in self.kernels:
             k.build(self.context)
-
