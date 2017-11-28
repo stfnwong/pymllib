@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import pyopencl as cl
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 
 def cl_load_kernel(filename):
@@ -61,6 +61,12 @@ class clKernel(object):
     def __repr__(self):
         return ''.join('%s\n' % self.name)
 
+# Get program build log
+#build_log = self.prog.get_build_info(device, cl.program_build_info.LOG)
+#if len(build_log) > 0:
+#    if self.verbose:
+#        print("Build log:")
+#        print('%s\n' % build_log)
 
 class clProgram(object):
     def __init__(self):
@@ -68,28 +74,19 @@ class clProgram(object):
         self.kernels = {}
         self.verbose = True
 
-    def build(self, ctx, source, device=None, options=[]):
-        self.prog = cl.Program(ctx, source)
-        self.prog.build(options, devices=[device])
+    def build(self, ctx, source, device, options=[]):
+        self.prog = cl.Program(ctx, source).build(devices=[device])
 
-        build_log = self.prog.get_build_info(device, cl.program_build_info.LOG)
-        if len(build_log) > 0:
-            if self.verbose:
-                print("Build log:")
-                print('%s\n' % build_log)
+        if self.prog.num_kernels < 1:
+            err_str = "No kernels were built for program %s" % self.prog
+            raise ValueError(err_str)
 
-        # TODO : How to get build errors from here?
+        # Create references to the kernels in this program
         kernel_list = self.prog.all_kernels()
-        if len(kernel_list) < 1:
-            raise ValueError('No kernels were built for program %s' % self.prog)
+        for k in kernel_list:       # TODO : May not need to keep kernel_list here
+            self.kernels[k.function_name] = k
 
-        #for k in kernel_list:
-        #    self.kernels[k] = self.prog.k     # Not sure this is correct....
-
-        # TODO : Debug, remove
-        if self.verbose:
-            for k, v in self.kernels.items():
-                print("%s : %s" % (k, v))
+        return self.kernels
 
 
 class clContext(object):
@@ -123,6 +120,10 @@ class clContext(object):
                 s.append('%s : %s' % (k, v))
 
         return ''.join(s)
+
+    def _update_program(self, program):
+        # TODO : check for attribute clash?
+        self.kernels.update(program.kernels)
 
     def get_platform(self):
 

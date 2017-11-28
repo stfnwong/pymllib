@@ -17,7 +17,7 @@ import numpy as np
 from pymllib.opencl import cl_util
 
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 
 def create_cl_test_harness(platform_str='AMD'):
@@ -66,13 +66,13 @@ def create_cl_test_harness(platform_str='AMD'):
     return ctx, queue, platform, device
 
 
-
 class TestCLProgram(unittest.TestCase):
     def setUp(self):
         self.verbose = True
         #self.cl_platform_string = 'Intel Gen OCL Driver'
         self.cl_platform_string = 'AMD Accelerated Parallel Processing'
-        self.kernel_source = 'pymllib/opencl/kernels/sgemm_test.cl'
+        self.kernel_source = 'pymllib/opencl/kernels/sum.cl'
+        #self.kernel_source = 'pymllib/opencl/kernels/sgemm_test.cl'
         self.dtype = np.float32
 
     def test_build_program(self):
@@ -88,8 +88,8 @@ class TestCLProgram(unittest.TestCase):
         with open(self.kernel_source, 'r') as fp:
             source = fp.read().replace('\n', '')
 
-        cl_program.build(ctx, source, device=device)
-        for k, v in cl_program.kernels.items():
+        kernels = cl_program.build(ctx, source, device=device)
+        for k, v in kernels.items():
             print('%s : %s' % (k, v))
 
         # Create some dummy data
