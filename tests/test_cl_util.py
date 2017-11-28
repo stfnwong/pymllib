@@ -99,8 +99,14 @@ class TestCLProgram(unittest.TestCase):
 
         # Create some dummy data
         print("Generating test data...")
-        A = np.random.randn(64, 64).astype(self.dtype)
-        B = np.random.randn(64, 64).astype(self.dtype)
+        A = np.linspace(1, 64, num=64*64).astype(self.dtype)
+        A = A.reshape((64,64))
+        B = np.linspace(1, 64, num=64*64).astype(self.dtype)
+        B = B.reshape((64,64))
+        print('A shape : %s' % str(A.shape))
+        print('B shape : %s' % str(B.shape))
+        #A = np.random.randn(64, 64).astype(self.dtype)
+        #B = np.random.randn(64, 64).astype(self.dtype)
         a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
         b_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=B)
         r_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
@@ -112,9 +118,10 @@ class TestCLProgram(unittest.TestCase):
         kernels[str(self.kernel_name)].set_args(M, N, K, a_buf, b_buf, r_buf)
         # Stick the kernel in the queue
         ev = cl.enqueue_nd_range_kernel(queue, kernels[str(self.kernel_name)], A.shape, None)
+        print(ev)
         # Results
         C = np.dot(A, B)
-        cl_result = np.empty_like(C)
+        cl_result = np.empty_like(C).astype(self.dtype)
         cl.enqueue_copy(queue, cl_result, r_buf)
 
         diff = abs(C - cl_result)
