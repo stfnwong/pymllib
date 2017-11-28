@@ -65,6 +65,11 @@ def create_cl_test_harness(platform_str='AMD'):
 
     return ctx, queue, platform, device
 
+def read_source(filename):
+    with open(filename, 'r') as fp:
+        source = fp.read().rstrip('\n')
+
+    return source
 
 class TestCLProgram(unittest.TestCase):
     def setUp(self):
@@ -72,9 +77,31 @@ class TestCLProgram(unittest.TestCase):
         #self.cl_platform_string = 'Intel Gen OCL Driver'
         self.cl_platform_string = 'AMD Accelerated Parallel Processing'
         #self.kernel_source = 'pymllib/opencl/kernels/sum.cl'
-        self.kernel_source = 'pymllib/opencl/kernels/sgemm_test.cl'
-        self.kernel_name = 'GEMM1'
+        self.kernel_file = 'pymllib/opencl/kernels/sgemm.cl'
+        self.kernel_name = 'sgemm_naive'
         self.dtype = np.float32
+
+    def test_sgemm_kernels(self):
+        print("\n======== TestCLProgram.test_sgemm_kernels:")
+
+        kernel_names = ['sgemm_naive', 'sgemm_tiling']
+        # Get source
+        source = read_source(self.kernel_file)
+        # Get dummy vars for test
+        ctx, queue, platform, device = create_cl_test_harness(platform_str=self.cl_platform_string)
+        # Get a program object
+        cl_program = cl_util.clProgram(verbose=self.verbose)
+        kernels = cl_program.build(ctx, source, device=device)
+        print("Built %d kernel(s)" % len(kernels.keys()) )
+        for k, v in kernels.items():
+            print('\t%s : %s' % (k, v))
+
+        for n in kernel_names:
+            self.assertTrue(n in kernels.keys())
+
+
+
+        print("======== TestCLProgram.test_sgemm_kernels: <END> ")
 
     def test_build_program(self):
         print("\n======== TestCLProgram.test_build_program:")
@@ -86,9 +113,8 @@ class TestCLProgram(unittest.TestCase):
         # Get a program object
         cl_program = cl_util.clProgram()
         # Get some source
-        print("Reading source file from %s" % self.kernel_source)
-        with open(self.kernel_source, 'r') as fp:
-            source = fp.read().replace('\n', '')
+        print("Reading source file from %s" % self.kernel_file)
+        source = read_source(self.kernel_file)
         # Build the kernels in the source file
         kernels = cl_program.build(ctx, source, device=device)
         print("Built %d kernel(s)" % len(kernels.keys()) )
@@ -132,54 +158,10 @@ class TestCLProgram(unittest.TestCase):
         print('max diff')
         print(np.max(diff))
 
-
-
-
         print("======== TestCLProgram.test_build_program: <END> ")
 
-class TestCLUtil(unittest.TestCase):
-
-    def setUp(self):
-        self.verbose = True
-        self.cl_platform_string = 'Intel Gen OCL Driver'
-
-    def test_init_context(self):
-        print("\n======== TestCLUtil.test_init_context:")
-
-        cl_context = cl_util.clContext(verbose=self.verbose)
-        try:
-            cl_context.init_context()
-        except ValueError as e:
-            print(e)
-            print("Failed test_init_context")
-            return
-
-        # Ensure that members have values
-        self.assertIsNotNone(cl_context.context)
-        self.assertIsNotNone(cl_context.queue)
-        self.assertIsNotNone(cl_context.platform)
-        self.assertIsNotNone(cl_context.device)
 
 
-        print("======== TestCLUtil.test_init_context: <END> ")
-
-    def test_build_program(self):
-        print("\n======== TestCLUtil.test_build_program:")
-        test_kernel_source_file = 'pymllib/opencl/kernels/sgemm_test.cl'
-
-        cl_context = cl_util.clContext(verbose=self.verbose)
-        try:
-            cl_context.init_context()
-        except ValueError as e:
-            print(e)
-            print("Failed test_init_context")
-            return
-
-        cl_context.prog_from_file(test_kernel_source_file)
-        print(cl_context)
-
-
-        print("======== TestCLUtil.test_build_program: <END> ")
 
 
 

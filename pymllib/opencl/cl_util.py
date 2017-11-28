@@ -9,6 +9,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pyopencl as cl
+
 # Debug
 #from pudb import set_trace; set_trace()
 
@@ -20,7 +21,7 @@ def cl_load_kernel(filename):
     return kernel_source
 
 def cl_select_platform(pname, verbose=False):
-
+    # Try to get our preferred platform
     platform_list = cl.get_platforms()
     for p in platform_list:
         if p.name == pname:
@@ -61,21 +62,41 @@ class clKernel(object):
     def __repr__(self):
         return ''.join('%s\n' % self.name)
 
-# Get program build log
-#build_log = self.prog.get_build_info(device, cl.program_build_info.LOG)
-#if len(build_log) > 0:
-#    if self.verbose:
-#        print("Build log:")
-#        print('%s\n' % build_log)
+
 
 class clProgram(object):
-    def __init__(self):
+    """
+    CLPROGRAM
+    Builds a program from a source file and returns a dictionary of
+    kernel references. Each key in the dictionary is the name of a
+    kernel in the source file.
+    """
+    def __init__(self, verbose=False):
         self.prog = None
         self.kernels = {}
-        self.verbose = True
+        self.verbose = verbose
+
+    def __str__(self):
+        s =[]
+        if self.kernels:
+            for k, v in self.kernels.items():
+                s.append('%s : %s' % (k, v))
+
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
 
     def build(self, ctx, source, device, options=[]):
+
         self.prog = cl.Program(ctx, source).build(devices=[device])
+        # Print build log to console in verbose mode
+        if self.verbose:
+            build_log = self.prog.get_build_info(device, cl.program_build_info.LOG)
+            if len(build_log) > 0:
+                if self.verbose:
+                    print("Build log:")
+                    print('%s\n' % build_log)
 
         if self.prog.num_kernels < 1:
             err_str = "No kernels were built for program %s" % self.prog
@@ -83,10 +104,12 @@ class clProgram(object):
 
         # Create references to the kernels in this program
         kernel_list = self.prog.all_kernels()
-        for k in kernel_list:       # TODO : May not need to keep kernel_list here
+        for k in kernel_list:
             self.kernels[k.function_name] = k
 
         return self.kernels
+
+
 
 
 class clContext(object):
@@ -185,4 +208,3 @@ class clContext(object):
 
         program = clProgram()
         program.build(self.context, source, device=self.device)
-
