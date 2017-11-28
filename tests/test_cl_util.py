@@ -101,11 +101,57 @@ class TestCLProgram(unittest.TestCase):
         self.cl_platform_string = 'AMD Accelerated Parallel Processing'
         #self.kernel_source = 'pymllib/opencl/kernels/sum.cl'
         self.kernel_file = 'pymllib/opencl/kernels/sgemm.cl'
-        #self.kernel_name = 'sgemm_naive'
-        self.kernel_name = 'sgemm_tiling16'
+        self.kernel_name = 'sgemm_naive'
+        #self.kernel_name = 'sgemm_tiling16'
         self.dtype = np.float32
 
-    #@do_cprofile
+    def test_sgemm_tiling16(self):
+        print("\n======== TestCLProgram.test_sgemm_tiling16:")
+
+        source = read_source(self.kernel_file)
+        # Get dummy vars for test
+        ctx, queue, platform, device = create_cl_test_harness(platform_str=self.cl_platform_string)
+        # Get a program object
+        cl_program = cl_util.clProgram(verbose=self.verbose)
+        kernels = cl_program.build(ctx, source, device=device)
+        print("Built %d kernel(s)" % len(kernels.keys()) )
+        for k, v in kernels.items():
+            print('\t%s : %s' % (k, v))
+
+        # Ensure we built the correct kernel
+        self.assertTrue('sgemm_tiling32' in kernels.keys())
+
+        # Generate test data
+        A = np.linspace(1, 64, num=64*64).astype(self.dtype)
+        A = A.reshape((64,64))
+        B = np.linspace(1, 64, num=64*64).astype(self.dtype)
+        B = B.reshape((64,64))
+        print('A shape : %s' % str(A.shape))
+        print('B shape : %s' % str(B.shape))
+        a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
+        b_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=B)
+        r_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
+
+        M = np.int32(A.shape[0])
+        N = np.int32(A.shape[0])
+        K = np.int32(A.shape[0])
+
+        # Create the reference result
+        C = np.dot(A, B)
+        cl_result = np.empty_like(C)
+
+        kernels['sgemm_tiling16'].set_args(M, N, K, a_buf, b_buf, r_buf)
+        print("Enqueuing sgemm_tiling16")
+        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tiling16'], A.shape, None)
+        cl.enqueue_copy(queue, cl_result, r_buf)
+        diff = abs(C - cl_result)
+        print("Kernel %s difference matrix" % k)
+        print(diff)
+        self.assertLessEqual(np.max(diff), 1e-8)
+        print("Max difference was %f" % np.max(diff))
+
+        print("======== TestCLProgram.test_sgemm_tiling16: <END> ")
+
     def test_sgemm_kernels(self):
         print("\n======== TestCLProgram.test_sgemm_kernels:")
 
@@ -151,14 +197,22 @@ class TestCLProgram(unittest.TestCase):
         cl_result = np.empty_like(C)
 
         for k in kernels.keys():
-            print("Enqueuing kernel %s" % k)
-            kernels[k].set_args(M, N, K, a_buf, b_buf, result_buffers[k])
-            cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, None)
-            cl.enqueue_copy(queue, cl_result, result_buffers[k])
-            diff = abs(C - cl_result)
-            print("Kernel %s difference matrix" % k)
-            print(diff)
-            self.assertLessEqual(np.max(diff), 1e-8)
+            if k == 'sgemm_tiling32':
+                print("Enqueuing kernel %s" % k)
+                kernels[k].set_args(M, N, K, a_buf, b_buf, result_buffers[k])
+                cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, None)
+                #if k == 'sgemm_naive':
+                #    cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, None)
+                #elif k == 'sgemm_tiling16':
+                #    cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, (16,16))
+                #elif k == 'sgemm_tiling32':
+                #    cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, (32,32))
+                cl.enqueue_copy(queue, cl_result, result_buffers[k])
+                diff = abs(C - cl_result)
+                print("Kernel %s difference matrix" % k)
+                print(diff)
+                self.assertLessEqual(np.max(diff), 1e-8)
+                print("Max difference was %f" % np.max(diff))
 
         print("======== TestCLProgram.test_sgemm_kernels: <END> ")
 

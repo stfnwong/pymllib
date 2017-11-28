@@ -41,29 +41,6 @@ def cl_get_device_info(cl_platform):
     return device_list
 
 
-class clKernel(object):
-    """
-    clKernel
-
-    Holds a single kernel object extracted from a clProgram
-    """
-    def __init__(self):
-        self.source_file = ''
-        self.name = ''
-        self.kernel = None
-
-    def __str__(self):
-        s = []
-        s.append('Name        : %s\n' % self.name)
-        s.append('Source File : %s\n' % self.source_file)
-
-        return ''.join(s)
-
-    def __repr__(self):
-        return ''.join('%s\n' % self.name)
-
-
-
 class clProgram(object):
     """
     CLPROGRAM
@@ -79,8 +56,9 @@ class clProgram(object):
     def __str__(self):
         s =[]
         if self.kernels:
+            s.append('Program contains:\n')
             for k, v in self.kernels.items():
-                s.append('%s : %s' % (k, v))
+                s.append('\t%s : %s' % (k, v))
 
         return ''.join(s)
 
@@ -108,9 +86,6 @@ class clProgram(object):
             self.kernels[k.function_name] = k
 
         return self.kernels
-
-
-
 
 class clContext(object):
     def __init__(self, **kwargs):
@@ -201,10 +176,15 @@ class clContext(object):
         self.context = cl.Context(dev_type=self.device.type)
         self.queue = cl.CommandQueue(self.context)
 
-    def prog_from_file(self, filename):
+    def load_source(self, filename):
 
         with open(filename, 'r') as fp:
-            source = fp.read().replace('\n', '')
+            source = fp.read().rstrip('\n')
 
-        program = clProgram()
-        program.build(self.context, source, device=self.device)
+        prog = clProgram(verbose=self.verbose)
+        kernels = prog.build(self.context, source, self.device)
+        if not kernels:
+            return None
+        self.kernels.update(kernels)
+
+        return len(kernels.keys())
