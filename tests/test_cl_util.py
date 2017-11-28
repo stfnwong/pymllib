@@ -17,7 +17,7 @@ import numpy as np
 from pymllib.opencl import cl_util
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 
 def create_cl_test_harness(platform_str='AMD'):
@@ -71,8 +71,9 @@ class TestCLProgram(unittest.TestCase):
         self.verbose = True
         #self.cl_platform_string = 'Intel Gen OCL Driver'
         self.cl_platform_string = 'AMD Accelerated Parallel Processing'
-        self.kernel_source = 'pymllib/opencl/kernels/sum.cl'
-        #self.kernel_source = 'pymllib/opencl/kernels/sgemm_test.cl'
+        #self.kernel_source = 'pymllib/opencl/kernels/sum.cl'
+        self.kernel_source = 'pymllib/opencl/kernels/sgemm_test.cl'
+        self.kernel_name = 'GEMM1'
         self.dtype = np.float32
 
     def test_build_program(self):
@@ -85,12 +86,16 @@ class TestCLProgram(unittest.TestCase):
         # Get a program object
         cl_program = cl_util.clProgram()
         # Get some source
+        print("Reading source file from %s" % self.kernel_source)
         with open(self.kernel_source, 'r') as fp:
             source = fp.read().replace('\n', '')
-
+        # Build the kernels in the source file
         kernels = cl_program.build(ctx, source, device=device)
+        print("Built %d kernel(s)" % len(kernels.keys()) )
         for k, v in kernels.items():
-            print('%s : %s' % (k, v))
+            print('\t%s : %s' % (k, v))
+
+        self.assertTrue(self.kernel_name in kernels.keys())
 
         # Create some dummy data
         print("Generating test data...")
@@ -98,7 +103,29 @@ class TestCLProgram(unittest.TestCase):
         B = np.random.randn(64, 64).astype(self.dtype)
         a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
         b_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=B)
-        result = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
+        r_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
+        # Note, we must use np.int32's here to ensure the correct alignment
+        M = np.int32(A.shape[0])
+        N = np.int32(A.shape[0])
+        K = np.int32(A.shape[0])
+        # Set the kernel args
+        kernels[str(self.kernel_name)].set_args(M, N, K, a_buf, b_buf, r_buf)
+        # Stick the kernel in the queue
+        ev = cl.enqueue_nd_range_kernel(queue, kernels[str(self.kernel_name)], A.shape, None)
+        # Results
+        C = np.dot(A, B)
+        cl_result = np.empty_like(C)
+        cl.enqueue_copy(queue, cl_result, r_buf)
+
+        diff = abs(C - cl_result)
+        print("C = A * B : \n")
+        print(C)
+        print("CL result :\n")
+        print(cl_result)
+        print('max diff')
+        print(np.max(diff))
+
+
 
 
         print("======== TestCLProgram.test_build_program: <END> ")
