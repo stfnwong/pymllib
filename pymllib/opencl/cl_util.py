@@ -65,24 +65,22 @@ class clKernel(object):
 class clProgram(object):
     def __init__(self):
         self.prog = None
-        self.options = None
         self.kernels = {}
+        self.verbose = True
 
-    # This function is of dubious value
-    def load_source(self, filename):
-        with open(filename, 'r') as fp:
-            source = fp.read().replace('\n', '')
+    def build(self, ctx, source, device=None, options=None):
+        self.prog = cl.Program(ctx, source, options)
+        self.prog.build()
 
-        return source
-
-    def build(self, ctx, source):
-        self.prog = cl.Program(ctx, source, self.options)
-
-        # TODO : We need to confirm that the program
-        # built correctly, then
+        # TODO : How to get build errors from here?
         kernel_list = self.prog.all_kernels()
         for k in kernel_list:
             self.kernels[k] = prg.k     # Not sure this is correct....
+
+        # TODO : Debug, remove
+        if self.verbose:
+            for k, v in self.kernels.items():
+                print("%s : %s" % (k, v))
 
 
 # The main reason for making this a class is for pretty print
@@ -97,14 +95,11 @@ class clContext(object):
         self.verbose = kwargs.pop('verbose', False)
 
         # Init internals
-        #self.context = cl.create_some_context()
-        #self.queue = cl.CommandQueue(self.context)
-        #self.platform = self._get_platform()
         self.context = None
         self.queue = None
         self.platform = None
         self.device = None
-        self.kernels = []
+        self.kernels = {}
 
     def __str__(self):
         s = []
@@ -163,15 +158,11 @@ class clContext(object):
         self.context = cl.Context(dev_type=self.device.type)
         self.queue = cl.CommandQueue(self.context)
 
+    def prog_from_file(self, filename):
 
+        with open(filename, 'r') as fp:
+            source = fp.read().replace('\n', '')
 
+        program = clProgram()
+        program.build(self.context, source, device=self.device)
 
-    def load_kernel(self, filename):
-        kernel = clKernel()
-        kernel.load_source(filename)
-        self.kernels.append(kernel)
-
-    def build_program(self):
-        # TODO : How to get compiler error messages?
-        for k in self.kernels:
-            k.build(self.context)

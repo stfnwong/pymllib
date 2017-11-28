@@ -1,8 +1,7 @@
-/* SGEMM Routines
- *
- * The first one here is just a naive one for testing the OpenCL routines
- */
-
+// SGEMM Routines
+//
+// The first one here is just a naive one for testing the OpenCL routines
+//
 
 __kernel void GEMM1(const int M, const int N, const int K, 
         const __global float* A, 
@@ -16,7 +15,9 @@ __kernel void GEMM1(const int M, const int N, const int K,
     // loop over k and compute a single element
     float acc = 0.0f;
     for(int k = 0; k < K; k++)
+    {
         acc += A[k*M + global_row] * B[global_col * K + k];
+    }
 
     // Store result
     C[global_col * M + global_row] = acc;

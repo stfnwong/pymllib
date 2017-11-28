@@ -12,18 +12,95 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import unittest
 import pyopencl as cl
+import numpy as np
 # Module under test
 from pymllib.opencl import cl_util
 
 # Debug
 #from pudb import set_trace; set_trace()
 
+
+def create_cl_test_harness():
+    """
+    CREATE_CL_TEST_HARNESS
+    Utility function to create a useable cl context
+    """
+    # Get a platform
+    platform = None
+    platform_list = cl.get_platforms()
+    for p in platform_list:
+        if 'Intel' in p.name:
+            platform = p
+            break
+    if platform is None:
+        if len(platform_list) >= 1:
+            platform = platform_list[0]
+        else:
+            print("Failed to get platform")
+            return None, None, None, None
+
+    # Get a device
+    device = None
+    device_list = platform.get_devices()
+    for d in device_list:
+        # prefer a GPU
+        if cl.device_type.to_string(d.type) == 'GPU':
+            device = d
+    if device is None:
+        if len(device_list) >= 1:
+            device = device_list[0]
+        else:
+            print("Failed to get device")
+            return None, None, None, None
+
+    # Create a context
+    ctx = cl.Context(dev_type=device.type)
+    queue = cl.CommandQueue(ctx)
+
+    return ctx, queue, platform, device
+
+
+
+class TestCLProgram(unittest.TestCase):
+    def setUp(self):
+        self.verbose = True
+        self.cl_platform_string = 'Intel Gen OCL Driver'
+        self.kernel_source = 'pymllib/opencl/kernels/sgemm_test.cl'
+        self.dtype = np.float32
+
+    def test_build_program(self):
+        print("\n======== TestCLProgram.test_build_program:")
+        # Create dummy vars for test
+        ctx, queue, platform, device = create_cl_test_harness()
+        if ctx is None:
+            print('Failed to init test harness')
+            return
+        # Get a program object
+        cl_program = cl_util.clProgram()
+        # Get some source
+        with open(self.kernel_source, 'r') as fp:
+            source = fp.read().replace('\n', '')
+
+        cl_program.build(ctx, source)
+        for k, v in cl_program.kernels.items():
+            print('%s : %s' % (k, v))
+
+        # Create some dummy data
+        print("Generating test data...")
+        A = np.random.randn(64, 64, dtype=self.dtype)
+        B = np.random.randn(64, 64, dtype=self.dtype)
+        a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
+        b_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=B)
+        result = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
+
+
+        print("======== TestCLProgram.test_build_program: <END> ")
+
 class TestCLUtil(unittest.TestCase):
 
     def setUp(self):
         self.verbose = True
         self.cl_platform_string = 'Intel Gen OCL Driver'
-
 
     def test_init_context(self):
         print("\n======== TestCLUtil.test_init_context:")
@@ -38,34 +115,32 @@ class TestCLUtil(unittest.TestCase):
 
         # Ensure that members have values
         self.assertIsNotNone(cl_context.context)
+        self.assertIsNotNone(cl_context.queue)
+        self.assertIsNotNone(cl_context.platform)
         self.assertIsNotNone(cl_context.device)
 
 
         print("======== TestCLUtil.test_init_context: <END> ")
 
+    def test_build_program(self):
+        print("\n======== TestCLUtil.test_build_program:")
+        test_kernel_source_file = 'pymllib/opencl/kernels/sgemm_test.cl'
+
+        cl_context = cl_util.clContext(verbose=self.verbose)
+        try:
+            cl_context.init_context()
+        except ValueError as e:
+            print(e)
+            print("Failed test_init_context")
+            return
+
+        cl_context.prog_from_file(test_kernel_source_file)
+        print(cl_context)
 
 
-    #def test_load_kernel(self):
-    #    print("\n======== TestCLUtil.test_load_kernel:")
-
-    #    # TODO: Using the Intel driver for testing, change
-    #    # to AMD driver on workstation
-    #    preferred_platform = 'Intel Gen OCL Driver'
-    #    preferred_device_type = 'GPU'
-
-    #    # Get a context object
-    #    context = cl_util.clContext(platform_str = preferred_platform,
-    #                      device_type = preferred_device_type,
-    #                      verbose = self.verbose)
-    #    test_kernel = 'pymllib/opencl/kernels/sgemm_test.cl'
-    #    context.load_kernel(test_kernel)
-    #    # Print the kernels that we loaded
-    #    print("Context contains the following kernels")
-    #    for k in context.kernels:
-    #        print(str(k))
+        print("======== TestCLUtil.test_build_program: <END> ")
 
 
-    #    print("======== TestCLUtil.test_load_kernel: <END> ")
 
 
 if __name__ == "__main__":
