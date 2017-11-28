@@ -13,6 +13,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import unittest
 import pyopencl as cl
 import numpy as np
+import cProfile
+
 # Module under test
 from pymllib.opencl import cl_util
 
@@ -20,10 +22,25 @@ from pymllib.opencl import cl_util
 #from pudb import set_trace; set_trace()
 
 
+def do_cprofile(func):
+    """
+    Decorator functions for profiler
+    """
+    def profiled_func(*args, **kwargs):
+        profile = cProfile.Profile()
+        try:
+            profile.enable()
+            result = func(*args, **kwargs)
+            profile.disable()
+            return result
+        finally:
+            profile.print_stats()
+        return profiled_func
+
 def create_cl_test_harness(platform_str='AMD'):
     """
     CREATE_CL_TEST_HARNESS
-    Utility function to create a useable cl context
+    Utility function to get a usable platform, device, context and queue
     """
     # Get a platform
     platform = None
@@ -66,26 +83,35 @@ def create_cl_test_harness(platform_str='AMD'):
     return ctx, queue, platform, device
 
 def read_source(filename):
+    """
+    Read kernel source from disk
+    """
     with open(filename, 'r') as fp:
         source = fp.read().rstrip('\n')
 
     return source
 
 class TestCLProgram(unittest.TestCase):
+    """
+    Test the CLProgram object
+    """
     def setUp(self):
         self.verbose = True
         #self.cl_platform_string = 'Intel Gen OCL Driver'
         self.cl_platform_string = 'AMD Accelerated Parallel Processing'
         #self.kernel_source = 'pymllib/opencl/kernels/sum.cl'
         self.kernel_file = 'pymllib/opencl/kernels/sgemm.cl'
-        self.kernel_name = 'sgemm_naive'
+        #self.kernel_name = 'sgemm_naive'
+        self.kernel_name = 'sgemm_tiling16'
         self.dtype = np.float32
 
+    #@do_cprofile
     def test_sgemm_kernels(self):
         print("\n======== TestCLProgram.test_sgemm_kernels:")
 
-        kernel_names = ['sgemm_naive', 'sgemm_tiling']
+        kernel_names = ['sgemm_naive', 'sgemm_tiling16', 'sgemm_tiling32']
         # Get source
+        print("Loading source from file %s" % self.kernel_file)
         source = read_source(self.kernel_file)
         # Get dummy vars for test
         ctx, queue, platform, device = create_cl_test_harness(platform_str=self.cl_platform_string)
@@ -96,10 +122,43 @@ class TestCLProgram(unittest.TestCase):
         for k, v in kernels.items():
             print('\t%s : %s' % (k, v))
 
+        # Ensure that all the expected kernels were built
         for n in kernel_names:
             self.assertTrue(n in kernels.keys())
 
+        # Generate test data
+        A = np.linspace(1, 64, num=64*64).astype(self.dtype)
+        A = A.reshape((64,64))
+        B = np.linspace(1, 64, num=64*64).astype(self.dtype)
+        B = B.reshape((64,64))
+        print('A shape : %s' % str(A.shape))
+        print('B shape : %s' % str(B.shape))
+        a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
+        b_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=B)
 
+        result_buffers = {}
+        for k in kernels.keys():
+            result_buffers[k] = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
+
+        #r_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
+        # Note, we must use np.int32's here to ensure the correct alignment
+        M = np.int32(A.shape[0])
+        N = np.int32(A.shape[0])
+        K = np.int32(A.shape[0])
+
+        # Create the reference result
+        C = np.dot(A, B)
+        cl_result = np.empty_like(C)
+
+        for k in kernels.keys():
+            print("Enqueuing kernel %s" % k)
+            kernels[k].set_args(M, N, K, a_buf, b_buf, result_buffers[k])
+            cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, None)
+            cl.enqueue_copy(queue, cl_result, result_buffers[k])
+            diff = abs(C - cl_result)
+            print("Kernel %s difference matrix" % k)
+            print(diff)
+            self.assertLessEqual(np.max(diff), 1e-8)
 
         print("======== TestCLProgram.test_sgemm_kernels: <END> ")
 
@@ -131,8 +190,6 @@ class TestCLProgram(unittest.TestCase):
         B = B.reshape((64,64))
         print('A shape : %s' % str(A.shape))
         print('B shape : %s' % str(B.shape))
-        #A = np.random.randn(64, 64).astype(self.dtype)
-        #B = np.random.randn(64, 64).astype(self.dtype)
         a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
         b_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=B)
         r_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
@@ -162,7 +219,15 @@ class TestCLProgram(unittest.TestCase):
 
 
 
-
+class TestCLContext(unittest.TestCase):
+    def setUp(self):
+        self.verbose = True
+        #self.cl_platform_string = 'Intel Gen OCL Driver'
+        self.cl_platform_string = 'AMD Accelerated Parallel Processing'
+        #self.kernel_source = 'pymllib/opencl/kernels/sum.cl'
+        self.kernel_file = 'pymllib/opencl/kernels/sgemm.cl'
+        self.kernel_name = 'sgemm_naive'
+        self.dtype = np.float32
 
 
 
