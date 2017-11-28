@@ -20,7 +20,7 @@ from pymllib.opencl import cl_util
 #from pudb import set_trace; set_trace()
 
 
-def create_cl_test_harness():
+def create_cl_test_harness(platform_str='AMD'):
     """
     CREATE_CL_TEST_HARNESS
     Utility function to create a useable cl context
@@ -29,7 +29,7 @@ def create_cl_test_harness():
     platform = None
     platform_list = cl.get_platforms()
     for p in platform_list:
-        if 'Intel' in p.name:
+        if platform_str in p.name:
             platform = p
             break
     if platform is None:
@@ -38,6 +38,9 @@ def create_cl_test_harness():
         else:
             print("Failed to get platform")
             return None, None, None, None
+
+    print('Platform name is %s' % platform.name)
+    print('Platform vendor is %s' % platform.vendor)
 
     # Get a device
     device = None
@@ -53,8 +56,11 @@ def create_cl_test_harness():
             print("Failed to get device")
             return None, None, None, None
 
-    # Create a context
-    ctx = cl.Context(dev_type=device.type)
+    print('Device name is %s' % device.name)
+    print('Device type is %s' % cl.device_type.to_string(device.type))
+
+    # Create a context`
+    ctx = cl.Context(devices=[device])
     queue = cl.CommandQueue(ctx)
 
     return ctx, queue, platform, device
@@ -64,14 +70,15 @@ def create_cl_test_harness():
 class TestCLProgram(unittest.TestCase):
     def setUp(self):
         self.verbose = True
-        self.cl_platform_string = 'Intel Gen OCL Driver'
+        #self.cl_platform_string = 'Intel Gen OCL Driver'
+        self.cl_platform_string = 'AMD Accelerated Parallel Processing'
         self.kernel_source = 'pymllib/opencl/kernels/sgemm_test.cl'
         self.dtype = np.float32
 
     def test_build_program(self):
         print("\n======== TestCLProgram.test_build_program:")
         # Create dummy vars for test
-        ctx, queue, platform, device = create_cl_test_harness()
+        ctx, queue, platform, device = create_cl_test_harness(platform_str=self.cl_platform_string)
         if ctx is None:
             print('Failed to init test harness')
             return
@@ -81,14 +88,14 @@ class TestCLProgram(unittest.TestCase):
         with open(self.kernel_source, 'r') as fp:
             source = fp.read().replace('\n', '')
 
-        cl_program.build(ctx, source)
+        cl_program.build(ctx, source, device=device)
         for k, v in cl_program.kernels.items():
             print('%s : %s' % (k, v))
 
         # Create some dummy data
         print("Generating test data...")
-        A = np.random.randn(64, 64, dtype=self.dtype)
-        B = np.random.randn(64, 64, dtype=self.dtype)
+        A = np.random.randn(64, 64).astype(self.dtype)
+        B = np.random.randn(64, 64).astype(self.dtype)
         a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
         b_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=B)
         result = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)

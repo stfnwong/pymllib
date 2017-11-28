@@ -68,14 +68,23 @@ class clProgram(object):
         self.kernels = {}
         self.verbose = True
 
-    def build(self, ctx, source, device=None, options=None):
-        self.prog = cl.Program(ctx, source, options)
-        self.prog.build()
+    def build(self, ctx, source, device=None, options=[]):
+        self.prog = cl.Program(ctx, source)
+        self.prog.build(options, devices=[device])
+
+        build_log = self.prog.get_build_info(device, cl.program_build_info.LOG)
+        if len(build_log) > 0:
+            if self.verbose:
+                print("Build log:")
+                print('%s\n' % build_log)
 
         # TODO : How to get build errors from here?
         kernel_list = self.prog.all_kernels()
-        for k in kernel_list:
-            self.kernels[k] = prg.k     # Not sure this is correct....
+        if len(kernel_list) < 1:
+            raise ValueError('No kernels were built for program %s' % self.prog)
+
+        #for k in kernel_list:
+        #    self.kernels[k] = self.prog.k     # Not sure this is correct....
 
         # TODO : Debug, remove
         if self.verbose:
@@ -83,7 +92,6 @@ class clProgram(object):
                 print("%s : %s" % (k, v))
 
 
-# The main reason for making this a class is for pretty print
 class clContext(object):
     def __init__(self, **kwargs):
         # Unload kwargs
@@ -103,6 +111,17 @@ class clContext(object):
 
     def __str__(self):
         s = []
+        if self.platform is not None:
+            s.append('Platform Name   : %s\n' % self.platform.name)
+            s.append('Platform Vendor : %s\n' % self.platform.vendor)
+        if self.device is not None:
+            s.append('Device Name     : %s\n' % self.device.name)
+            s.append('Device Vendor   : %s\n' % self.device.vendor)
+        if self.kernels:
+            print('Kernels :\n')
+            for k, v in self.kernels.items():
+                s.append('%s : %s' % (k, v))
+
         return ''.join(s)
 
     def get_platform(self):
@@ -117,7 +136,7 @@ class clContext(object):
         # If we can't find our preferred platform then
         # take the first valid platform we can find
         if len(platform_list) >= 1:
-            if self.vebose:
+            if self.verbose:
                 print("Could not find preferred platform %s" % self.platform_str)
                 print("Using alternative platform %s" % platform_list[0].name)
             return platform_list[0]
