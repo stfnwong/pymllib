@@ -145,7 +145,7 @@ class TestCLProgram(unittest.TestCase):
         cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tiling16'], A.shape, None)
         cl.enqueue_copy(queue, cl_result, r_buf)
         diff = abs(C - cl_result)
-        print("Kernel %s difference matrix" % k)
+        print('sgemm_tiling16 difference matrix')
         print(diff)
         self.assertLessEqual(np.max(diff), 1e-8)
         print("Max difference was %f" % np.max(diff))
@@ -188,7 +188,7 @@ class TestCLProgram(unittest.TestCase):
         cl_result = np.empty_like(C)
 
         kernels['sgemm_tiling32'].set_args(M, N, K, a_buf, b_buf, r_buf)
-        print("Enqueuing sgemm_tiling16")
+        print("Enqueuing sgemm_tiling32")
         cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tiling32'], A.shape, None)
         cl.enqueue_copy(queue, cl_result, r_buf)
         diff = abs(C - cl_result)
@@ -329,6 +329,15 @@ class TestCLContext(unittest.TestCase):
         self.kernel_file = 'pymllib/opencl/kernels/sgemm.cl'
         self.kernel_name = 'sgemm_naive'
         self.dtype = np.float32
+
+    def test_context_setup(self):
+        print("======== TestCLContext.test_context_setup:")
+
+        cl_context = cl_util.clContext()
+
+
+
+        print("======== TestCLContext.test_context_setup: <END> ")
 
 
 
