@@ -23,7 +23,7 @@ __kernel void sgemm_naive(const int M, const int N, const int K,
 }
 
 //#define TILE16 16
-__kernel void sgemm_tiling16(const int M, const int N, const int K,
+__kernel void sgemm_tile16(const int M, const int N, const int K,
         const __global float* A,
         const __global float* B,
               __global float* C)
@@ -69,7 +69,7 @@ __kernel void sgemm_tiling16(const int M, const int N, const int K,
 // Tile size for this kernel is fixed at 32
 //
 #define TILE32 32
-__kernel void sgemm_tiling32(const int M, const int N, const int K,
+__kernel void sgemm_tile32(const int M, const int N, const int K,
         const __global float* A,
         const __global float* B,
               __global float* C)

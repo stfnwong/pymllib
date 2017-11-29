@@ -1,5 +1,5 @@
 """
-TEST_CL_UTIL
+TEST_CL_UTILS
 Unit tests for OpenCL utilities.
 
 
@@ -16,7 +16,7 @@ import numpy as np
 import cProfile
 
 # Module under test
-from pymllib.opencl import cl_util
+from pymllib.opencl import cl_utils
 
 # Debug
 #from pudb import set_trace; set_trace()
@@ -102,24 +102,24 @@ class TestCLProgram(unittest.TestCase):
         #self.kernel_source = 'pymllib/opencl/kernels/sum.cl'
         self.kernel_file = 'pymllib/opencl/kernels/sgemm.cl'
         self.kernel_name = 'sgemm_naive'
-        #self.kernel_name = 'sgemm_tiling16'
+        #self.kernel_name = 'sgemm_tile16'
         self.dtype = np.float32
 
-    def test_sgemm_tiling16(self):
-        print("\n======== TestCLProgram.test_sgemm_tiling16:")
+    def test_sgemm_tile16(self):
+        print("\n======== TestCLProgram.test_sgemm_tile16:")
 
         source = read_source(self.kernel_file)
         # Get dummy vars for test
         ctx, queue, platform, device = create_cl_test_harness(platform_str=self.cl_platform_string)
         # Get a program object
-        cl_program = cl_util.clProgram(verbose=self.verbose)
+        cl_program = cl_utils.clProgram(verbose=self.verbose)
         kernels = cl_program.build(ctx, source, device=device)
         print("Built %d kernel(s)" % len(kernels.keys()) )
         for k, v in kernels.items():
             print('\t%s : %s' % (k, v))
 
         # Ensure we built the correct kernel
-        self.assertTrue('sgemm_tiling16' in kernels.keys())
+        self.assertTrue('sgemm_tile16' in kernels.keys())
 
         # Generate test data
         A = np.linspace(1, 64, num=64*64).astype(self.dtype)
@@ -140,33 +140,33 @@ class TestCLProgram(unittest.TestCase):
         C = np.dot(A, B)
         cl_result = np.empty_like(C)
 
-        kernels['sgemm_tiling16'].set_args(M, N, K, a_buf, b_buf, r_buf)
-        print("Enqueuing sgemm_tiling16")
-        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tiling16'], A.shape, None)
+        kernels['sgemm_tile16'].set_args(M, N, K, a_buf, b_buf, r_buf)
+        print("Enqueuing sgemm_tile16")
+        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tile16'], A.shape, None)
         cl.enqueue_copy(queue, cl_result, r_buf)
         diff = abs(C - cl_result)
-        print('sgemm_tiling16 difference matrix')
+        print('sgemm_tile16 difference matrix')
         print(diff)
         self.assertLessEqual(np.max(diff), 1e-8)
         print("Max difference was %f" % np.max(diff))
 
-        print("======== TestCLProgram.test_sgemm_tiling16: <END> ")
+        print("======== TestCLProgram.test_sgemm_tile16: <END> ")
 
-    def test_sgemm_tiling32(self):
-        print("\n======== TestCLProgram.test_sgemm_tiling32:")
+    def test_sgemm_tile32(self):
+        print("\n======== TestCLProgram.test_sgemm_tile32:")
 
         source = read_source(self.kernel_file)
         # Get dummy vars for test
         ctx, queue, platform, device = create_cl_test_harness(platform_str=self.cl_platform_string)
         # Get a program object
-        cl_program = cl_util.clProgram(verbose=self.verbose)
+        cl_program = cl_utils.clProgram(verbose=self.verbose)
         kernels = cl_program.build(ctx, source, device=device)
         print("Built %d kernel(s)" % len(kernels.keys()) )
         for k, v in kernels.items():
             print('\t%s : %s' % (k, v))
 
         # Ensure we built the correct kernel
-        self.assertTrue('sgemm_tiling32' in kernels.keys())
+        self.assertTrue('sgemm_tile32' in kernels.keys())
 
         # Generate test data
         A = np.linspace(1, 64, num=64*64).astype(self.dtype)
@@ -187,9 +187,9 @@ class TestCLProgram(unittest.TestCase):
         C = np.dot(A, B)
         cl_result = np.empty_like(C)
 
-        kernels['sgemm_tiling32'].set_args(M, N, K, a_buf, b_buf, r_buf)
-        print("Enqueuing sgemm_tiling32")
-        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tiling32'], A.shape, None)
+        kernels['sgemm_tile32'].set_args(M, N, K, a_buf, b_buf, r_buf)
+        print("Enqueuing sgemm_tile32")
+        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tile32'], A.shape, None)
         cl.enqueue_copy(queue, cl_result, r_buf)
         diff = abs(C - cl_result)
         print("Kernel %s difference matrix" % k)
@@ -197,19 +197,19 @@ class TestCLProgram(unittest.TestCase):
         self.assertLessEqual(np.max(diff), 1e-8)
         print("Max difference was %f" % np.max(diff))
 
-        print("======== TestCLProgram.test_sgemm_tiling32: <END> ")
+        print("======== TestCLProgram.test_sgemm_tile32: <END> ")
 
     def test_sgemm_kernels(self):
         print("\n======== TestCLProgram.test_sgemm_kernels:")
 
-        kernel_names = ['sgemm_naive', 'sgemm_tiling16', 'sgemm_tiling32']
+        kernel_names = ['sgemm_naive', 'sgemm_tile16', 'sgemm_tile32']
         # Get source
         print("Loading source from file %s" % self.kernel_file)
         source = read_source(self.kernel_file)
         # Get dummy vars for test
         ctx, queue, platform, device = create_cl_test_harness(platform_str=self.cl_platform_string)
         # Get a program object
-        cl_program = cl_util.clProgram(verbose=self.verbose)
+        cl_program = cl_utils.clProgram(verbose=self.verbose)
         kernels = cl_program.build(ctx, source, device=device)
         print("Built %d kernel(s)" % len(kernels.keys()) )
         for k, v in kernels.items():
@@ -244,15 +244,15 @@ class TestCLProgram(unittest.TestCase):
         cl_result = np.empty_like(C)
 
         for k in kernels.keys():
-            if k == 'sgemm_tiling32':
+            if k == 'sgemm_tile32':
                 print("Enqueuing kernel %s" % k)
                 kernels[k].set_args(M, N, K, a_buf, b_buf, result_buffers[k])
                 cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, None)
                 #if k == 'sgemm_naive':
                 #    cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, None)
-                #elif k == 'sgemm_tiling16':
+                #elif k == 'sgemm_tile16':
                 #    cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, (16,16))
-                #elif k == 'sgemm_tiling32':
+                #elif k == 'sgemm_tile32':
                 #    cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, (32,32))
                 cl.enqueue_copy(queue, cl_result, result_buffers[k])
                 diff = abs(C - cl_result)
@@ -271,7 +271,7 @@ class TestCLProgram(unittest.TestCase):
             print('Failed to init test harness')
             return
         # Get a program object
-        cl_program = cl_util.clProgram()
+        cl_program = cl_utils.clProgram()
         # Get some source
         print("Reading source file from %s" % self.kernel_file)
         source = read_source(self.kernel_file)
@@ -322,23 +322,109 @@ class TestCLProgram(unittest.TestCase):
 
 class TestCLContext(unittest.TestCase):
     def setUp(self):
+        """
+        SETUP NOTES:
+        Before executing these tests ensure that the following members are
+        set to values that reflect the hardware installed on the test system
+
+        self.cl_platform_string
+        self.cl_vendor_string
+        self.cl_device_name
+
+        The clContext object will attempt to use the specific platform and/or
+        device so long as it is available, and thus it is possible to use this
+        unit test to determine whether or not a particular platform is operational
+        """
         self.verbose = True
-        #self.cl_platform_string = 'Intel Gen OCL Driver'
         self.cl_platform_string = 'AMD Accelerated Parallel Processing'
-        #self.kernel_source = 'pymllib/opencl/kernels/sum.cl'
-        self.kernel_file = 'pymllib/opencl/kernels/sgemm.cl'
-        self.kernel_name = 'sgemm_naive'
+        self.cl_vendor_string = 'Advanced Micro Devices'
+        self.cl_device_name = 'Bonaire'
+        # Source files used in test
+        self.kernel_files = ['pymllib/opencl/kernels/sgemm.cl']
+        # Number of kernel routines in each source file
+        self.num_kernels = [3]
+        self.kernel_names = {0: ['sgemm_naive', 'sgemm_tile16', 'sgemm_tile32']}
         self.dtype = np.float32
 
     def test_context_setup(self):
         print("======== TestCLContext.test_context_setup:")
 
-        cl_context = cl_util.clContext()
-
-
+        cl_context = cl_utils.clContext(platform_str=self.cl_platform_string,
+                                        verbose=self.verbose)
+        cl_context.init_context()
+        # assert that fields were filled in
+        self.assertIsNotNone(cl_context.platform)
+        self.assertIsNotNone(cl_context.device)
+        self.assertIsNotNone(cl_context.context)
+        self.assertIsNotNone(cl_context.queue)
+        # assert that fields are correct
+        self.assertIn(self.cl_vendor_string, cl_context.platform.vendor)
+        self.assertIn(self.cl_platform_string, cl_context.platform.name)
 
         print("======== TestCLContext.test_context_setup: <END> ")
 
+    def test_single_source_load(self):
+        print("======== TestCLContext.test_single_source_load:")
+
+        cl_context = cl_utils.clContext(platform_str=self.cl_platform_string,
+                                        verbose=self.verbose)
+        cl_context.init_context()
+        # assert that fields were filled in
+        self.assertIsNotNone(cl_context.platform)
+        self.assertIsNotNone(cl_context.device)
+        self.assertIsNotNone(cl_context.context)
+        self.assertIsNotNone(cl_context.queue)
+        # assert that fields are correct
+        self.assertIn(self.cl_vendor_string, cl_context.platform.vendor)
+        self.assertIn(self.cl_platform_string, cl_context.platform.name)
+
+        # Try to load from a single source file
+        num_kernels = cl_context.load_source(self.kernel_files[0])
+        self.assertEqual(num_kernels, self.num_kernels[0])
+        # Check that the names are correct
+        if self.verbose:
+            print("Kernels in clContext object:")
+            for k, v in cl_context.kernels.items():
+                print('\t%s : %s' % (k, v))
+
+        for k, v in cl_context.kernels.items():
+            self.assertIn(k, self.kernel_names[0])
+            print("Kernel %s found" % k)
+
+        print("======== TestCLContext.test_single_source_load: <END> ")
+
+
+    def test_single_source_exec(self):
+        print("======== TestCLContext.test_single_source_exec:")
+
+        cl_context = cl_utils.clContext(platform_str=self.cl_platform_string,
+                                        verbose=self.verbose)
+        cl_context.init_context()
+        # assert that fields were filled in
+        self.assertIsNotNone(cl_context.platform)
+        self.assertIsNotNone(cl_context.device)
+        self.assertIsNotNone(cl_context.context)
+        self.assertIsNotNone(cl_context.queue)
+        # assert that fields are correct
+        self.assertIn(self.cl_vendor_string, cl_context.platform.vendor)
+        self.assertIn(self.cl_platform_string, cl_context.platform.name)
+
+        # Try to load from a single source file
+        num_kernels = cl_context.load_source(self.kernel_files[0])
+        self.assertEqual(num_kernels, self.num_kernels[0])
+        # Check that the names are correct
+        if self.verbose:
+            print("Kernels in clContext object:")
+            for k, v in cl_context.kernels.items():
+                print('\t%s : %s' % (k, v))
+
+        for k, v in cl_context.kernels.items():
+            self.assertIn(k, self.kernel_names[0])
+            print("Kernel %s found" % k)
+
+        # Now attempt to execute a kernel in the list
+
+        print("======== TestCLContext.test_single_source_exec: <END> ")
 
 
 if __name__ == "__main__":

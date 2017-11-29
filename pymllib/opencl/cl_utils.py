@@ -93,7 +93,6 @@ class clContext(object):
         self.platform_str = kwargs.pop('platform_str', 'Intel Gen OCL Driver')
         self.device_type = kwargs.pop('device_type', 'GPU')
         self.vendor_str = kwargs.pop('vendor_str', 'Intel')
-        self.auto_init = kwargs.pop('auto_init', False)
         # Debug
         self.verbose = kwargs.pop('verbose', False)
 
@@ -106,6 +105,7 @@ class clContext(object):
 
     def __str__(self):
         s = []
+        s.append('clContext\n')
         if self.platform is not None:
             s.append('Platform Name   : %s\n' % self.platform.name)
             s.append('Platform Vendor : %s\n' % self.platform.vendor)
@@ -118,10 +118,6 @@ class clContext(object):
                 s.append('%s : %s' % (k, v))
 
         return ''.join(s)
-
-    def _update_program(self, program):
-        # TODO : check for attribute clash?
-        self.kernels.update(program.kernels)
 
     def get_platform(self):
 
@@ -173,7 +169,7 @@ class clContext(object):
             raise ValueError('Failed to get a valid device')
 
         # Create the context object
-        self.context = cl.Context(dev_type=self.device.type)
+        self.context = cl.Context(devices=[self.device])
         self.queue = cl.CommandQueue(self.context)
 
     def load_source(self, filename):
@@ -188,3 +184,14 @@ class clContext(object):
         self.kernels.update(kernels)
 
         return len(kernels.keys())
+
+    def get_kernel(self, kname):
+        """
+        Get a kernel reference
+        """
+        if kname not in self.kernels.keys():
+            if self.verbose:
+                print("No kernel %s loaded" % kname)
+            return None
+
+        return self.kernels[kname]
