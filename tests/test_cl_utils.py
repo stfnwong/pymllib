@@ -105,6 +105,53 @@ class TestCLProgram(unittest.TestCase):
         #self.kernel_name = 'sgemm_tile16'
         self.dtype = np.float32
 
+    def test_sgemm_tile4(self):
+        print("\n======== TestCLProgram.test_sgemm_tile4:")
+
+        source = read_source(self.kernel_file)
+        # Get dummy vars for test
+        ctx, queue, platform, device = create_cl_test_harness(platform_str=self.cl_platform_string)
+        # Get a program object
+        cl_program = cl_utils.clProgram(verbose=self.verbose)
+        kernels = cl_program.build(ctx, source, device=device)
+        print("Built %d kernel(s)" % len(kernels.keys()) )
+        for k, v in kernels.items():
+            print('\t%s : %s' % (k, v))
+
+        # Ensure we built the correct kernel
+        self.assertTrue('sgemm_tile4' in kernels.keys())
+
+        # Generate test data
+        A = np.linspace(1, 64, num=64*64).astype(self.dtype)
+        A = A.reshape((64,64))
+        B = np.linspace(1, 64, num=64*64).astype(self.dtype)
+        B = B.reshape((64,64))
+        print('A shape : %s' % str(A.shape))
+        print('B shape : %s' % str(B.shape))
+        a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
+        b_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=B)
+        r_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
+
+        M = np.int32(A.shape[0])
+        N = np.int32(B.shape[1])
+        K = np.int32(A.shape[1])
+
+        # Create the reference result
+        C = np.dot(A, B)
+        cl_result = np.empty_like(C)
+
+        kernels['sgemm_tile4'].set_args(M, N, K, a_buf, b_buf, r_buf)
+        print("Enqueuing sgemm_tile4")
+        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tile4'], A.shape, None)
+        cl.enqueue_copy(queue, cl_result, r_buf)
+        diff = abs(C - cl_result)
+        print('sgemm_tile4 difference matrix')
+        print(diff)
+        self.assertLessEqual(np.max(diff), 1e-8)
+        print("Max difference was %f" % np.max(diff))
+
+        print("======== TestCLProgram.test_sgemm_tile4: <END> ")
+
     def test_sgemm_tile8(self):
         print("\n======== TestCLProgram.test_sgemm_tile8:")
 
@@ -133,8 +180,8 @@ class TestCLProgram(unittest.TestCase):
         r_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
 
         M = np.int32(A.shape[0])
-        N = np.int32(A.shape[0])
-        K = np.int32(A.shape[0])
+        N = np.int32(B.shape[1])
+        K = np.int32(A.shape[1])
 
         # Create the reference result
         C = np.dot(A, B)
@@ -180,8 +227,8 @@ class TestCLProgram(unittest.TestCase):
         r_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
 
         M = np.int32(A.shape[0])
-        N = np.int32(A.shape[0])
-        K = np.int32(A.shape[0])
+        N = np.int32(B.shape[1])
+        K = np.int32(A.shape[1])
 
         # Create the reference result
         C = np.dot(A, B)
@@ -227,8 +274,8 @@ class TestCLProgram(unittest.TestCase):
         r_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
 
         M = np.int32(A.shape[0])
-        N = np.int32(A.shape[0])
-        K = np.int32(A.shape[0])
+        N = np.int32(B.shape[1])
+        K = np.int32(A.shape[1])
 
         # Create the reference result
         C = np.dot(A, B)
@@ -283,8 +330,8 @@ class TestCLProgram(unittest.TestCase):
         #r_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
         # Note, we must use np.int32's here to ensure the correct alignment
         M = np.int32(A.shape[0])
-        N = np.int32(A.shape[0])
-        K = np.int32(A.shape[0])
+        N = np.int32(B.shape[1])
+        K = np.int32(A.shape[1])
 
         # Create the reference result
         C = np.dot(A, B)
@@ -343,8 +390,8 @@ class TestCLProgram(unittest.TestCase):
         r_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, size=A.nbytes)
         # Note, we must use np.int32's here to ensure the correct alignment
         M = np.int32(A.shape[0])
-        N = np.int32(A.shape[0])
-        K = np.int32(A.shape[0])
+        N = np.int32(B.shape[1])
+        K = np.int32(A.shape[1])
         # Set the kernel args
         kernels[str(self.kernel_name)].set_args(M, N, K, a_buf, b_buf, r_buf)
         # Stick the kernel in the queue
@@ -389,8 +436,8 @@ class TestCLContext(unittest.TestCase):
         # Source files used in test
         self.kernel_files = ['pymllib/opencl/kernels/sgemm.cl']
         # Number of kernel routines in each source file
-        self.num_kernels = [4]
-        self.kernel_names = {0: ['sgemm_naive', 'sgemm_tile8', 'sgemm_tile16', 'sgemm_tile32']}
+        self.num_kernels = [5]
+        self.kernel_names = {0: ['sgemm_naive', 'sgemm_tile4', 'sgemm_tile8', 'sgemm_tile16', 'sgemm_tile32']}
         self.dtype = np.float32
 
     def test_context_setup(self):
