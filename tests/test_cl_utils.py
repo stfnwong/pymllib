@@ -97,6 +97,7 @@ class TestCLProgram(unittest.TestCase):
     """
     def setUp(self):
         self.verbose = True
+        self.sq_mat_size = 128
         #self.cl_platform_string = 'Intel Gen OCL Driver'
         self.cl_platform_string = 'AMD Accelerated Parallel Processing'
         #self.kernel_source = 'pymllib/opencl/kernels/sum.cl'
@@ -122,10 +123,10 @@ class TestCLProgram(unittest.TestCase):
         self.assertTrue('sgemm_tile4' in kernels.keys())
 
         # Generate test data
-        A = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        A = A.reshape((64,64))
-        B = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        B = B.reshape((64,64))
+        A = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        A = A.reshape((self.sq_mat_size,self.sq_mat_size))
+        B = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        B = B.reshape((self.sq_mat_size,self.sq_mat_size))
         print('A shape : %s' % str(A.shape))
         print('B shape : %s' % str(B.shape))
         a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
@@ -142,7 +143,7 @@ class TestCLProgram(unittest.TestCase):
 
         kernels['sgemm_tile4'].set_args(M, N, K, a_buf, b_buf, r_buf)
         print("Enqueuing sgemm_tile4")
-        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tile4'], A.shape, None)
+        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tile4'], A.shape, (4, 4))
         cl.enqueue_copy(queue, cl_result, r_buf)
         diff = abs(C - cl_result)
         print('sgemm_tile4 difference matrix')
@@ -169,10 +170,10 @@ class TestCLProgram(unittest.TestCase):
         self.assertTrue('sgemm_tile8' in kernels.keys())
 
         # Generate test data
-        A = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        A = A.reshape((64,64))
-        B = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        B = B.reshape((64,64))
+        A = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        A = A.reshape((self.sq_mat_size,self.sq_mat_size))
+        B = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        B = B.reshape((self.sq_mat_size,self.sq_mat_size))
         print('A shape : %s' % str(A.shape))
         print('B shape : %s' % str(B.shape))
         a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
@@ -189,7 +190,7 @@ class TestCLProgram(unittest.TestCase):
 
         kernels['sgemm_tile8'].set_args(M, N, K, a_buf, b_buf, r_buf)
         print("Enqueuing sgemm_tile8")
-        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tile8'], A.shape, None)
+        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tile8'], A.shape, (8, 8))
         cl.enqueue_copy(queue, cl_result, r_buf)
         diff = abs(C - cl_result)
         print('sgemm_tile8 difference matrix')
@@ -216,10 +217,10 @@ class TestCLProgram(unittest.TestCase):
         self.assertTrue('sgemm_tile16' in kernels.keys())
 
         # Generate test data
-        A = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        A = A.reshape((64,64))
-        B = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        B = B.reshape((64,64))
+        A = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        A = A.reshape((self.sq_mat_size,self.sq_mat_size))
+        B = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        B = B.reshape((self.sq_mat_size,self.sq_mat_size))
         print('A shape : %s' % str(A.shape))
         print('B shape : %s' % str(B.shape))
         a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
@@ -236,7 +237,7 @@ class TestCLProgram(unittest.TestCase):
 
         kernels['sgemm_tile16'].set_args(M, N, K, a_buf, b_buf, r_buf)
         print("Enqueuing sgemm_tile16")
-        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tile16'], A.shape, None)
+        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tile16'], A.shape, (16, 16))
         cl.enqueue_copy(queue, cl_result, r_buf)
         diff = abs(C - cl_result)
         print('sgemm_tile16 difference matrix')
@@ -263,10 +264,10 @@ class TestCLProgram(unittest.TestCase):
         self.assertTrue('sgemm_tile32' in kernels.keys())
 
         # Generate test data
-        A = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        A = A.reshape((64,64))
-        B = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        B = B.reshape((64,64))
+        A = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        A = A.reshape((self.sq_mat_size,self.sq_mat_size))
+        B = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        B = B.reshape((self.sq_mat_size,self.sq_mat_size))
         print('A shape : %s' % str(A.shape))
         print('B shape : %s' % str(B.shape))
         a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
@@ -283,7 +284,7 @@ class TestCLProgram(unittest.TestCase):
 
         kernels['sgemm_tile32'].set_args(M, N, K, a_buf, b_buf, r_buf)
         print("Enqueuing sgemm_tile32")
-        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tile32'], A.shape, None)
+        cl.enqueue_nd_range_kernel(queue, kernels['sgemm_tile32'], A.shape, (32, 32))
         cl.enqueue_copy(queue, cl_result, r_buf)
         diff = abs(C - cl_result)
         print("Kernel %s difference matrix" % k)
@@ -314,10 +315,10 @@ class TestCLProgram(unittest.TestCase):
             self.assertTrue(n in kernels.keys())
 
         # Generate test data
-        A = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        A = A.reshape((64,64))
-        B = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        B = B.reshape((64,64))
+        A = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        A = A.reshape((self.sq_mat_size,self.sq_mat_size))
+        B = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        B = B.reshape((self.sq_mat_size,self.sq_mat_size))
         print('A shape : %s' % str(A.shape))
         print('B shape : %s' % str(B.shape))
         a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
@@ -337,23 +338,24 @@ class TestCLProgram(unittest.TestCase):
         C = np.dot(A, B)
         cl_result = np.empty_like(C)
 
+        wg_size = {'sgemm_naive': None,
+                     'sgemm_tile4': (4,4),
+                     'sgemm_tile8': (8,8),
+                     'sgemm_tile16': (16,16),
+                     'sgemm_tile32': (32,32)}
         for k in kernels.keys():
+            # TODO : skip 32x32 tile while debugging
             if k == 'sgemm_tile32':
-                print("Enqueuing kernel %s" % k)
-                kernels[k].set_args(M, N, K, a_buf, b_buf, result_buffers[k])
-                cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, None)
-                #if k == 'sgemm_naive':
-                #    cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, None)
-                #elif k == 'sgemm_tile16':
-                #    cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, (16,16))
-                #elif k == 'sgemm_tile32':
-                #    cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, (32,32))
-                cl.enqueue_copy(queue, cl_result, result_buffers[k])
-                diff = abs(C - cl_result)
-                print("Kernel %s difference matrix" % k)
-                print(diff)
-                self.assertLessEqual(np.max(diff), 1e-8)
-                print("Max difference was %f" % np.max(diff))
+                continue
+            print("Enqueuing kernel %s" % k)
+            kernels[k].set_args(M, N, K, a_buf, b_buf, result_buffers[k])
+            cl.enqueue_nd_range_kernel(queue, kernels[k], A.shape, wg_size[k])
+            cl.enqueue_copy(queue, cl_result, result_buffers[k])
+            diff = abs(C - cl_result)
+            print("Kernel %s difference matrix" % k)
+            print(diff)
+            self.assertLessEqual(np.max(diff), 1e-8)
+            print("Max difference was %f" % np.max(diff))
 
         print("======== TestCLProgram.test_sgemm_kernels: <END> ")
 
@@ -379,10 +381,10 @@ class TestCLProgram(unittest.TestCase):
 
         # Create some dummy data
         print("Generating test data...")
-        A = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        A = A.reshape((64,64))
-        B = np.linspace(1, 64, num=64*64).astype(self.dtype)
-        B = B.reshape((64,64))
+        A = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        A = A.reshape((self.sq_mat_size,self.sq_mat_size))
+        B = np.linspace(1, self.sq_mat_size, num=self.sq_mat_size*self.sq_mat_size).astype(self.dtype)
+        B = B.reshape((self.sq_mat_size,self.sq_mat_size))
         print('A shape : %s' % str(A.shape))
         print('B shape : %s' % str(B.shape))
         a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=A)
