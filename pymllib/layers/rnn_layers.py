@@ -5,6 +5,8 @@ Layer functions for recurrent neural networks
 
 import numpy as np
 
+# Debug
+#from pudb import set_trace; set_trace()
 
 def rnn_step_forward(x, prev_h, Wx, Wh, b):
     """
@@ -29,7 +31,6 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
     cache = (x, Wx, prev_h, Wh, forward)
 
     return next_h, cache
-
 
 def rnn_step_backward(dnext_h, cache):
     """
@@ -59,7 +60,6 @@ def rnn_step_backward(dnext_h, cache):
     db = np.sum(dforward, axis=0)
 
     return dx, dprev_h, dWx, dWh, db
-
 
 
 def temporal_affine_forward(x, w, b):
@@ -160,6 +160,14 @@ def temporal_softmax_loss(x, y, mask, verbose=False):
     dx = dx_flat.reshape(N, T, V)
 
     return loss, dx
+
+
+def word_embedding_forward(x, W):
+    """
+    Forward pass for word embeddings. We operate on minibatches of
+    size N where each sequence has length T. We assume a vocabulary
+    of V words
+    """
 
 
 def sigmoid(x):
