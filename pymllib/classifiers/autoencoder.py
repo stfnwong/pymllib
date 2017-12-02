@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import numpy as np
 
 import pymllib.layers.layers as layers
-import pymllib.utils.data_utils as data_utils
+#import pymllib.utils.data_utils as data_utils
 
 # Debug
 from pudb import set_trace; set_trace()
@@ -44,6 +44,13 @@ def sparse_autoencoder_loss(X, y, rho, beta=1.0, sparsity=0.05):
     loss = hs_loss + (beta * p_loss)
 
     return loss, hs_dx
+
+# TODO : This might not be needed here
+def stable_softmax(X):
+    exps = np.exp(X) - np.max(X)
+    loss = exps/ np.sum(exps)
+
+    return loss
 
 
 #def auto_loss(X, y, rho, beta=1.0, sparsity=0.05):
@@ -83,17 +90,25 @@ def auto_affine_backward(dout, cache, rho, beta=1.0, s=0.05):
 
 
 class Autoencoder(object):
-    def __init__(self, hidden_dims, input_dim,
-                 dropout=0, use_batchnorm=False, reg=0.0,
-                 weight_scale=1e-2, dtype=np.float32, seed=None,
-                 verbose=False):
+    def __init__(self, hidden_dims, input_dim, **kwargs):
+                 #dropout=0, use_batchnorm=False, reg=0.0,
+                 #weight_scale=1e-2, dtype=np.float32, seed=None,
+                 #verbose=False):
+        """
+        AUTOENCODER
+        An implementation of an autoencoder using the same architecture
+        as other models in this library
+        """
+        # TODO : Update kwargs, add weight init methods
 
-        self.verbose = verbose
-        self.use_batchnorm = use_batchnorm
-        self.use_dropout = dropout > 0
-        self.reg = reg
+        self.verbose = kwargs.pop('verbose', False)
+        self.use_batchnorm = kwargs.pop('use_batchnorm', False)
+        self.dropout = kwargs.pop('dropout', 0)
+        self.use_dropout = self.dropout > 0
+        self.reg = kwargs.pop('reg', 0.0)
+        self.dtype = kwargs.pop('dtype', np.float32)
+        self.seed = kwargs.pop('seed', None)
         self.num_layers = 1 + len(hidden_dims)
-        self.dtype = dtype
         self.params = {}
 
         # Init the params of the network into the dictionary self.params
@@ -120,6 +135,33 @@ class Autoencoder(object):
 
     def __repr__(self):
         return self.__str__()
+
+    def _weight_init(self, N, D, fsize=None):
+        """
+        WEIGHT_INIT
+        Set up the weights for a given layer.
+        """
+        if self.weight_init == 'gauss':
+            if fsize is None:
+                W = self.weight_scale * np.random.randn(N, D)
+            else:
+                W = self.weight_scale * np.random.randn(N, D, fsize, fsize)
+        elif self.weight_init == 'gauss_sqrt':
+            if fsize is None:
+                W = self.weight_scale * np.random.randn(N, D) * (1 / np.sqrt(2.0 / (N+D)))
+            else:
+                W = self.weight_scale * np.random.randn(N, D, fsize, fsize) * (1 / np.sqrt(2.0 / (N+D)))
+        elif self.weight_init == 'xavier':
+            w_lim = 2 / np.sqrt(N + D)
+            if fsize is None:
+                wsize = (N, D)
+            else:
+                wsize = (N, D, fsize, fsize)
+            W = np.random.uniform(low=-w_lim, high=w_lim, size=wsize)
+        else:
+            raise ValueError('Invalid weight init method %s' % self.weight_init)
+
+        return W
 
     def loss(self, X, y=None):
 
