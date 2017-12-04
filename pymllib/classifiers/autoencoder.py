@@ -24,7 +24,8 @@ def half_square_loss(X, y):
     probs /= np.sum(probs, axis=1, keepdims=True)
     N = X.shape[0]
 
-    s = np.sum(np.abs(X - y), axis=1, keepdims=True)
+    #s = np.sum(np.abs(X - y), axis=1, keepdims=True)
+    s = np.sum(np.abs(X - y))
     loss = (0.5 * (s**2)) / N
 
     # activations (a) are X here
@@ -99,11 +100,14 @@ class Autoencoder(object):
         An implementation of an autoencoder using the same architecture
         as other models in this library
         """
-        # TODO : Update kwargs, add weight init methods
+        if type(hidden_dims) is not list:
+            raise ValueError("hidden_dims must be a list")
 
         self.verbose = kwargs.pop('verbose', False)
         self.use_batchnorm = kwargs.pop('use_batchnorm', False)
         self.dropout = kwargs.pop('dropout', 0)
+        self.weight_scale = kwargs.pop('weight_scale', 1e-2)
+        self.weight_init = kwargs.pop('weight_init', 'gauss_sqrt')
         self.use_dropout = self.dropout > 0
         self.reg = kwargs.pop('reg', 0.0)
         self.dtype = kwargs.pop('dtype', np.float32)
@@ -113,8 +117,14 @@ class Autoencoder(object):
 
         # Init the params of the network into the dictionary self.params
         dims = [input_dim] + hidden_dims + [input_dim]
-        Ws = {'W' + str(i+1): weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
-        bs = {'b' + str(i+1): np.zeros(dims[i+1]) for i in range(len(dims)-1)}
+
+        # Init weights
+        Ws = {}
+        bs = {}
+        for i in range(len(dims) - 1):
+            Ws['W' + str(i+1)] = self._weight_init(dims[i], dims[i+1])
+            bs['b' + str(i+1)] = np.zeros(dims[i+1])
+
         self.params.update(bs)
         self.params.update(Ws)
 
@@ -163,6 +173,16 @@ class Autoencoder(object):
 
         return W
 
+    # TODO : This is for debugging only, remove
+    def print_weight_sizes(self):
+
+        s = []
+        for k, v in sorted(self.params.items()):
+            if k[:1] == 'W':
+                s.append("%s : %s\n" % (k, v.shape))
+
+        return ''.join(s)
+
     def loss(self, X, y=None):
 
         X = X.astype(self.dtype)
@@ -171,6 +191,10 @@ class Autoencoder(object):
             mode = 'test'
         else:
             mode = 'train'
+
+        # Possibly reshape y
+        #if len(y.shape) == 4:
+        #    y = np.reshape(y, (y.shape[0], np.prod(y.shape[1:])))
 
         # ===============================
         # FORWARD PASS
@@ -224,7 +248,8 @@ class Autoencoder(object):
         # Here we don't want to use the softmax loss, rather
         #data_loss, dscores = sparse_autoencoder_loss(scores, y)
         rho = hidden['rho' + str(self.num_layers-1)]
-        data_loss, dscores = half_square_loss(scores, y, rho)                # TODO: <- Add rho here...
+        # TODO : add 'sparse' switch here
+        data_loss, dscores = half_square_loss(scores, y)
         reg_loss = 0
         for f in self.params.keys():
             if f[0] == 'W':
