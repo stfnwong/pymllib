@@ -248,8 +248,10 @@ class Autoencoder(object):
         # Here we don't want to use the softmax loss, rather
         #data_loss, dscores = sparse_autoencoder_loss(scores, y)
         rho = hidden['rho' + str(self.num_layers-1)]
-        # TODO : add 'sparse' switch here
-        data_loss, dscores = half_square_loss(scores, y)
+        if self.verbose:
+            print("rho : %f" % rho)
+        #data_loss, dscores = half_square_loss(scores, y)
+        data_loss, dscores = sparse_autoencoder_loss(scores, y, rho)
         reg_loss = 0
         for f in self.params.keys():
             if f[0] == 'W':
@@ -275,7 +277,7 @@ class Autoencoder(object):
                 hidden['db' + str(idx)] = db
             else:
                 # TODO: Batchnorm, etc
-                dh, dw, db = layers.affine_relu_backward(dh, h_cache)         # TODO This layer definition
+                dh, dw, db = layers.affine_relu_backward(dh, h_cache)
                 hidden['dh' + str(idx-1)] = dh
                 hidden['dW' + str(idx)] = dw
                 hidden['db' + str(idx)] = db
