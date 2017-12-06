@@ -32,6 +32,7 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
 
     return next_h, cache
 
+
 def rnn_step_backward(dnext_h, cache):
     """
     Backward pass for a single timestep of a vanilla RNN.
@@ -62,6 +63,93 @@ def rnn_step_backward(dnext_h, cache):
     return dx, dprev_h, dWx, dWh, db
 
 
+def rnn_forward(x, h0, Wx, Wh, b):
+    """
+    Run a vanilla RNN forward on an entire sequence of data. We assume an
+    input sequence composed of T vectors, each of dimension D. The RNN uses
+    a hidden size of H, and we operated on a minibatch containing N sequences.
+    After running the RNN forward we return the hidden state for all
+    timesteps.
+
+    Inputs:
+        - x  : Input data for the entire timeseries. Shape (N, T, D)
+        - h0 : Initial hidden state. Shape (N, H)
+        - Wx : Weight matrix for input-to-hidden connections. Shape (D, H)
+        - Wh : Weight matrix for hidden-to-hidden connections. Shape (H, H)
+        - b  : Biases. Shape (H,)c
+
+    Returns:
+        - h : Hidden states for entire timeseries. Shape (N, T, H)
+        - cache : Values required for backward pass
+
+    """
+    N, T, D = x.shape
+    H = h0.shape[1]
+    cache = []
+
+    x = x.transpose(1, 0, 2)
+    h = np.zeros((T, N, H))
+
+    h[-1] = h0
+    for t in range(T):
+        if t == 0:
+            h_prev = h0
+        else:
+            h_prev = h[t-1]
+        h[t], cache_next = rnn_step_forward(x[t], h_prev, Wx, Wh, b)
+        cache.append(cache_next)
+
+    # Since x was transposed, transpose the hidden vector back
+    h = h.transpose(1, 0, 2)
+
+    return h, cache
+
+
+def rnn_backward(dh, cache):
+    """
+    Compute the backward pass for a vanilla RNN over an entire sequence of data.
+
+    Inputs:
+        - dh : Upstream gradients. Shape (N, T, H)
+        - cache : Values computed in forward pass. Eac
+
+    Returns:
+        - dx: Gradient of inputs. Shape (N, T, D)
+        - dh0 : Gradient of initial hidden state. Shape (N, H)
+        - dWx : Gradient of input-to-hidden weights. Shape (D, H)
+        - dWh : Gradient of hidden-to-hidden weights. Shape (H, H)
+        - db  : Gradient of biases. Shape (H,)
+    """
+
+    N, T, H = dh.shape
+    D = cache[0][0].shape[1]
+
+    # Init gradients
+    dx = np.zeros((T, N, D))
+    dh0 = np.zeros((N, H))
+    db = np.zeros((H))
+    dWh = np.zeros((H, H))
+    dWx = np.zeros((D, H))
+
+    # Transpose dh
+    dh = dh.transpose(1, 0, 2)
+    dh_prev = np.zeros((N, H))
+
+    for t in reversed(range(T)):
+        dh_current = dh[t] + dh_prev
+        dx_t, dh_prev, dWx_t, dWh_t, db_t = rnn_step_backward(
+            dh_current, cache[t])
+        dx[t] += dx_t
+        dh0 = dh_prev
+        dWx += dWx_t
+        dWh += dWh_t
+        db += db_t
+
+    # Restore the gradient matrix
+    dx = dx.transpose(1, 0, 2)
+
+    return dx, dh0, dWx, dWh, db
+
 def temporal_affine_forward(x, w, b):
     """
     Forward pass for a temporal affine layer. The input is a set
@@ -77,7 +165,8 @@ def temporal_affine_forward(x, w, b):
 
     Returns a tuple of:
         - out : Output data of shape (N, T, M)
-        - cache : Values needed for the backward pass
+        - cache : Values needed for the backward pass. cache[n]
+        contains values computed in the forward pass for timestep n.
     """
 
     N, T, D = x.shape
@@ -168,6 +257,26 @@ def word_embedding_forward(x, W):
     size N where each sequence has length T. We assume a vocabulary
     of V words
     """
+
+    out = W[x, :]
+    cache = x, W
+
+    return out, cache
+
+
+def word_embedding_backward(dout, cache):
+    """
+    Backward pass for word embeddings. Because the words are integers we
+    cannot backpropogate into them, so we only return gradient for the
+    word embedding matrix
+    """
+
+    print('word_embedding_backward : %d' % len(cache))
+    x, W = cache
+    dW = np.zeros_like(W)
+    np.add.at(dW, x, dout)
+
+    return dW
 
 
 def sigmoid(x):
