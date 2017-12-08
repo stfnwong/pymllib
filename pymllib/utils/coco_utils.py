@@ -61,7 +61,7 @@ def load_coco_data(prefix='datasets/coco_captioning',
         num_train = data['train_captions'].shape[0]
         mask = np.random.randint(num_train, size=max_train)
         data['train_captions'] = data['train_captions'][mask]
-        data['train_img_idxs'] = data['train_img_idxs'][mask]
+        data['train_image_idxs'] = data['train_image_idxs'][mask]
 
     return data
 

@@ -10,9 +10,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import unittest
 import numpy as np
+import matplotlib.pyplot as plt
 from pymllib.utils import error
 from pymllib.utils import check_gradient
 from pymllib.utils import rnn_utils
+from pymllib.utils import coco_utils
 # Unit under test
 from pymllib.layers import rnn_layers
 from pymllib.classifiers import captioning_rnn
@@ -25,7 +27,9 @@ from pymllib.solver import captioning_solver
 class TestCaptioningRNN(unittest.TestCase):
     def setUp(self):
         self.eps = 1e-6
+        self.dtype = np.float64
         self.verbose = True
+        self.draw_figures = True
 
     def test_step_forward(self):
         print("\n======== TestCaptioningRNN.test_step_forward:")
@@ -242,7 +246,7 @@ class TestCaptioningRNN(unittest.TestCase):
                                 wordvec_dim=W,
                                 hidden_dim=H,
                                 cell_type='rnn',
-                                dtype=np.float32)
+                                dtype=self.dtype)
 
         # Set all parameters to fixed values
         for k, v in model.params.items():
@@ -252,12 +256,84 @@ class TestCaptioningRNN(unittest.TestCase):
         captions = (np.arange(N * T) % V).reshape(N, T)
 
         loss, grads = model.loss(features, captions)
-        print('type(loss) : %s' % type(loss))
-        print('type(grads) : %s' % type(grads))
         expected_loss = 9.83235591003
+        loss_err = abs(loss - expected_loss)
+        self.assertLessEqual(loss_err, self.eps)
+        print('loss          : %f' % loss)
+        print('expected loss : %f' % expected_loss)
+        print('error         : %f' % loss_err)
 
         print("======== TestCaptioningRNN.test_basic_captioning_loss: <END> ")
 
+    def test_basic_captioning_gradient(self):
+        print("\n======== TestCaptioningRNN.test_basic_captioning_gradient:")
+        batch_size = 2
+        timesteps = 3
+        input_dim = 4
+        wordvec_dim = 5
+        hidden_dim = 6
+        word_to_idx = {'<NULL>': 0, 'cat': 2, 'dog': 3}
+        V = len(word_to_idx)    # size of our vocabulary
+
+        captions = np.random.randint(V, size=(batch_size, timesteps))
+        features = np.random.randn(batch_size, input_dim)
+
+        # Get a model
+        model = captioning_rnn.CaptioningRNN(word_to_idx,
+                                input_dim=input_dim,
+                                wordvec_dim=wordvec_dim,
+                                hidden_dim=hidden_dim,
+                                cell_type='rnn',
+                                dtype=self.dtype)
+        # Compute loss
+        loss, grads = model.loss(features, captions)
+        for param_name in sorted(grads):
+            f = lambda _: model.loss(features, captions)[0]
+            param_grad_num = check_gradient.eval_numerical_gradient(f,
+                                    model.params[param_name], verbose=False, h=1e-6)
+            err = error.rel_error(param_grad_num, grads[param_name])
+            #self.assertLessEqual(err, self.eps)
+            self.assertLessEqual(err, 1e-5)
+            print("%s relative error : %f" % (param_name, err))
+
+        print("======== TestCaptioningRNN.test_basic_captioning_gradient: <END> ")
+
+
+    def test_overfit(self):
+        print("\n======== TestCaptioningRNN.test_overfit:")
+
+        small_data = coco_utils.load_coco_data(max_train=50)
+
+        small_rnn_model = captioning_rnn.CaptioningRNN(
+            cell_type='rnn',
+            word_to_idx=small_data['word_to_idx'],
+            input_dim=small_data['train_features'].shape[1],
+            hidden_dim=512,
+            wordvec_dim=256
+        )
+
+        solv = captioning_solver.CaptioningSolver(
+            small_rnn_model,
+            small_data,
+            update_rule='adam',
+            num_epochs=50,
+            batch_size=25,
+            optim_config={'learning_rate': 5e-3},
+            lr_decay=0.95,
+            verbose=self.verbose,
+            print_every=20
+        )
+
+        solv.train()
+
+        if self.draw_figures:
+            plt.plt(solv.loss_history)
+            plt.xlabe('Iteration')
+            plt.ylabel('Loss')
+            plt.title("Training loss history")
+            plt.show()
+
+        print("======== TestCaptioningRNN.test_overfit: <END> ")
 
 
 if __name__ == '__main__':

@@ -255,7 +255,7 @@ def word_embedding_forward(x, W):
     """
     Forward pass for word embeddings. We operate on minibatches of
     size N where each sequence has length T. We assume a vocabulary
-    of V words
+    of V words assigning each to a vector of dimension D.
     """
 
     out = W[x, :]
@@ -271,7 +271,6 @@ def word_embedding_backward(dout, cache):
     word embedding matrix
     """
 
-    print('word_embedding_backward : %d' % len(cache))
     x, W = cache
     dW = np.zeros_like(W)
     np.add.at(dW, x, dout)
