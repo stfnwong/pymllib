@@ -1,0 +1,34 @@
+SOME NOTES FOR OPENCL IMPLEMENTATION
+
+Most of the stuff we need to start executing an OpenCL program are contained in the clContext class. This class does not have any buffers for storing the data.
+
+There are two sources of data that we need to be concerned with in the layer implementation
+
+1) The actual training/test data (X)
+2) The weights, biases, and cache
+
+It does seem that this would all be a lot easier if there was a more object oriented implementation of the classifiers/solver. That way we could coalesce the buffers together a bit better.....
+
+
+Or maybe not. What if each entry in the dictionary was just a clBuffer reference? 
+
+
+
+
+# IDEAS FOR OBJECT ORIENTED DESIGN 
+So if I was to re-implement some classifiers in an object-oriented way, what would change? 
+
+
+- There would be layer objects rather than layer functions
+- The classifier would hold a graph of these objects that represented the layout of the network. Initially these would just be arranged in a linear path from front to back (forget about recurrent networks for the moment).
+- It possibly makes sense for there to be a different layer type for each 
+
+
+So how would we queue the data onto the device? We would need to hold the data on the device until training is complete, and therefore we would need a solver program to be loaded onto the GPU.
+
+1) First walk the network graph. Create buffer objects for each layer with the initial weight values. Arrange these in a list and write the weight data to global memory on the device.
+
+2) There needs to be a kernel that computes the activations (forward) and gradients (backward) passes for each of the layers. I suppose that the way to do this is to enqueue the kernels such that
+[2a] all the forward pass kernels go on the device first
+[2b] then the backward pass kernels go on the device in reverse order 
+[2c] we write the backward pass so that it does accesses to the weight memory in the reverse order as the forward pass. 
