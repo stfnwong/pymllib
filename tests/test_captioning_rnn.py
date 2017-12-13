@@ -21,7 +21,7 @@ from pymllib.classifiers import captioning_rnn
 from pymllib.solver import captioning_solver
 
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 
 class TestCaptioningRNN(unittest.TestCase):
@@ -321,7 +321,7 @@ class TestCaptioningRNN(unittest.TestCase):
             optim_config={'learning_rate': 5e-3},
             lr_decay=0.95,
             verbose=self.verbose,
-            print_every=20
+            print_every=1
         )
 
         solv.train()

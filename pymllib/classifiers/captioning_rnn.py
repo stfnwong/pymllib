@@ -14,7 +14,6 @@ from pymllib.layers import rnn_layers
 # Debug
 #from pudb import set_trace; set_trace()
 
-
 class CaptioningRNN(object):
     def __init__(self, word_to_idx, **kwargs):
         """
