@@ -208,8 +208,7 @@ class CaptioningRNN(object):
 
         # Iterate over the sequence
         for t in range(max_length):
-            cur_word = cur_word.astype(np.int32)
-            print('cur_word.dtype : %s' % cur_word.dtype)
+            cur_word = cur_word.astype(np.int32) # Convert type
             word_embed, _ = rnn_layers.word_embedding_forward(cur_word, W_embed)
             if self.cell_type == 'rnn':
                 h, _ = rnn_layers.rnn_step_forward(
