@@ -204,14 +204,16 @@ class CaptioningRNN(object):
         prev_h = h0
         prev_c = np.zeros_like(h0)
         # current word
-        cur_word = self._start * np.ones((N, 1), dtype=self.dtype)
+        cur_word = self._start * np.ones((N, 1))
 
         # Iterate over the sequence
         for t in range(max_length):
+            cur_word = cur_word.astype(np.int32)
+            print('cur_word.dtype : %s' % cur_word.dtype)
             word_embed, _ = rnn_layers.word_embedding_forward(cur_word, W_embed)
             if self.cell_type == 'rnn':
-                h, _ = rnn_layers.rnn_step_forward(np.squeeze(word_embed),
-                                                   prev_h, Wx, Wh, b)
+                h, _ = rnn_layers.rnn_step_forward(
+                    np.squeeze(word_embed), prev_h, Wx, Wh, b)
             elif self.cell_type == 'lstm':
                 print('lstm not yet implemented')
             else:
@@ -223,7 +225,6 @@ class CaptioningRNN(object):
             # Squeeze out un-needed dimensions, find best word index
             idx_best = np.squeeze(np.argmax(scores, axis=2))
             captions[:, t] = idx_best
-
             # Update the hidden state, cell state (lstm only) and current word
             prev_h = h
 

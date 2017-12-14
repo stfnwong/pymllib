@@ -76,7 +76,7 @@ def rnn_forward(x, h0, Wx, Wh, b):
         - h0 : Initial hidden state. Shape (N, H)
         - Wx : Weight matrix for input-to-hidden connections. Shape (D, H)
         - Wh : Weight matrix for hidden-to-hidden connections. Shape (H, H)
-        - b  : Biases. Shape (H,)c
+        - b  : Biases. Shape (H,)
 
     Returns:
         - h : Hidden states for entire timeseries. Shape (N, T, H)
@@ -111,7 +111,7 @@ def rnn_backward(dh, cache):
 
     Inputs:
         - dh : Upstream gradients. Shape (N, T, H)
-        - cache : Values computed in forward pass. Eac
+        - cache : Values computed in forward pass.
 
     Returns:
         - dx: Gradient of inputs. Shape (N, T, D)
@@ -256,6 +256,16 @@ def word_embedding_forward(x, W):
     Forward pass for word embeddings. We operate on minibatches of
     size N where each sequence has length T. We assume a vocabulary
     of V words assigning each to a vector of dimension D.
+
+    Inputs:
+        - x : Integer array of shape (N, T) giving indices of words. Each
+        element of x must be in the range 0 <= idx < V
+        - W : Weight matrix of shape (V, D) giving word vectors for all words.
+
+    Returns a tuple of:
+        - out : Array of shape (N, T, D) giving word vectors for all input
+        words.
+        - cache : Values needed for backward pass
     """
 
     out = W[x, :]

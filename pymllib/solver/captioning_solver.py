@@ -15,6 +15,11 @@ from pymllib.utils import coco_utils
 # debug
 #from pudb import set_trace; set_trace()
 
+# TODO : Debug function for model types
+def print_ptypes(model):
+    for k, v in model.params.items():
+        print('%s : %s' % (k, type(v)))
+
 class CaptioningSolver(object):
     def __init__(self, model, data, **kwargs):
         """
@@ -78,7 +83,6 @@ class CaptioningSolver(object):
                                     batch_size=self.batch_size,
                                     split='train')
         captions, features, urls = minibatch
-
         # Compute loss and gradient
         loss, grads = self.model.loss(features, captions)
         self.loss_history.append(loss)
@@ -88,7 +92,7 @@ class CaptioningSolver(object):
             dw = grads[p]
             config = self.optim_configs[p]
             next_w, next_config = self.update_rule(w, dw, config)
-            self.model.params[p] = next_w,
+            self.model.params[p] = next_w
             self.optim_configs[p] = next_config
 
 

@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from scipy.misc import imread
 import numpy as np
-import urllib2
+import urllib
 import tempfile
 
 from pymllib.layers import layers
@@ -58,7 +58,7 @@ def preproces_image(img, mean_img, mean='image', dtype=np.float32):
 
     return img.astype(dtype).transpose(2, 0, 1)[None] - mean
 
-def deprocess_img(img, mean_img, mean='image', renorm=False, dtype=np.unit8):
+def deprocess_img(img, mean_img, mean='image', renorm=False, dtype=np.uint8):
     """
     Add mean pixel, tranpose, and convert to uint8
 
@@ -96,7 +96,7 @@ def image_from_url(url):
     """
 
     try:
-        f = urllib2.urlopen(url)
+        f = urllib.request.urlopen(url)
         _, fname = tempfile.mkstemp()
 
         with open(fname, 'wb') as fp:
@@ -105,7 +105,7 @@ def image_from_url(url):
         os.remove(fname)
 
         return img
-    except urllib2.URLError as e:
+    except urllib.error.URLError as e:
         print("URLError: %s, %s" % (e.reason, url))
-    except urllib2.HTTPError as e:
+    except urllib.error.HTTPError as e:
         print("HTTPError: %s, %s" % (e.code, url))

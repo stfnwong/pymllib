@@ -10,7 +10,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
-
+from pymllib.layers import rnn_layers
 
 class CharRNN(object):
     """
@@ -41,6 +41,7 @@ class CharRNN(object):
         # Biases
         self.params['bh'] = np.zeros((self.hidden_dims, 1))
         self.params['by'] = np.zeros((self.vocab_size, 1))
+
         # Cast parameters to correct type
         for k, v in self.params.items():
             self.params[k] = v.astype(self.dtype)
@@ -57,6 +58,20 @@ class CharRNN(object):
         Why = self.params['Why']
         bh = self.params['bh']
         by = self.params['by']
+
+
+
+#def rnn_step_forward(x, prev_h, Wx, Wh, b):
+        h, cache_rnn = rnn_layers.rnn_forward(x, h0, Wxh, Whh, bh)
+
+
+
+        # Backward pass
+        dx, dh0, dWxh, dWhh, dbh = rnn_layers.rnn_backward(dh, cache_rnn)
+
+
+
+
 
         # ==== FORWARD PASS ==== #
         for t in range(len(inputs)):
