@@ -25,13 +25,6 @@ from pymllib.solver import captioning_solver
 #from pudb import set_trace; set_trace()
 
 
-# TODO : Debug function for tuple problem
-def print_ptypes(model):
-
-    for k, v in model.params.items():
-        print('%s : %s' % (k, type(v)))
-
-
 class TestCaptioningRNN(unittest.TestCase):
     def setUp(self):
         self.eps = 1e-6
