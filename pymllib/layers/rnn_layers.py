@@ -302,3 +302,104 @@ def sigmoid(x):
     top[neg_mask] = z[neg_mask]
 
     return top / (1 + z)
+
+
+
+# ======== LSTM LAYERS ======== #
+
+def lstm_step_forward(X, prev_h, prev_c, Wx, Wh, b):
+    """
+    Forward pass of a single timestep in an LSTM
+
+    In input data has dimension D, the hidden state dimension H, and
+    we operated on a minibatch size of N.
+
+    Inputs:
+        - x      : Input data. Shape (N, D)
+        - prev_h : Previous hidden state. Shape (N, H)
+        - prev_c : Previous cell state. Shape (N, H)
+        - Wx     : Input-to-hidden weights. Shape (D, 4H)
+        - Wh     : Hidden-to-hidden weights. Shape (H, 4H)
+        - b      : Biases. Shape (4H,)
+
+    Returns (as tuple):
+        - next_h : Next hidden state. Shape (N, H)
+        - next_c : Next cell state. Shape (N. H)
+        - cache  : Tuple of values needed for backward pass
+
+    """
+
+    H = prev_h.shape[1]
+    # compute intermediate vector
+    a = np.dot(X, Wx) + np.dot(prev_h, Wh) + b
+
+    # Compute gates
+    ai = a[:, :H]
+    af = a[:, H:2*H]
+    ao = a[:, 2*H:3*H]
+    ag = a[:, 3*H:4*H]
+    # Compute gate activations
+    i = sigmoid(ai)
+    f = sigmoid(af)
+    o = sigmoid(ao)
+    g = sigmoid(ag)
+
+    # compute next cell state
+    next_c = f * prev_c + i * g
+    # compute next hidden state
+    next_h = o * np.tanh(next_c)
+    # cache for backward pass
+    cache = (i, f, o, g, a, ai, af, ao, ag, Wx,
+             Wh, b, prev_h, prev_c, X,
+             next_c, next_h)
+
+    return next_h, next_c, cache
+
+
+
+def lstm_step_backward(dnext_h, dnext_c, cache):
+    """
+    Backward pass of a single timestep in an LSTM
+
+    Inputs:
+        - dnext_h : Gradients of next hidden state. Shape (N, H)
+        - dnext_c : Gradients of next cell state. Shape (N, H)
+        - cache   : Variables from forward pass
+
+    Returns (as tuple):
+        - dx : Gradient of input data. Shape (N, D)
+        - dprev_h  : Gradient of previous hidden state. Shape (N, H)
+        - dprev_c  : Gradient of previous cell state. Shape (N, H)
+        - dWx : Gradient of input-to-hidden weights. Shape (N, H)
+        - dWh : Gradient of hidden-to-hidden weights. Shape (H, H)
+        - db : Gradient of biases. Shape (4H,)
+
+    """
+
+    i, f, o, g, a, ai, af, ao, ag, Wx, Wh, b, prev_h, prev_c, X, next_c, next_h = cache
+    # Backprop
+    do = np.tanh(next_c) * dnext_h
+    dnext_c += 0 * (1 - np.tanh((next_c)**2)*dnext_h)
+
+    # Forget gate
+    df = prev_c * dnext_c
+    dprev_c = f * dnext_c
+    di = g * dnext_c
+    dg = i * dnext_c
+
+    # Next gate
+    dag = (1 - np.tanh(ag)**2) * dg
+    dao = sigmoid(ao) * (1 - sigmoid(ao)) * do
+    daf = sigmoid(af) * (1 - sigmoid(df)) * df
+    dai = sigmoid(ai) * (1 - sigmoid(ai)) * di
+
+    # Backprop into activation
+    da = np.hstack((dai, daf, dao, dag))
+    # Backprop into input
+    dx = np.dot(da, Wx.T)
+    dWx = np.dot(X.T, da)
+    dprev_h = np.dot(da, Wh.T)
+    dWh = np.dot(prev_h.T, da)
+    db = np.sum(da, axis=0)
+
+    return dx, dprev_h, dprev_c, dWx, dWh, db

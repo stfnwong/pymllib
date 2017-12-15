@@ -59,10 +59,12 @@ class CharRNN(object):
         bh = self.params['bh']
         by = self.params['by']
 
+        h0 = np.dot(inputs, Wxh) # TODO: This is not correct...
 
-
-#def rnn_step_forward(x, prev_h, Wx, Wh, b):
         h, cache_rnn = rnn_layers.rnn_forward(x, h0, Wxh, Whh, bh)
+        scores, cache_scores = rnn_layers.temporal_affine_forward(h, Why, by)
+        loss, dscores = rnn_layers.temporal_softmax_loss(
+            scores, targets, verbose=self.verbose)
 
 
 

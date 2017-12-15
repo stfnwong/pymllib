@@ -372,7 +372,7 @@ class TestCaptioningRNN(unittest.TestCase):
         for split in ['train', 'val']:
             minibatch = coco_utils.sample_coco_minibatch(small_data,
                                                          split=split,
-                                                         batch_size=2)
+                                                         batch_size=8)
             gt_captions, features, urls = minibatch
             gt_captions = coco_utils.decode_captions(gt_captions, small_data['idx_to_word'])
 
@@ -382,7 +382,7 @@ class TestCaptioningRNN(unittest.TestCase):
 
             for gt_capt, samp_capt, url in zip(gt_captions, sample_captions, urls):
                 plt.imshow(image_utils.image_from_url(url))
-                plt.title('%s\n%5s\nGT :%s' % (split, samp_capt, gt_capt))
+                plt.title('Split : %s\n%5s\nGT :%s' % (split, samp_capt, gt_capt))
                 plt.axis('off')
                 plt.show()
 
