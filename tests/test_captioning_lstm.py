@@ -18,6 +18,8 @@ from pymllib.utils import check_gradient
 from pymllib.utils import rnn_utils
 from pymllib.utils import coco_utils
 from pymllib.utils import image_utils
+# Vis
+from pymllib.vis import vis_solver
 # Unit under test
 from pymllib.layers import rnn_layers
 from pymllib.classifiers import captioning_rnn
@@ -216,6 +218,83 @@ class TestCaptioningLSTM(unittest.TestCase):
             self.assertLessEqual(err[k], self.eps)
 
         print("\n======== TestCaptioningLSTM.test_lstm_backward: <END>")
+
+    def test_captioning_model(self):
+        print("\n======== TestCaptioningLSTM.test_captioning_model:")
+
+        N = 10
+        D = 20
+        W = 30
+        H = 40
+        word_to_idx = {'<NULL>': 0, 'cat': 2, 'dog': 3}
+        V = len(word_to_idx)
+        T = 13
+
+        lstm_model = captioning_rnn.CaptioningRNN(word_to_idx,
+                            input_dim=D,
+                            wordvec_dim=W,
+                            hidden_dim=H,
+                            cell_type='lstm',
+                            dtype=np.float32)
+        # Set all model params to fixed values
+        for k, v in lstm_model.params.items():
+            lstm_model.params[k] = np.linspace(-1.4, 1.3, num=v.size).reshape(*v.shape)
+
+        features = np.linspace(-0.5, 1.7, num=N*D).reshape(N, D)
+        captions = (np.arange(N*T) % V).reshape(N, T)
+        # Run loss
+        loss, grads = lstm_model.loss(features, captions)
+        expected_loss = 9.82445935443
+        loss_err = error.rel_error(loss, expected_loss)
+
+        print('loss          : %f' % loss)
+        print('expected loss : %f' % expected_loss)
+        print('error         : %f' % loss_err)
+        self.assertLessEqual(loss_err, self.eps)
+
+        print("\n======== TestCaptioningLSTM.test_captioning_model: <END>")
+
+
+    def test_overfit_model(self):
+        print("\n======== TestCaptioningLSTM.test_overfit_model:")
+
+        small_data = coco_utils.load_coco_data(max_train=50)
+
+        small_lstm_model = captioning_rnn.CaptioningRNN(
+            cell_type='lstm',
+            word_to_idx=small_data['word_to_idx'],
+            input_dim=small_data['train_features'].shape[1],
+            hidden_dim = 512,
+            wordvec_dim=256,
+            dtype=np.float32
+        )
+
+        small_lstm_solv = captioning_solver.CaptioningSolver(
+            small_lstm_model,
+            small_data,
+            update_rule='adam',
+            num_epochs=50,
+            batch_size=25,
+            optim_config={'learning_rate': 5e-3},
+            lr_decay=0.95,
+            print_every=10,
+            verbose=self.verbose
+        )
+
+        # Train
+        small_lstm_solv.train()
+
+        if self.draw_figures:
+            #fig, ax = vis_solver.get_train_fig()
+            #vis_solver.plot_solver(ax, small_lstm_solv)
+            plt.plot(small_lstm_solv.loss_history)
+            plt.xlabel('Iteration')
+            plt.ylabel('Loss')
+            plt.title('Training loss history')
+            plt.show()
+
+
+        print("\n======== TestCaptioningLSTM.test_overfit_model: <END>")
 
 if __name__ == '__main__':
     unittest.main()

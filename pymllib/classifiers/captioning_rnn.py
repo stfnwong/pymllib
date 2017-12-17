@@ -214,7 +214,9 @@ class CaptioningRNN(object):
                 h, _ = rnn_layers.rnn_step_forward(
                     np.squeeze(word_embed), prev_h, Wx, Wh, b)
             elif self.cell_type == 'lstm':
-                print('lstm not yet implemented')
+                # Run one step of LSTM
+                h, c, _ = rnn_layers.lstm_step_forward(np.squeeze(word_embed),
+                                                       prev_h, prev_c, Wx, Wh, b)
             else:
                 raise ValueError('cell_type %s not implemented' % self.cell_type)
 
@@ -226,7 +228,6 @@ class CaptioningRNN(object):
             captions[:, t] = idx_best
             # Update the hidden state, cell state (lstm only) and current word
             prev_h = h
-
             if self.cell_type == 'lstm':
                 prev_c = c
             cur_word = captions[:, t]

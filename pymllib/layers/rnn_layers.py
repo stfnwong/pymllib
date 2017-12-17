@@ -375,7 +375,7 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
 
     """
 
-    # Unpack cache
+    # Unpack cache (TODO : should this cache actually be a dict?)
     i, f, o, g, a, ai, af, ao, ag, Wx, Wh, b, prev_h, prev_c, X, next_c, next_h = cache
     # Backprop
     do = np.tanh(next_c) * dnext_h
