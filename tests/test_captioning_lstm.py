@@ -72,10 +72,11 @@ class TestCaptioningLSTM(unittest.TestCase):
         h_err = error.rel_error(next_h, expected_next_h)
         c_err = error.rel_error(next_c, expected_next_c)
 
-        self.assertLessEqual(h_err, self.eps)
-        self.assertLessEqual(c_err, self.eps)
         print('h_err : %f' % h_err)
         print('c_err : %f' % c_err)
+        self.assertLessEqual(h_err, self.eps)
+        self.assertLessEqual(c_err, self.eps)
+
 
         print("\n======== TestCaptioningLSTM.test_lstm_step_forward: <END>")
 
@@ -130,11 +131,91 @@ class TestCaptioningLSTM(unittest.TestCase):
         err['dWh_err'] = error.rel_error(dWh, dWh_num)
 
         for k, v in err.items():
-            print('%s' % k)
+            print("%s: %f" % (k, v))
+
+        for k, v in err.items():
             self.assertLessEqual(v, self.eps)
-            print("%s err : %f" % (k, v))
 
         print("\n======== TestCaptioningLSTM.test_lstm_step_backward: <END>")
+
+
+    def test_lstm_forward(self):
+        print("\n======== TestCaptioningLSTM.test_lstm_forward:")
+
+        N = 2
+        D = 5
+        H = 4
+        T = 3
+        X = np.linspace(-0.4, 0.6, num=N*T*D).reshape(N, T, D)
+        h0 = np.linspace(-0.4, 0.8, num=N*H).reshape(N, H)
+        Wx = np.linspace(-0.2, 0.9, num=4*D*H).reshape(D, 4*H)
+        Wh = np.linspace(-0.3, 0.6, num=4*H*H).reshape(H, 4*H)
+        b = np.linspace(0.2, 0.7, num=4*H)
+
+        h, cache = rnn_layers.lstm_forward(X, h0, Wx, Wh, b)
+
+        expected_h = np.asarray([
+             [[ 0.01764008,  0.01823233,  0.01882671,  0.0194232 ],
+              [ 0.11287491,  0.12146228,  0.13018446,  0.13902939],
+              [ 0.31358768,  0.33338627,  0.35304453,  0.37250975]],
+             [[ 0.45767879,  0.4761092,   0.4936887,   0.51041945],
+              [ 0.6704845,   0.69350089,  0.71486014,  0.7346449 ],
+              [ 0.81733511,  0.83677871,  0.85403753,  0.86935314]]])
+        h_err = error.rel_error(h, expected_h)
+        print('h_err : %f' % h_err)
+        self.assertLessEqual(h_err, self.eps)
+
+        print("\n======== TestCaptioningLSTM.test_lstm_forward: <END>")
+
+
+    def test_lstm_backward(self):
+        print("\n======== TestCaptioningLSTM.test_lstm_backward:")
+
+        N = 2
+        D = 5
+        H = 6
+        T = 10
+
+        X = np.random.randn(N, T, D)
+        h0 = np.random.randn(N, H)
+        Wx = np.random.randn(D, 4 * H)
+        Wh = np.random.randn(H, 4 * H)
+        b = np.random.randn(4 * H)
+
+        # Do forward pass
+        hout, cache = rnn_layers.lstm_forward(X, h0, Wx, Wh, b)
+        dout = np.random.randn(*hout.shape)
+        # Do backward pass
+        dx, dh0, dWx, dWh, db = rnn_layers.lstm_backward(dout, cache)
+
+        # Check gradient
+        fx  = lambda x: rnn_layers.lstm_forward(X, h0, Wx, Wh, b)[0]
+        fh0 = lambda x: rnn_layers.lstm_forward(X, h0, Wx, Wh, b)[0]
+        fWx = lambda x: rnn_layers.lstm_forward(X, h0, Wx, Wh, b)[0]
+        fWh = lambda x: rnn_layers.lstm_forward(X, h0, Wx, Wh, b)[0]
+        fb  = lambda x: rnn_layers.lstm_forward(X, h0, Wx, Wh, b)[0]
+        num_grad = check_gradient.eval_numerical_gradient_array
+
+        dx_num  = num_grad(fx, X, dout)
+        dh0_num = num_grad(fh0, h0, dout)
+        dWx_num = num_grad(fWx, Wx, dout)
+        dWh_num = num_grad(fWh, Wh, dout)
+        db_num  = num_grad(fb, b, dout)
+
+        err = {}
+        err['dx_err']  = error.rel_error(dx, dx_num)
+        err['dh0_err'] = error.rel_error(dh0, dh0_num)
+        err['dWx_err'] = error.rel_error(dWx, dWx_num)
+        err['dWh_err'] = error.rel_error(dWh, dWh_num)
+        err['db_err']  = error.rel_error(db, db_num)
+
+        for k, v, in err.items():
+            print('%s : %f' % (k, v))
+
+        for k in err.keys():
+            self.assertLessEqual(err[k], self.eps)
+
+        print("\n======== TestCaptioningLSTM.test_lstm_backward: <END>")
 
 if __name__ == '__main__':
     unittest.main()

@@ -333,28 +333,27 @@ def lstm_step_forward(X, prev_h, prev_c, Wx, Wh, b):
     # compute intermediate vector
     a = np.dot(X, Wx) + np.dot(prev_h, Wh) + b
 
-    # Compute gates
-    ai = a[:, :H]
-    af = a[:, H:2*H]
+    # Select gates from range
+    ai = a[:,   0:H]
+    af = a[:,   H:2*H]
     ao = a[:, 2*H:3*H]
     ag = a[:, 3*H:4*H]
     # Compute gate activations
     i = sigmoid(ai)
     f = sigmoid(af)
     o = sigmoid(ao)
-    g = sigmoid(ag)
+    g = np.tanh(ag)
 
     # compute next cell state
     next_c = f * prev_c + i * g
     # compute next hidden state
     next_h = o * np.tanh(next_c)
     # cache for backward pass
-    cache = (i, f, o, g, a, ai, af, ao, ag, Wx,
-             Wh, b, prev_h, prev_c, X,
+    cache = (i, f, o, g, a, ai, af, ao, ag,
+             Wx, Wh, b, prev_h, prev_c, X,
              next_c, next_h)
 
     return next_h, next_c, cache
-
 
 
 def lstm_step_backward(dnext_h, dnext_c, cache):
@@ -376,10 +375,11 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
 
     """
 
+    # Unpack cache
     i, f, o, g, a, ai, af, ao, ag, Wx, Wh, b, prev_h, prev_c, X, next_c, next_h = cache
     # Backprop
     do = np.tanh(next_c) * dnext_h
-    dnext_c += 0 * (1 - np.tanh((next_c)**2)*dnext_h)
+    dnext_c += o * (1 - np.tanh(next_c)**2) * dnext_h
 
     # Forget gate
     df = prev_c * dnext_c
@@ -403,3 +403,106 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
     db = np.sum(da, axis=0)
 
     return dx, dprev_h, dprev_c, dWx, dWh, db
+
+
+
+def lstm_forward(X, h0, Wx, Wh, b):
+    """
+    Forward pass for an LSTM over an entire sequence of data. We
+    assume an input sequence composed of T vectors each of dimension
+    D. Each step has a hidden size of H and operates on a minibatch of
+    N sequences.
+
+    The internal cell state is passed as input, but the initial cell state
+    is set to zero. The cell state is not returned - we consider this as
+    an internal variable of the LSTM and do not access it from the outside.
+
+    Inputs:
+        - x : Input data. Shape (N, T, D)
+        - h0: Initial hidden state. Shape (N, H)
+        - Wx : Weights for input-to-hidden connections. Shape (D, 4H)
+        - Wh : Weights for hidden-to-hidden connections. Shape (H, 4H)
+        - b  : Biases. Shape (4H,)
+
+    Returns (as tuple):
+        - h : Hidden states for all timesteps of all sequences. Shape (N, T, H)
+        - cache : Values needed for backward pass
+
+    """
+    N, T, D = X.shape
+    N, H = h0.shape
+
+    # init internal state
+    prev_h = h0
+    prev_c = np.zeros_like(prev_h)
+    h = np.zeros((T, N, H))
+    X = X.transpose(1, 0, 2)        # Flip matrix
+    cache = []
+
+    # Run the loop over each element in the sequence
+    for t in range(T):
+        if t > 0:
+            prev_h = h[t-1]
+            prev_c = next_c
+        h[t], next_c, cache_next = lstm_step_forward(
+            X[t], prev_h, prev_c, Wx, Wh, b)
+        cache.append(cache_next)
+
+    h = h.transpose(1, 0, 2)        # Flip matrix back
+
+    return h, cache
+
+
+
+def lstm_backward(dh, cache):
+    """
+    Backward pass for an LSTM over an entire sequence of data
+
+    Inputs:
+        - dh : Gradients of upstream hidden states. Shape (N, T, D)
+        - cache  : Values from forward pass
+
+    Returns (as tuple):
+        - dx : Gradient of input data. Shape (N, T, D)
+        - dh0 : Gradient of initial hidden state. Shape (N, H)
+        - dWx : Gradient of input-to-hidden weights. Shape (D, 4H)
+        - dWh : Gradient of hidden-to-hidden weights. Shape (H, 4H)
+        - db  : Gradient of biases. Shape (4H,)
+
+    """
+
+    # unpack cache
+    i, f, o, g, a, ai, af, ao, ag, Wx, Wh, b, prev_h, prev_c, X, next_c, next_h = cache[0]
+    N, T, H = dh.shape
+    D = X.shape[-1]
+
+    assert len(cache) == T      # TODO: raise exception?
+
+    # Init gradients
+    dx  = np.zeros((T, N, D))
+    dh0 = np.zeros((N, H))
+    db  = np.zeros((4 * H,))
+    dWh = np.zeros((H, 4 * H))
+    dWx = np.zeros((D, 4 * H))
+    # Transpose dh
+    dh = dh.transpose(1, 0, 2)
+    dh_prev = np.zeros((N, H))
+    dc_prev = np.zeros_like(dh_prev)
+
+    # Compute backwards pass over sequence
+    for t in reversed(range(T)):
+        dh_current = dh[t] + dh_prev
+        dc_current = dc_prev
+        dx_t, dh_prev, dc_prev, dWx_t, dWh_t, db_t = lstm_step_backward(
+            dh_current, dc_current, cache[t])
+        dx[t] += dx_t
+        dh0 = dh_prev
+        dWx += dWx_t
+        dWh += dWh_t
+        db += db_t
+
+    # Transpose matrix back
+    dx = dx.transpose(1, 0, 2)
+
+    return dx, dh0, dWx, dWh, db
+
