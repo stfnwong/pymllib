@@ -38,9 +38,9 @@ class Solver(object):
 
         self.check_point_every = kwargs.pop('check_point_every', 1)
         self.checkpoint_name = kwargs.pop('checkpoint_name', None)
+        self.checkpoint_dir = kwargs.pop('checkpoint_dir', 'checkpoint')
         self.print_every = kwargs.pop('print_every', 10)
         self.verbose = kwargs.pop('verbose', True)
-        self.checkpoint_dir = kwargs.pop('checkpoint_dir', 'checkpoint')
         # The idea here is that if the loss doesn't change by eps for more than
         # 500 iters we quit
         self.enable_loss_window = kwargs.pop('enable_loss_window', False)

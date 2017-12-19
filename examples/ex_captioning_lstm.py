@@ -61,6 +61,8 @@ def ex_caption_lstm(verbose=False, plot_figures=False):
         batch_size=25,
         optim_config={'learning_rate': 5e-3},
         lr_decay=0.95,
+        checkpoint_dir='examples',
+        checkpoint_name='caption-rnn-coco',
         verbose=verbose,
         print_every=100
     )

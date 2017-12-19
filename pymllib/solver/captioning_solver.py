@@ -9,6 +9,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 #import numpy as np
+import pickle
 from pymllib.solver import optim
 from pymllib.utils import coco_utils
 
@@ -31,9 +32,12 @@ class CaptioningSolver(object):
         self.lr_decay = kwargs.pop('lr_decay', 1.0)
         self.batch_size = kwargs.pop('batch_size', 128)
         self.num_epochs = kwargs.pop('num_epochs', 10)
-        # Debug, pring
+        # Debug, print
         self.print_every = kwargs.pop('print_every', 10)
         self.verbose = kwargs.pop('verbose', True)
+        # Checkpoints
+        self.checkpoint_name = kwargs.pop('checkpoint_name', None)
+        self.checkpoint_dir = kwargs.pop('checkpoint_dir', None)
 
         # Keep reference to data and model
         self.model = model
@@ -96,6 +100,49 @@ class CaptioningSolver(object):
             self.optim_configs[p] = next_config
 
 
+    def _get_checkpoint(self):
+        checkpoint = {
+            # Model data
+            'model': self.model,
+            # Solver params
+            'update_rule': self.update_rule,
+            'lr_decay': self.lr_decay,
+            'optim_config': self.optim_config,
+            'batch_size': self.batch_size,
+            'epoch': self.epoch,
+            'num_epochs': self.num_epochs,
+            # Solution data
+            'loss_history': self.loss_history,
+            'train_acc_history': self.train_acc_history,
+            'val_acc_history': self.val_acc_history,
+            # Loss window
+            #'enable_loss_window': self.enable_loss_window,
+            #'loss_window_len': self.loss_window_len,
+            #'loss_window_eps': self.loss_window_eps,
+            #'loss_converge_window': self.loss_converge_window,
+            # Checkpoint info
+            'checkpoint_name': self.checkpoint_name,
+            'checkpoint_dir': self.checkpoint_dir
+        }
+
+        return checkpoint
+
+
+    def _save_checkpoint(self):
+        """
+        Save the current training status
+        """
+        if self.checkpoint_name is None:
+            return
+
+        checkpoint = self._get_checkpoint()
+        filename = "%s/%s_epoch_%d.pkl" % (self.checkpoint_dir, self.checkpoint_name, self.epoch)
+        if self.verbose:
+            print("Saving checkpoint to file %s" % filename)
+        with open(filename, 'wb') as fp:
+            pickle.dump(checkpoint, fp)
+
+
     def train(self):
         """
         Run optimization to train the model
@@ -103,7 +150,6 @@ class CaptioningSolver(object):
         """
         # TODO : Add the loss window stuff ? Or perhaps take
         # the loss window out of the other branches....
-
         num_train = self.data['train_captions'].shape[0]
         iterations_per_epoch = int(max(num_train / self.batch_size, 1))
         num_iterations = int(self.num_epochs * iterations_per_epoch)
@@ -114,6 +160,11 @@ class CaptioningSolver(object):
             if self.verbose and t % self.print_every == 0:
                 print("(Iteration %d / %d) loss : %f" % (t+1, num_iterations, self.loss_history[-1]))
 
+            first_it = (t == 0)
+            last_it = (t == num_iterations + 1)
+            if first_it or last_it or epoch_end:
+                self._save_checkpoint()
+
             # At the end of each epoch decay learning rate,
             # increment epoch counter
             epoch_end = (t + 1) % iterations_per_epoch == 0
@@ -123,4 +174,3 @@ class CaptioningSolver(object):
                     self.optim_configs[k]['learning_rate'] *= self.lr_decay
 
             # TODO : check accuracy
-
