@@ -122,7 +122,7 @@ class FCNet(object):
         hidden['h0'] = X.reshape(X.shape[0], np.prod(X.shape[1:]))   # TODO ; Check this...
 
         if self.use_dropout:
-            hdrop, cache_hdrop = layers.layers.dropout_forward(hidden['h0'],
+            hdrop, cache_hdrop = layers.dropout_forward(hidden['h0'],
                                                  self.dropout_param)
             hidden['hdrop0'] = hdrop
             hidden['cache_hdrop0'] = cache_hdrop
@@ -171,7 +171,7 @@ class FCNet(object):
 
                 if self.use_dropout:
                     h = hidden['h' + str(idx)]
-                    hdrop, cache_hdrop = dropout_forward(h, self.dropout_param)
+                    hdrop, cache_hdrop = layers.dropout_forward(h, self.dropout_param)
                     hidden['hdrop' + str(idx)] = hdrop
                     hidden['cache_hdrop' + str(idx)] = cache_hdrop
 
@@ -185,9 +185,9 @@ class FCNet(object):
         # Compute loss
         data_loss, dscores = layers.softmax_loss(scores, y)
         reg_loss = 0
-        for f in self.params.keys():
-            if f[0] == 'W':
-                for w in self.params[f]:
+        for k in self.params.keys():
+            if k[0] == 'W':
+                for w in self.params[k]:
                     reg_loss += 0.5 * self.reg * np.sum(w * w)
 
         loss = data_loss + reg_loss

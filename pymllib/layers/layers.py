@@ -4,8 +4,17 @@ Functional implementation of layers in neural network. These are based on the
 layers in Caffe.
 """
 
+try:
+    from pymllib.layers.im2col_cython import col2im_cython, im2col_cython
+    from pymllib.layers.im2col_cython import col2im_6d_cython
+except ImportError:
+    print("Failed to import im2col_cython. Ensure that setup.py has")
+    print("been run with build_ext --inplace.")
+    print("eg: python3 setup.py build_ext --inplace")
+
+import pymllib.layers.im2col
 import numpy as np
-import im2col
+
 # Debug
 #from pudb import set_trace; set_trace()
 
@@ -24,6 +33,7 @@ def affine_forward(X, w, b):
 
     return out, cache
 
+
 def affine_backward(dout, cache):
     """
     Compute the backward pass for an affine layer
@@ -35,6 +45,7 @@ def affine_backward(dout, cache):
 
     return dx, dw, db
 
+
 def relu_forward(X):
     """
     Computes the forward pass for a layer of rectified linear units
@@ -43,6 +54,7 @@ def relu_forward(X):
     cache = X
 
     return out, cache
+
 
 def relu_backward(dout, cache):
     """
@@ -180,8 +192,6 @@ def batchnorm_backward(dout, cache):
 
     return dx, dgamma, dbeta
 
-# TODO : Alternative function?
-
 
 # ==== Convenience layers
 def affine_relu_forward(X, w, b):
@@ -205,7 +215,7 @@ def affine_relu_backward(dout, cache):
 
     return dx, dw, db
 
-# TODO ; Specialty layers
+
 def affine_norm_relu_forward(X, v, b, gamma, beta, bn_param):
     """
     Performs an affine transform followed by a ReLU
@@ -230,10 +240,6 @@ def softmax_loss(X, y):
     probs /= np.sum(probs, axis=1, keepdims=True)
     N = X.shape[0]
 
-#    print("probs.shape; (%d, %d)" % (probs.shape[0], probs.shape[1]))
-#    if np.min(probs) < 0.0:
-#        print('min of probs is %f' % np.min(probs))
-#
     #l1 = np.log(np.max(probs[np.arange(N), y], 1e-15))
     l1 = np.log(probs[np.arange(N), y])
     loss = -np.sum(l1) / N
@@ -257,10 +263,8 @@ def conv_forward_naive(X, w, b, conv_param):
     # Add padding to each image
     x_pad = np.pad(X, ((0,0), (0,0), (P,P), (P,P)), 'constant')
     # Size of the output
-    Hh = 1 + (H + 2 * P - HH) / S
-    Hw = 1 + (W + 2 * P - WW) / S
-    Hh = int(Hh)
-    Hw = int(Hw)
+    Hh = int(1 + (H + 2 * P - HH) / S)
+    Hw = int(1 + (W + 2 * P - WW) / S)
     out = np.zeros((N, F, Hh, Hw))
 
     for n in range(N):      # Iterate over images
@@ -290,8 +294,8 @@ def conv_backward_naive(dout, cache):
     x_pad = np.pad(X, ((0,0), (0,0), (P,P), (P,P)), 'constant')
 
     N, C, H, W = X.shape
-    F, C, HH, WW = w.shape
-    N, F, Hh, Hw = dout.shape
+    F, _, HH, WW = w.shape
+    _, _, Hh, Hw = dout.shape
     S = conv_param['stride']
 
     # Weights
@@ -332,6 +336,117 @@ def conv_backward_naive(dout, cache):
     return dx, dw, db
 
 
+# ======== FAST CONV LAYERS ======== #
+def conv_forward_im2col(x, w, b, conv_param):
+    """
+    A fast implementation of the forward pass for a convolutional layer
+    based on im2col and col2im
+    """
+    N, C, H, W = x.shape
+
+    num_filters, _, filter_h, filter_w = w.shape
+    pad = conv_param['pad']
+    stride = conv_param['stride']
+    # Dimension check
+    assert (W + 2 * pad - filter_w) % stride == 0, 'Width does not align'
+    assert (H + 2 * pad - filter_h) % stride == 0, 'Height does not align'
+    # Create output
+    out_height =int(1 + (H + 2 * pad - filter_h) / stride)
+    out_width = int(1 + (W + 2 * pad - filter_w) / stride)
+    out = np.zeros((N, num_filters, out_height, out_width), dtype=x.dtype)
+
+    x_cols = im2col_cython(x, w.shape[2], w.shape[3], pad, stride)
+    res = w.reshape((w.shape[0], -1)).dot(x_cols) + b.reshape(-1, 1)
+    out = res.reshape(w.shape[0], out.shape[2], out.shape[3], x.shape[0])
+    out = out.transpose(3, 0, 1, 2)
+
+    cache = (x, w, b, conv_param, x_cols)
+
+    return out, cache
+
+def conv_backward_im2col(dout, cache):
+    """
+    A fast implementation of the backward pass for a convolutional layer
+    """
+
+    x, w, b, conv_param, x_cols = cache
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+    _, _, out_h, out_w = dout.shape
+
+    db = np.sum(dout, axis=(0, 2, 3))
+    dout_reshaped = dout.transpose(1, 0, 2, 3).rehsape(F, -1)
+    dw = dout_reshaped.dot(x_cols.T).reshape(w.shape)
+
+    dx_cols = w.reshape(F, -1).T.dot(dout_reshaped)
+    dx_cols.shape = (C, HH, WW, N, out_h, out_w)
+    dx = col2img_6d_cython(dx_cols, N, C, H, W, HH, WW, pad, stride)
+
+    return dx, dw, db
+
+
+def conv_forward_strides(x, w, b, conv_param):
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+
+    assert (W + 2 * pad - WW) % stride == 0, 'Width does not align'
+    assert (H + 2 * pad - HH) % stride == 0, 'Height does not align'
+
+    x_padded = np.pad(x, ((0,0), (0,0), (pad,pad), (pad,pad)), mode='constant')
+    #x_padded = x_padded.astype(np.int32)
+
+    # Compute output dimensions
+    H += 2 * pad
+    W += 2 * pad
+    out_h = int(1 + (H - HH) / stride)
+    out_w = int(1 + (W - WW) / stride)
+    # Perform im2col operation
+    shape = (C, HH, WW, N, out_h, out_w)
+    strides = (H * W, W, 1, C * H * W, stride * W, stride)
+    strides = x.itemsize * np.array(strides)
+    x_stride = np.lib.stride_tricks.as_strided(x_padded,
+                                               shape=shape,
+                                               strides=strides)
+    x_cols = np.ascontiguousarray(x_stride)
+    x_cols.shape = (C * HH * WW, N * out_h * out_w)
+    # Now convolutions are just a large matrix multiply
+    res = w.reshape(F, -1).dot(x_cols) + b.reshape(-1, 1)
+    # reshape the output
+    res.shape = (F, N, out_h, out_w)
+    out = res.transpose(1, 0, 2, 3)
+    # Return a contiguous array.
+    out = np.ascontiguousarray(out)
+
+    cache = (x, w, b, conv_param, x_cols)
+
+    return out, cache
+
+
+def conv_backward_strides(dout, cache):
+    x, w, b, conv_param, x_cols = cache
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+    _, _, out_h, out_w = dout.shape
+
+    db = np.sum(dout, axis=(0, 2, 3))
+    dout_reshaped = dout.transpose(1, 0, 2, 3).reshape(F, -1)
+    dw = dout_reshaped.dot(x_cols.T).reshape(w.shape)
+
+    dx_cols = w.reshape(F, -1).T.dot(dout_reshaped)
+    dx_cols.shape = (C, HH, WW, N, out_h, out_w)
+    dx = col2im_6d_cython(dx_cols, N, C, H, W, HH, WW, pad, stride)
+
+    return dx, dw, db
+
+
 # Util layer forward passes
 def max_pool_forward_reshape(x, pool_param):
     """
@@ -351,9 +466,6 @@ def max_pool_forward_reshape(x, pool_param):
     out = x_reshaped.max(axis=3).max(axis=4)
     cache = (x, x_reshaped, out)
 
-    print("(max_pool_forward_reshape), out.shape")
-    print(out.shape)
-
     return out, cache
 
 
@@ -372,7 +484,7 @@ def max_pool_forward_im2col(x, pool_param):
     assert (W - pool_w) % stride == 0, "Invalid width"
 
     out_height = int(1 + (H - pool_h) / stride)
-    out_width = int(1 + (W - pool_w) / stride)
+    out_width =  int(1 + (W - pool_w) / stride)
 
     x_split = x.reshape(N * C, 1, H, W)
     x_cols = im2col(x_split, pool_h, pool_w, padding=0, stride=stride)
@@ -437,8 +549,6 @@ def max_pool_backward_reshape(dout, cache):
     out_newaxis = out[:, :, :, np.newaxis, :, np.newaxis]
     mask = (x_reshaped == out_newaxis)
 
-    # TODO : for some reason dout is smaller than I expected....
-    print(dout.shape)
     dout_newaxis = dout[:, :, :, np.newaxis, :, np.newaxis]
     dout_broadcast, _ = np.broadcast_arrays(dout_newaxis, dx_reshaped)
     dx_reshaped[mask] = dout_broadcast[mask]
@@ -478,7 +588,8 @@ def conv_relu_pool_forward(x, w, b, conv_param, pool_param):
     """
 
     # TODO : implement Cython versions
-    a, conv_cache = conv_forward_naive(x, w, b, conv_param)
+    #a, conv_cache = conv_forward_naive(x, w, b, conv_param)
+    a, conv_cache = conv_forward_strides(x, w, b, conv_param)
     s, relu_cache = relu_forward(a)
     out, pool_cache = max_pool_forward_fast(s, pool_param)
     cache = (conv_cache, relu_cache, pool_cache)
@@ -493,10 +604,10 @@ def conv_relu_pool_backward(dout, cache):
     conv_cache, relu_cache, pool_cache = cache
     ds = max_pool_backward_fast(dout, pool_cache)
     da = relu_backward(ds, relu_cache)
-    dx, dw, db = conv_backward_naive(da, conv_cache)
+    dx, dw, db = conv_backward_strides(da, conv_cache)
+    #dx, dw, db = conv_backward_naive(da, conv_cache)
 
     return dx, dw, db
-
 
 
 # Sigmoid functions
@@ -530,7 +641,6 @@ def sigmoid_backward(dout, cache):
     #dw = np.dot(X.reshape(X.shape[0], np.prod(X.shape[1:])).T, ddot)
 
     return dx, dw, db
-
 
 
 # ===== LAYER OBJECT ===== #
