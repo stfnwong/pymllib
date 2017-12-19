@@ -1,8 +1,7 @@
 """
-EX_CAPTIONING_RNN
-Example with captioning RNN
+EX_CAPTIONING_LSTM
+Example of a captioning LSTM
 
-Stefan Wong 2017
 """
 
 import os
@@ -41,12 +40,13 @@ def test_time_sampling(data, model, batch_size=16, plot_figures=False):
                 plt.axis('off')
                 plt.show()
 
-def ex_caption_rnn(verbose=False, plot_figures=False):
+
+def ex_caption_lstm(verbose=False, plot_figures=False):
 
     test_data = coco_utils.load_coco_data(max_train=50000)
 
-    small_rnn_model = captioning_rnn.CaptioningRNN(
-        cell_type='rnn',
+    small_lstm_model = captioning_rnn.CaptioningRNN(
+        cell_type='lstm',
         word_to_idx=test_data['word_to_idx'],
         input_dim=test_data['train_features'].shape[1],
         hidden_dim=512,
@@ -54,7 +54,7 @@ def ex_caption_rnn(verbose=False, plot_figures=False):
     )
 
     solv = captioning_solver.CaptioningSolver(
-        small_rnn_model,
+        small_lstm_model,
         test_data,
         update_rule='adam',
         num_epochs=50,
@@ -70,17 +70,20 @@ def ex_caption_rnn(verbose=False, plot_figures=False):
     # Plot the loss...
     if plot_figures:
         test_time_sampling(test_data,
-                        small_rnn_model,
+                        small_lstm_model,
                         plot_figures=plot_figures)
         plt.plot(solv.loss_history, 'o')
         plt.xlabel('Iterations')
         plt.ylabel('Loss')
-        plt.title('Captioning RNN Loss')
+        plt.title('Captioning LSTM Loss')
         plt.show()
+
+
+
 
 
 if __name__ == '__main__':
     global_verbose = True
     global_plot = True
-    ex_caption_rnn(verbose=global_verbose,
+    ex_caption_lstm(verbose=global_verbose,
                    plot_figures=global_plot)
