@@ -15,6 +15,7 @@ import pymllib.utils.data_utils as data_utils
 import pymllib.solver.solver as solver
 import pymllib.solver.optim as optim
 import pymllib.classifiers.fcnet as fcnet
+from pymllib.vis import vis_solver
 
 # Debug
 #from pudb import set_trace; set_trace()
@@ -410,6 +411,83 @@ class TestSolverCheckpoint(unittest.TestCase):
 
         print("======== TestSolverCheckpoint.test_model_restore: <END> ")
 
+
+class TestSolverCompare(unittest.TestCase):
+    """
+    TESTSOLVERCOMPARE
+    This test is intended to reveal the differences between a 3 layer FCNet and the
+    ThreeLayerConvNet
+    """
+    def setUp(self):
+        self.eps = 1e-6
+        self.data_dir = 'datasets/cifar-10-batches-py'
+        self.draw_fig = True
+        self.verbose = False
+        self.draw_plots = True
+
+    def test_3layer_nets(self):
+        print("\n======== TestSolverCompare.test_3layer_nets:")
+        dataset =  load_data(self.data_dir, self.verbose)
+        num_train = 50
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+
+        filter_size = 7
+        num_filters = 32
+        hidden_dims = 100
+        weight_scale = 1e-2
+        learning_rate = 1e-3
+        reg = 0.0
+        num_epochs = 50
+        batch_size = 50
+        update_rule='adam'
+
+        # TODO : Save this for a Xavier test
+        #for i in range(2):
+        #    if i == 0:
+        #        use_xavier = False
+        #    else:
+        #        use_xavier = True
+
+        from pymllib.classifiers import convnet
+
+        l3_net = convnet.ThreeLayerConvNet(hidden_dim=hidden_dims,
+                                           num_filters=num_filters,
+                                           filter_size=filter_size,
+                                           weight_scale=weight_scale,
+                                           reg=reg)
+        if self.verbose:
+            print("L3 net:")
+            print(l3_net)
+        fc_net = convnet.ConvNetLayer(hidden_dims=[hidden_dims],
+                                      num_filters=[num_filters],
+                                      filter_size=filter_size,
+                                      weight_scale=weight_scale,
+                                      reg=reg)
+
+        model_dict = {'l3_net': l3_net, 'fc_net': fc_net}
+        solver_dict = {}
+        for k, m in model_dict.items():
+            solv = solver.Solver(m, small_data,
+                                 optim_config={'learning_rate': learning_rate},
+                                 num_epochs=num_epochs,
+                                 batch_size=batch_size,
+                                 verbose=True)
+            solv.train()
+            solver_dict[k] = solv
+
+        # Make some plots
+        if self.draw_plots:
+            fig, ax = vis_solver.get_train_fig()
+            vis_solver.plot_solver_compare(ax, solver_dict)
+            plt.show()
+
+
+        print("======== TestSolverCompare.test_3layer_nets : <END> ")
 
 if __name__ == "__main__":
     unittest.main()

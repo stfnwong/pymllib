@@ -22,8 +22,6 @@ def affine_forward(X, w, b):
     """
     Compute forward pass for an affine layer
 
-    TODO: This does a reshape for minibatches, include in
-    docstring
     """
     N = X.shape[0]
     D = np.prod(X.shape[1:])

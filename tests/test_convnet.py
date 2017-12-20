@@ -16,11 +16,14 @@ from pymllib.utils import check_gradient
 from pymllib.utils import error
 from pymllib.layers import layers
 from pymllib.classifiers import convnet
-import pymllib.solver.solver as solver
-import pymllib.vis.vis_weights as vis_weights
+from pymllib.solver import solver
+from pymllib.vis import vis_weights
+from pymllib.vis import vis_solver
+#import pymllib.solver.solver as solver
+#import pymllib.vis.vis_weights as vis_weights
 
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 # TODO : Once an arbitrary layer convnet is implemented,
 # replace the three layer convnet with the arbitrary convnet
@@ -89,7 +92,7 @@ class TestConvNet(unittest.TestCase):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.eps = 1e-7
         self.verbose = True
-        self.draw_plots = True
+        self.draw_plots = False
 
     def test_conv_forward_naive(self):
         print("\n======== TestConvNet.test_conv_forward_naive:")
@@ -149,9 +152,304 @@ class TestConvNet(unittest.TestCase):
 
         print("======== TestConvNet.test_conv_backward_naive: <END> ")
 
-    def test_loss_3layer_conv(self):
+    def test_loss_2conv_layers(self):
 
         print("\n======== TestConvNet.test_loss_3layer_conv:")
+
+        N = 10       # Because the naive implementation is VERY slow
+        X = np.random.randn(N, 3, 32, 32)
+        y = np.random.randint(10, size=N)
+        model_3l = convnet.ConvNetLayer()
+        model_3l.reg = 0.0
+        loss, grads = model_3l.loss(X,y)
+        print("Initial loss (no regularization) : %f" % loss)
+        model_3l.reg = 0.5
+        loss, grads = model_3l.loss(X, y)
+        print("Initial loss (with regularization) : %f" % loss)
+
+        print("======== TestConvNet.test_loss_3layer_conv: <END> ")
+
+
+    def test_gradient_check_2conv_layers(self):
+        print("\n======== TestConvNet.test_gradient_check_conv:")
+
+        num_inputs = 2
+        input_dim = (3, 32, 32)
+        num_classes = 10
+
+        X = np.random.randn(num_inputs, *input_dim)
+        y = np.random.randint(num_classes, size=num_inputs)
+
+        # TODO ; Modify this to be L Layer net
+        model = convnet.ConvNetLayer(reg=0.0)
+        loss, grads = model.loss(X, y)
+        for p in sorted(grads):
+            f = lambda _: model.loss(X, y)[0]
+            param_grad_num = check_gradient.eval_numerical_gradient(f, model.params[p], verbose=False, h=1e-6)
+            err = error.rel_error(param_grad_num, grads[p])
+            print("%s max relative error: %e" % (p, err))
+
+        # This is in a separate pass so that we can see all errors
+        # printed to console before we invoke the assertions
+        for p in sorted(grads):
+            f = lambda _: model.loss(X, y)[0]
+            param_grad_num = check_gradient.eval_numerical_gradient(f, model.params[p], verbose=False, h=1e-6)
+            err = error.rel_error(param_grad_num, grads[p])
+            self.assertLessEqual(err, self.eps)
+
+        print("======== TestConvNet.test_gradient_check_conv: <END> ")
+
+    def test_overfit_3layer(self):
+        print("\n======== TestConvNet.test_overfit_3layer:")
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 500
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        if self.verbose:
+            print("Size of training dataset :")
+            for k, v in small_data.items():
+                print("%s : %s " % (k, v.shape))
+
+        #weight_scale = 1e-2
+        #learning_rate = 1e-3
+        weight_scale = 0.06
+        learning_rate = 0.077
+        num_epochs = 50
+        batch_size = 50
+        update_rule='adam'
+
+        # Get a model
+        model = convnet.ConvNetLayer(weight_scale=weight_scale,
+                                     num_filters=[32],
+                                     hidden_dims=[100],
+                                     use_batchnorm=True,
+                                     reg=0.0)
+        if self.verbose:
+            print(model)
+        # Get a solver
+        conv_solver = solver.Solver(model,
+                                    small_data,
+                                    num_epochs=num_epochs,
+                                    batch_size=batch_size,
+                                    update_rule=update_rule,
+                                    optim_config={'learning_rate': learning_rate},
+                                    print_every=10,
+                                    verbose=self.verbose)
+        conv_solver.train()
+        conv_dict = {"convnet": conv_solver}
+        # Plot figures
+        if self.draw_plots is True:
+            fig, ax = get_figure_handles()
+            plot_test_result(ax, conv_dict, num_epochs)
+            fig.set_size_inches(8,8)
+            fig.tight_layout()
+            plt.show()
+
+        print("======== TestConvNet.test_overfit_3layer: <END> ")
+
+
+        # TODO : Next up, spatial batch normalization
+
+    def test_conv_4layer_param_search(self):
+        print("\n======== TestConvNet.test_conv_4layer_param_search :")
+
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 100
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        #input_dim = small_data['X_train'].shape[0]
+        input_dim = (3, 32, 32)
+        num_epochs = 50
+
+        param_search = True
+        num_searches = 0
+        while param_search:
+            weight_scale = 10 ** (np.random.uniform(-6, -1))
+            learning_rate = 10 ** (np.random.uniform(-4, -1))
+            model = convnet.ConvNetLayer(input_dim=input_dim,
+                            hidden_dims=[256, 256],
+                            num_filters = [16, 32, 64, 128],
+                            weight_scale=weight_scale,
+                            dtype=np.float32)
+            if self.verbose:
+                print(model)
+            model_solver = solver.Solver(model,
+                                        small_data,
+                                        print_every=10,
+                                        num_epochs=num_epochs,
+                                        batch_size=50,     # previously 25
+                                        update_rule='adam',
+                                        optim_config={'learning_rate': learning_rate})
+            model_solver.train()
+            num_searches += 1
+            if max(model_solver.train_acc_history) >= 1.0:
+                param_search = False
+                lr = learning_rate
+                ws = weight_scale
+                print("Found parameters after %d epochs total (%d searches of %d epochs each)" % (num_searches * num_epochs, num_searches, num_epochs))
+
+        print("Best learning rate is %f" % lr)
+        print("Best weight scale is %f" % ws)
+
+        save_solver = True
+        if save_solver is True:
+            solver_fname = "conv-lr-%f-ws-%f.pkl" % (lr, ws)
+            model_solver.save(solver_fname)
+
+        # Plot results
+        if self.draw_plots:
+            title = "Training loss history (5 layers) with lr=%f, ws=%f" % (lr, ws)
+            plt.plot(model_solver.loss_history, 'o')
+            plt.title(title)
+            plt.xlabel('Iteration')
+            plt.ylabel('Training loss')
+            plt.show()
+
+        print("======== TestConvNet.test_conv_4layer_param_search: <END> ")
+
+    def test_xavier_overfit(self):
+        print("\n======== TestConvNet.test_xavier_overfit:")
+        dataset = load_data(self.data_dir, self.verbose)
+        num_train = 1500
+
+        small_data = {
+            'X_train': dataset['X_train'][:num_train],
+            'y_train': dataset['y_train'][:num_train],
+            'X_val':   dataset['X_val'][:num_train],
+            'y_val':   dataset['y_val'][:num_train]
+        }
+        input_dim = (3, 32, 32)
+        hidden_dims = [256, 256]
+        num_filters = [16, 32]
+        #weight_scale = 0.07
+        #learning_rate = 0.007
+        weight_scale = 1e-3
+        learning_rate = 1e-3
+        num_epochs = 50
+        batch_size = 50
+        update_rule='adam'
+
+        weight_init = ['gauss', 'gauss_sqrt', 'xavier']
+        model_dict = {}
+
+        for w in weight_init:
+            model = convnet.ConvNetLayer(input_dim=input_dim,
+                            hidden_dims=hidden_dims,
+                            num_filters = num_filters,
+                            weight_scale=weight_scale,
+                            user_xavier=True,
+                            verbose=True,
+                            dtype=np.float32)
+            model_dict[w] = model
+
+        solver_dict = {}
+
+        for k, m in model_dict.items():
+            if self.verbose:
+                print(m)
+            solv = solver.Solver(m,
+                                 small_data,
+                                 print_every=10,
+                                 num_epochs=num_epochs,
+                                 batch_size=batch_size,
+                                 update_rule=update_rule,
+                                 optim_config={'learning_rate': learning_rate})
+            solv.train()
+            fname = '%s-solver-%d-epochs.pkl' % (k, int(num_epochs))
+            solv.save(fname)
+            skey = '%s-%s' % (m.__repr__(), k)
+            solver_dict[skey] = solv
+
+        # Plot results
+        if self.draw_plots is True:
+            fig, ax = vis_solver.get_train_fig()
+            vis_solver.plot_solver_compare(ax, solver_dict)
+            plt.show()
+
+        print("======== TestConvNet.test_xavier_overfit: <END> ")
+
+"""
+All the old tests have been temporarily moved here
+"""
+class Test3LayerConvNet(unittest.TestCase):
+
+    def setUp(self):
+        self.data_dir = 'datasets/cifar-10-batches-py'
+        self.eps = 1e-7
+        self.verbose = True
+        self.draw_plots = True
+
+    def test_conv_forward_naive(self):
+        print("\n======== Test3LayerConvNet.test_conv_forward_naive:")
+
+        x_shape = (2, 3, 4, 4)
+        w_shape = (3, 3, 4, 4)
+        x = np.linspace(-0.1, 0.5, num=np.prod(x_shape)).reshape(x_shape)
+        w = np.linspace(-0.2, 0.3, num=np.prod(w_shape)).reshape(w_shape)
+        b = np.linspace(-0.1, 0.2, num=3)
+
+        conv_param = {'stride': 2, 'pad': 1}
+        out, _ = layers.conv_forward_naive(x, w, b, conv_param)
+        correct_out = np.array([[[[[-0.08759809, -0.10987781],
+                                   [-0.18387192, -0.2109216 ]],
+                                  [[ 0.21027089,  0.21661097],
+                                   [ 0.22847626,  0.23004637]],
+                                  [[ 0.50813986,  0.54309974],
+                                   [ 0.64082444,  0.67101435]]],
+                                 [[[-0.98053589, -1.03143541],
+                                   [-1.19128892, -1.24695841]],
+                                  [[ 0.69108355,  0.66880383],
+                                   [ 0.59480972,  0.56776003]],
+                                  [[ 2.36270298,  2.36904306],
+                                   [ 2.38090835,  2.38247847]]]]])
+        out_error = error.rel_error(out, correct_out)
+        print("out_error : %.9f " % out_error)
+        self.assertLessEqual(out_error, self.eps)
+
+        print("======== Test3LayerConvNet.test_conv_forward_naive: <END> ")
+
+    def test_conv_backward_naive(self):
+        print("\n======== Test3LayerConvNet.test_conv_backward_naive:")
+        X = np.random.randn(4, 3, 5, 5)
+        W = np.random.randn(2, 3, 3, 3)
+        b = np.random.randn(2,)
+        dout = np.random.randn(4, 2, 5, 5)
+        conv_param = {'stride': 1, 'pad': 1}
+
+        dx_num = check_gradient.eval_numerical_gradient_array(lambda x: layers.conv_forward_naive(X, W, b, conv_param)[0], X, dout)
+        dw_num = check_gradient.eval_numerical_gradient_array(lambda w: layers.conv_forward_naive(X, W, b, conv_param)[0], W, dout)
+        db_num = check_gradient.eval_numerical_gradient_array(lambda b: layers.conv_forward_naive(X, W, b, conv_param)[0], b, dout)
+
+        out, cache = layers.conv_forward_naive(X, W, b, conv_param)
+        dx, dw, db = layers.conv_backward_naive(dout, cache)
+
+        dx_error = error.rel_error(dx, dx_num)
+        dw_error = error.rel_error(dw, dw_num)
+        db_error = error.rel_error(db, db_num)
+
+        print("dx_error : %.9f" % dx_error)
+        print("dw_error : %.9f" % dw_error)
+        print("db_error : %.9f" % db_error)
+
+        self.assertLessEqual(dx_error, self.eps)
+        self.assertLessEqual(dw_error, self.eps)
+        self.assertLessEqual(db_error, self.eps)
+
+        print("======== Test3LayerConvNet.test_conv_backward_naive: <END> ")
+
+    def test_loss_3layer_conv(self):
+
+        print("\n======== Test3LayerConvNet.test_loss_3layer_conv:")
 
         N = 10       # Because the naive implementation is VERY slow
         X = np.random.randn(N, 3, 32, 32)
@@ -164,11 +462,11 @@ class TestConvNet(unittest.TestCase):
         loss, grads = model_3l.loss(X, y)
         print("Initial loss (with regularization) : %f" % loss)
 
-        print("======== TestConvNet.test_loss_3layer_conv: <END> ")
+        print("======== Test3LayerConvNet.test_loss_3layer_conv: <END> ")
 
 
     def test_gradient_check_conv(self):
-        print("\n======== TestConvNet.test_gradient_check_conv:")
+        print("\n======== Test3LayerConvNet.test_gradient_check_conv:")
 
         num_inputs = 2
         input_dim = (3, 10, 10)
@@ -199,12 +497,12 @@ class TestConvNet(unittest.TestCase):
             err = error.rel_error(param_grad_num, grads[p])
             self.assertLessEqual(err, self.eps)
 
-        print("======== TestConvNet.test_gradient_check_conv: <END> ")
+        print("======== Test3LayerConvNet.test_gradient_check_conv: <END> ")
 
     def test_overfit_3layer(self):
-        print("\n======== TestConvNet.test_overfit_3layer:")
+        print("\n======== Test3LayerConvNet.test_overfit_3layer:")
         dataset = load_data(self.data_dir, self.verbose)
-        num_train = 100
+        num_train = 500
 
         small_data = {
             'X_train': dataset['X_train'][:num_train],
@@ -213,8 +511,8 @@ class TestConvNet(unittest.TestCase):
             'y_val':   dataset['y_val'][:num_train]
         }
         input_dim = (3, 32, 32)
-        weight_scale = 1e-2
-        learning_rate = 1e-3
+        weight_scale = 0.07
+        learning_rate = 0.007
         num_epochs = 20
         batch_size = 50
         update_rule='adam'
@@ -243,84 +541,11 @@ class TestConvNet(unittest.TestCase):
             fig.tight_layout()
             plt.show()
 
-        print("======== TestConvNet.test_overfit_3layer: <END> ")
+        print("======== Test3LayerConvNet.test_overfit_3layer: <END> ")
 
 
         # TODO : Next up, spatial batch normalization
 
-class TestConvImgProc(unittest.TestCase):
-
-    def setUp(self):
-        self.data_dir = 'datasets/'
-
-    def test_conv_filter(self):
-        print("\n======== TestConvImgProc.test_conv_filter:")
-
-        from scipy.misc import imread, imresize
-        import matplotlib.pyplot as plt
-
-        img_filenames = [str(self.data_dir) + 'kitten.jpg', str(self.data_dir) + 'puppy.jpg']
-        kitten = imread(img_filenames[0])
-        puppy = imread(img_filenames[1])
-        # Manipulate dims
-        d = kitten.shape[1] - kitten.shape[0]
-        kitten_cropped = kitten[:, int(d/2) : int(-d/2), :]
-
-        img_size = 200
-        X = np.zeros((2, 3, img_size, img_size))            # Input data
-        X[0, :, :, :] = imresize(puppy, (img_size, img_size)).transpose((2, 0, 1))
-        X[1:,:, :, :] = imresize(kitten_cropped, (img_size, img_size)).transpose((2, 0, 1))
-
-        # Set up convolutional weights holding 2 filters, each 3x3
-        W = np.zeros((2, 3, 3, 3))
-        # The first filter converts the image to grayscale
-        # Set up red, green and blue channels of filter
-        W[0, 0, :, :] = [[0, 0, 0], [0, 0.3, 0], [0, 0, 0]]
-        W[0, 1, :, :] = [[0, 0, 0], [0, 0.6, 0], [0, 0, 0]]
-        W[0, 2, :, :] = [[0, 0, 0], [0, 0.1, 0], [0, 0, 0]]
-        # Second filter detects horizontal edges in the blue channel
-        W[1, 2, :, :] = [[1, 2, 1], [0, 0, 0], [-1, -2, -1]]
-        # Vector of biases. No biases are needed for grayscale filter but for
-        # the edge detection filter we want to add 128 to each output so that
-        # no results are negative
-        b = np.array([0, 128])
-
-        # Compute the result of convolving each input in X with each filter in
-        # W
-        out, _ = layers.conv_forward_naive(X, W, b, {'stride': 1, 'pad': 1})
-
-        # Tiny helper for showing images as uint8's and
-        # removing axis labels
-        def imshow_noax(img, normalize=True):
-            if normalize is True:
-                img_max = np.max(img)
-                img_min = np.min(img)
-                img = 255.0 * (img - img_min) / (img_max - img_min)
-            plt.imshow(img.astype('uint8'))
-            plt.gca().axis('off')
-
-        # Show the original images and the results of the conv operation
-        plt.subplot(2, 3, 1)
-        imshow_noax(puppy, normalize=False)
-        plt.title('Original')
-        plt.subplot(2, 3, 2)
-        imshow_noax(out[0, 0])
-        plt.title('Grayscale')
-        plt.subplot(2, 3, 3)
-        imshow_noax(out[0, 1])
-        plt.title('Horizontal Edges')
-        plt.subplot(2, 3, 4)
-        imshow_noax(kitten_cropped, normalize=False)
-        plt.title('Original')
-        plt.subplot(2, 3, 5)
-        imshow_noax(out[1, 0])
-        plt.title('Grayscale')
-        plt.subplot(2, 3, 6)
-        imshow_noax(out[1, 1])
-        plt.title('Horizontal Edges')
-        plt.show()
-
-        print("======== TestConvImgProc.test_conv_filter: <END> ")
 
 
 if __name__ == "__main__":

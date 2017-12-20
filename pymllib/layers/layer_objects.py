@@ -4,11 +4,24 @@ LAYERS
 Stefan Wong 2017
 """
 
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import numpy as np
+
+# Import Cython files
+try:
+    from pymllib.layers.im2col_cython import col2im_cython, im2col_cython
+    from pymllib.layers.im2col_cython import col2im_6d_cython
+except ImportError:
+    print("Failed to import im2col_cython. Ensure that setup.py has")
+    print("been run with build_ext --inplace.")
+    print("eg: python3 setup.py build_ext --inplace")
+
 # Debug
 from pudb import set_trace; set_trace()
 
-# TODO : Implement mini-batch support....
 """
 LAYER
 
@@ -89,4 +102,3 @@ class SigmoidLayer(Layer):
         return p * (1 - p)
 
 
-# TODO ; Batchnorm layer
