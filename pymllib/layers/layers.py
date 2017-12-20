@@ -68,6 +68,7 @@ def relu_backward(dout, cache):
 
     return dx
 
+
 def dropout_forward(X, dropout_param):
     """
     Compute the forward pass for (inverted) drop out

@@ -33,6 +33,7 @@ types.
 """
 class Layer(object):
     def __init__(self, weight_scale, weight_init, N, D):
+        self.X = None        # input cache
         self.W = layer_utils.fc_layer_weight_init(weight_scale, weight_init, N, D)
         self.b = np.zeros((1, D))
         self.Z = None     # TODO : We need to know the batch size for this to work....
@@ -58,7 +59,7 @@ class AffineLayer(Layer):
         s.append('Linear Layer \n\tinput dim : %d \n\tlayer size : %d\n' %
                  (self.W.shape[0], self.W.shape[1]))
         if self.Z is not None:
-            s.append('Activation size: %s\n' % self.Z.shape)
+            s.append('Activation size: %s\n' % str(self.Z.shape))
 
         return ''.join(s)
 
@@ -66,16 +67,20 @@ class AffineLayer(Layer):
         return self.__str__()
 
     def forward(self, X):
+        self.X = X
         N = X.shape[0]
         D = np.prod(X.shape[1:])
         self.Z = np.dot(X.reshape(N, D), self.W) + self.b
         return self.Z
 
-    def backward(self, dz, X):
-        dx = np.dot(dz, self.W.T)
-        p = np.prod(X.T, dz)
-        dw = np.dot(X, p)
+    def backward(self, dz):
+        dx = np.dot(dz, self.W)
+        print('dx shape : %s' % str(dx.shape))
+        print('self.X shape : %s' % str(self.X.shape))
+        xdim = (self.X.shape[0], np.prod(self.X.shape[1:]))
+        dw = np.dot(self.X.reshape(xdim).T, dz)
         db = np.sum(dz, axis=0)
+
         return (dx, dw, db)
 
 # Layer with ReLU activation
@@ -90,13 +95,14 @@ class ReLULayer(Layer):
         return self.__str__()
 
     def forward(self, X):
+        self.X = X
         self.Z =  np.dot(X, self.W) + self.b
-        return np.maximum(0, self.Z)
+        return np.maximum(1, self.Z)
 
     def backward(self, dz):
-        d = np.zeros_like(dz)
-        d[dz > 0] = 1
-        return dz * d
+        dx = np.array(dz, copy=True)
+        dx[self.X <= 0] = 0
+        return dx
 
 # Layer with Sigmoid Activation
 class SigmoidLayer(Layer):
