@@ -36,18 +36,11 @@ class Layer(object):
         self.X = None        # input cache
         self.W = layer_utils.fc_layer_weight_init(weight_scale, weight_init, N, D)
         self.b = np.zeros((1, D))
-        self.Z = None     # TODO : We need to know the batch size for this to work....
+        self.Z = None
 
     def update(self, next_w, next_b):
         self.W = next_w
         self.b = next_b
-"""
-N = X.shape[0]
-D = np.prod(X.shape[1:])
-x2 = np.reshape(X, (N,D))
-out = np.dot(x2, w) + b
-cache = (X, w, b)
-"""
 
 """
 Specialized layer types
@@ -70,13 +63,13 @@ class AffineLayer(Layer):
         self.X = X
         N = X.shape[0]
         D = np.prod(X.shape[1:])
-        self.Z = np.dot(X.reshape(N, D), self.W) + self.b
+        x2 = np.reshape(X, (N, D))
+        self.Z = np.dot(x2, self.W) + self.b
+
         return self.Z
 
     def backward(self, dz):
         dx = np.dot(dz, self.W)
-        print('dx shape : %s' % str(dx.shape))
-        print('self.X shape : %s' % str(self.X.shape))
         xdim = (self.X.shape[0], np.prod(self.X.shape[1:]))
         dw = np.dot(self.X.reshape(xdim).T, dz)
         db = np.sum(dz, axis=0)

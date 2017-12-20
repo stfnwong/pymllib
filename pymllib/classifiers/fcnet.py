@@ -24,7 +24,6 @@ class FCNet(object):
 
         self.verbose = kwargs.pop('verbose', False)
         self.use_batchnorm = kwargs.pop('use_batchnorm', False)
-        #self.use_xavier = kwargs.pop('use_xavier', False)
         self.weight_init = kwargs.pop('weight_init', 'gauss')
         self.reg = kwargs.pop('reg', 0.0)
         self.dtype = kwargs.pop('dtype', np.float32)
@@ -46,11 +45,6 @@ class FCNet(object):
             raise ValueError('hidden_dim must be a list')
 
         dims = [input_dim] + hidden_dims + [num_classes]
-        #Ws = {'W' + str(i+1) : self.weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
-        #bs = {'b' + str(i+1) : np.zeros(dims[i+1]) for i in range(len(dims)-1)}
-        #self.params.update(bs)
-        #self.params.update(Ws)
-
         for i in range(len(dims)-1):
             W = self._weight_init(dims[i], dims[i+1])
             b = np.zeros(dims[i+1])

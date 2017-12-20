@@ -32,7 +32,7 @@ def fc_layer_weight_init(weight_scale, weight_init, N, D):
     return W
 
 
-def conv_layer_weight_init(weight_scale, weight_init, N, D, H, W):
+def conv_layer_weight_init(weight_scale, weight_init, N, D, f):
     """
     CONV_LAYER_WEIGHT_INIT
 
@@ -48,7 +48,7 @@ def conv_layer_weight_init(weight_scale, weight_init, N, D, H, W):
         W = np.random.randn(N, D, f, f) * (1 / np.sqrt(2/(N+D)))
     elif weight_init == 'xavier':
         w_lim = 2 / np.sqrt(N + D, f, f)
-        W = np.random.uniform(low=-w_lim, high=w_lim, size=(N, D))
+        W = np.random.uniform(low=-w_lim, high=w_lim, size=(N, D, f, f))
     else:
         raise ValueError('Invalid weight init method %s' % weight_init)
 
