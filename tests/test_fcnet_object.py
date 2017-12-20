@@ -18,7 +18,7 @@ from pymllib.utils import data_utils
 from pymllib.vis import vis_solver
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 
 def load_data(data_dir, verbose=False):
@@ -39,6 +39,20 @@ class TestFCNetObject(unittest.TestCase):
 
     def setUp(self):
         self.data_dir = 'datasets/cifar-10-batches-py'
+        self.verbose = True
+
+    def test_layer_creation(self):
+
+        print("\n======== TestFCNetObject.test_layer_creation:")
+
+        hidden_dims = [100, 100, 100]
+        fcnet = fcnet_object.FCNetObject(hidden_dims)
+
+        print(fcnet)
+
+
+
+        print("======== TestFCNetObject.test_layer_creation: <END> ")
 
 
 if __name__ == '__main__':

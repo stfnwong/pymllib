@@ -1,5 +1,6 @@
 """
-LAYERS
+LAYER_OBJECTS
+Object oriented layer implementation.
 
 Stefan Wong 2017
 """
@@ -9,6 +10,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
+from pymllib.utils import layer_utils
 
 # Import Cython files
 try:
@@ -20,7 +22,7 @@ except ImportError:
     print("eg: python3 setup.py build_ext --inplace")
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 """
 LAYER
@@ -30,29 +32,43 @@ types.
 
 """
 class Layer(object):
-    def __init__(self, input_dim, layer_size, layer_sd=0.01):
-        self.layer_sd = layer_sd
-        self.W = self.layer_sd * np.random.randn(input_dim, layer_size)
-        self.b = np.zeros((1, layer_size))
-        self.Z = None       # TODO : Pre-allocate...
+    def __init__(self, weight_scale, weight_init, N, D):
+        self.W = layer_utils.fc_layer_weight_init(weight_scale, weight_init, N, D)
+        self.b = np.zeros((1, D))
+        self.Z = None     # TODO : We need to know the batch size for this to work....
 
-    def update(self, dW, db, step_size):
-        self.W += (-step_size) * dW
-        self.b += (-step_size) * db
+    def update(self, next_w, next_b):
+        self.W = next_w
+        self.b = next_b
+"""
+N = X.shape[0]
+D = np.prod(X.shape[1:])
+x2 = np.reshape(X, (N,D))
+out = np.dot(x2, w) + b
+cache = (X, w, b)
+"""
 
+"""
+Specialized layer types
+"""
 # Linear layer
 class AffineLayer(Layer):
     def __str__(self):
         s = []
         s.append('Linear Layer \n\tinput dim : %d \n\tlayer size : %d\n' %
                  (self.W.shape[0], self.W.shape[1]))
+        if self.Z is not None:
+            s.append('Activation size: %s\n' % self.Z.shape)
+
         return ''.join(s)
 
     def __repr__(self):
         return self.__str__()
 
     def forward(self, X):
-        self.Z = np.dot(X, self.W) + self.b
+        N = X.shape[0]
+        D = np.prod(X.shape[1:])
+        self.Z = np.dot(X.reshape(N, D), self.W) + self.b
         return self.Z
 
     def backward(self, dz, X):
@@ -101,4 +117,5 @@ class SigmoidLayer(Layer):
         p = self.forward(dz)
         return p * (1 - p)
 
+# TODO : Softmax scoring layer
 
