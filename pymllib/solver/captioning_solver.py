@@ -143,6 +143,38 @@ class CaptioningSolver(object):
             pickle.dump(checkpoint, fp)
 
 
+    def load_checkpoint(self, fname):
+        """
+        LOAD_CHECKPOINT
+        Load a saved checkpoint from disk into a solver object.
+        In the current version of this method defaults are provided for
+        missing attributes. This somewhat obviates the need to have a
+        conversion utility, as the such a utility would be inserting
+        dummy values into attributes that are missing anyway.
+        """
+
+        with open(fname, 'rb') as fp:
+            cpoint_data = pickle.load(fp)
+
+        # Model data
+        self.model = cpoint_data.get('model')
+        # Solver params
+        self.update_rule = cpoint_data.get('update_rule')
+        self.lr_decay = cpoint_data.get('lr_decay')
+        self.optim_config = cpoint_data.get('optim_config')
+        self.batch_size = cpoint_data.get('batch_size')
+        self.epoch = cpoint_data.get('epoch')
+        self.num_epochs = cpoint_data.get('num_epochs', 0)
+        # Solution data
+        self.loss_history = cpoint_data.get('loss_history')
+        #self.train_acc_history = cpoint_data.get('train_acc_history')
+        #self.val_acc_history = cpoint_data.get('val_acc_history')
+        ## Loss window
+        #self.enable_loss_window = cpoint_data.get('enable_loss_window', False)
+        #self.loss_window_len = cpoint_data.get('loss_window_len', 500)
+        #self.loss_window_eps = cpoint_data.get('loss_window_eps', 1e-4)
+        #self.loss_converge_window = cpoint_data['loss_converge_window']
+
     def train(self):
         """
         Run optimization to train the model
