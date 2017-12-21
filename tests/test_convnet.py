@@ -464,39 +464,39 @@ class Test3LayerConvNet(unittest.TestCase):
         print("======== Test3LayerConvNet.test_loss_3layer_conv: <END> ")
 
 
-    def test_gradient_check_conv(self):
-        print("\n======== Test3LayerConvNet.test_gradient_check_conv:")
+    #def test_gradient_check_conv(self):
+    #    print("\n======== Test3LayerConvNet.test_gradient_check_conv:")
 
-        num_inputs = 2
-        input_dim = (3, 10, 10)
-        reg = 0.0
-        num_classes = 10
+    #    num_inputs = 2
+    #    input_dim = (3, 10, 10)
+    #    reg = 0.0
+    #    num_classes = 10
 
-        X = np.random.randn(num_inputs, *input_dim)
-        y = np.random.randint(num_classes, size=num_inputs)
+    #    X = np.random.randn(num_inputs, *input_dim)
+    #    y = np.random.randint(num_classes, size=num_inputs)
 
-        model = convnet.ThreeLayerConvNet(num_filters=3,
-                                          filter_size=3,
-                                          input_dim=input_dim,
-                                          hidden_dim=7,
-                                          reg=reg,
-                                          dtype=np.float32)
-        loss, grads = model.loss(X, y)
-        for p in sorted(grads):
-            f = lambda _: model.loss(X, y)[0]
-            param_grad_num = check_gradient.eval_numerical_gradient(f, model.params[p], verbose=False, h=1e-6)
-            err = error.rel_error(param_grad_num, grads[p])
-            print("%s max relative error: %e" % (p, err))
+    #    model = convnet.ThreeLayerConvNet(num_filters=3,
+    #                                      filter_size=3,
+    #                                      input_dim=input_dim,
+    #                                      hidden_dim=7,
+    #                                      reg=reg,
+    #                                      dtype=np.float32)
+    #    loss, grads = model.loss(X, y)
+    #    for p in sorted(grads):
+    #        f = lambda _: model.loss(X, y)[0]
+    #        param_grad_num = check_gradient.eval_numerical_gradient(f, model.params[p], verbose=False, h=1e-6)
+    #        err = error.rel_error(param_grad_num, grads[p])
+    #        print("%s max relative error: %e" % (p, err))
 
-        # This is in a separate pass so that we can see all errors
-        # printed to console before we invoke the assertions
-        for p in sorted(grads):
-            f = lambda _: model.loss(X, y)[0]
-            param_grad_num = check_gradient.eval_numerical_gradient(f, model.params[p], verbose=False, h=1e-6)
-            err = error.rel_error(param_grad_num, grads[p])
-            self.assertLessEqual(err, self.eps)
+    #    # This is in a separate pass so that we can see all errors
+    #    # printed to console before we invoke the assertions
+    #    for p in sorted(grads):
+    #        f = lambda _: model.loss(X, y)[0]
+    #        param_grad_num = check_gradient.eval_numerical_gradient(f, model.params[p], verbose=False, h=1e-6)
+    #        err = error.rel_error(param_grad_num, grads[p])
+    #        self.assertLessEqual(err, self.eps)
 
-        print("======== Test3LayerConvNet.test_gradient_check_conv: <END> ")
+    #    print("======== Test3LayerConvNet.test_gradient_check_conv: <END> ")
 
     def test_overfit_3layer(self):
         print("\n======== Test3LayerConvNet.test_overfit_3layer:")
