@@ -1,5 +1,9 @@
 """
+<<<<<<< HEAD
 X_CONVNET
+=======
+EX_CONVNET
+>>>>>>> layer-object
 Some examples of things that we can do with convnets
 
 Stefan Wong 2017
@@ -17,9 +21,7 @@ import pymllib.utils.data_utils as data_utils
 import pymllib.vis.vis_weights as vis_weights
 
 # Debug
-#from pudb import set_trace; set_trace()
-
-show_plots = False
+from pudb import set_trace; set_trace()
 
 def load_data(data_dir, verbose=False):
 
@@ -89,7 +91,6 @@ def plot_3layer_activations(ax, weight_dict):
 
 # Get the conv layers out of the model
 def get_conv_layers(model, verbose=False):
-
     weight_dict = {}
     for k, v in model.params.items():
         if k[:1] == 'W':
@@ -107,7 +108,7 @@ def ThreeLayerNet(verbose=True, show_plots=False):
     save_convnet = True
     load_convnet = False
     data_dir = 'datasets/cifar-10-batches-py'
-    convnet_path = 'examples/convnet_1conv_expr.pkl'
+    convnet_path = 'examples/convnet_expr.pkl'
 
     # Get data
     data = load_data(data_dir, verbose)
@@ -136,7 +137,6 @@ def ThreeLayerNet(verbose=True, show_plots=False):
         print("Loading convnet from file %s" % convnet_path)
         conv_solver.load(convnet_path)
 
-    if load_convnet is False:
         if verbose is True:
             print("Training %d layer net" % conv_model.num_layers)
         conv_solver.train()
@@ -158,7 +158,6 @@ def ThreeLayerNet(verbose=True, show_plots=False):
     print("Layer weight max, min")
     for k, v in weight_dict.items():
         print("%s : max = %f, min = %f" % (k, np.max(v), np.min(v)))
-
 
     if show_plots is True:
         fig, ax = get_one_figure_handle()
@@ -228,6 +227,31 @@ def LLayerConv(verbose=True, show_plots=False, solver_filename=None):
         solver_dict = {'convnet': conv_solver}
         plot_test_result(tax, solver_dict, num_epochs=num_epochs)
         plt.show()
+    if verbose:
+        print(conv_model)
+    # Get a solver
+    conv_solver = solver.Solver(conv_model, train_data,
+                                num_epochs=num_epochs,
+                                batch_size=50,
+                                update_rule='adam',
+                                optim_config={'learning_rate': 1e-3},
+                                verbose=verbose,
+                                print_every=50)
+    conv_solver.train()
+    # Plot results
+    #fig, ax = get_one_figure_handle()
+    #grid = vis_weights.vis_grid_img(weight_dict['W1'].transpose(0, 2, 3, 1))
+    #ax.imshow(grid)
+    #fig.set_size_inches(5,5)
+    # save the data
+    solver_file = "examples/conv_solver_%d_epochs.pkl" % num_epochs
+    conv_solver.save(solver_file)
+
+    # The training loss, accuracy, etc
+    tfig, tax = get_figure_handles()
+    solver_dict = {'convnet': conv_solver}
+    plot_test_result(tax, solver_dict, num_epochs=num_epochs)
+    plt.show()
 
     print("done")
 
