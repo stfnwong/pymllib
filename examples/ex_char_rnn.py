@@ -39,8 +39,6 @@ def run_char_rnn(verbose=True):
                            hidden_dims=hidden_dims,
                            vocab_size=vocab_size,
                            word_to_idx=char_to_idx)
-
-
     # Prepare inputs
     n = 0
     p = 0

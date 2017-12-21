@@ -59,59 +59,29 @@ class CharRNN(object):
         bh = self.params['bh']
         by = self.params['by']
 
-        h0 = np.dot(inputs, Wxh) # TODO: This is not correct...
+        #h0 = np.dot(inputs, Wxh) # TODO: This is not correct...
 
-        h, cache_rnn = rnn_layers.rnn_forward(x, h0, Wxh, Whh, bh)
+        # ==== FORWARD PASS ==== #
+        # where does h0 come from?
+        h, cache_rnn = rnn_layers.rnn_forward(inputs, h0, Wxh, Whh, bh)
         scores, cache_scores = rnn_layers.temporal_affine_forward(h, Why, by)
+        # find probs
         loss, dscores = rnn_layers.temporal_softmax_loss(
             scores, targets, verbose=self.verbose)
 
-
-
-        # Backward pass
+        grads = dict.fromkeys(self.params)
+        # ==== BACKWARD PASS ==== #
+        dh, dWhy, dby = rnn_layers.temporal_affine_backward(
+            dscores, cache_scores)
         dx, dh0, dWxh, dWhh, dbh = rnn_layers.rnn_backward(dh, cache_rnn)
 
-
-
-
-
-        # ==== FORWARD PASS ==== #
-        for t in range(len(inputs)):
-            xs = np.zeros((self.vocab_size, 1))
-            xs[inputs[t]] = 1
-            hs = np.tanh(np.dot(Wxh, xs) + np.dot(Whh, self.h_prev) + bh)
-            # un-normalized log probs for next char
-            ys = np.dot(Why, hs) + by
-            ps = np.exp(ys) / np.sum(np.exp(ys))    # probs for next chars
-            loss += np.log(ps[targets[t], 0])
-
-        dWxh = np.zeros_like(Wxh)
-        dWhh = np.zeros_like(Whh)
-        dWhy = np.zeros_like(Why)
-        dbh = np.zeros_like(bh)
-        dby = np.zeros_like(by)
-        dhnext = np.zeros_like(hs)
-
-        # ==== BACKWARD PASS ==== #
-        for l in reversed(range(len(inputs))):
-            dy = np.copy(ps)
-            dy[targets[l]] -= 1
-            dWhy += np.dot(dy, hs.T)
-            dby += dy
-            dh = np.dot(Why.T, dy) + dhnext # backprop into h
-            dhraw = (1 - hs * hs) * dh      # backprop through tanh
-            dbh += dhraw
-            dWxh += np.dot(dhraw, xs.T)
-            dWhh += np.dot(dhraw, hs.T)
-            dhnext = np.dot(Whh.T, dhraw)
-
-
         # Update grads
-        grads['dy'] = dy
+        grads['dx'] = dx
         grads['dWhy'] = dWhy
         grads['dWxh'] = dWxh
         grads['dWhh'] = dWhh
         grads['dby'] = dby
+        grads['dbh'] = dbh
         grads['dh'] = dh
 
         if self.clip:       # Mitigate exploding gradients

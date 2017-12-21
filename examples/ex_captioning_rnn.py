@@ -18,7 +18,7 @@ from pymllib.utils import coco_utils
 from pymllib.utils import image_utils
 
 # Debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 def test_time_sampling(data, model, batch_size=16, plot_figures=False):
 
@@ -45,6 +45,7 @@ def ex_caption_rnn(verbose=False, plot_figures=False):
 
     test_data = coco_utils.load_coco_data(max_train=50000)
 
+    print('Input dim : %s' % str(test_data['train_features'].shape[1]))
     small_rnn_model = captioning_rnn.CaptioningRNN(
         cell_type='rnn',
         word_to_idx=test_data['word_to_idx'],
@@ -57,7 +58,7 @@ def ex_caption_rnn(verbose=False, plot_figures=False):
         small_rnn_model,
         test_data,
         update_rule='adam',
-        num_epochs=50,
+        num_epochs=10,
         batch_size=25,
         optim_config={'learning_rate': 5e-3},
         lr_decay=0.95,

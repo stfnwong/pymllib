@@ -78,7 +78,6 @@ class CaptioningRNN(object):
             - features: Input image features. Shape (N, D)
             - captions: Integer array of ground-truth captions. Shape (N, T).
             Each element is in the range 0 <= y[i, t] < V
-
         """
 
         # Cut captions into two peices.
@@ -140,8 +139,9 @@ class CaptioningRNN(object):
         elif self.cell_type == 'lstm':
             dx, dh0, dWx, dWh, db = rnn_layers.lstm_backward(dh, cache_rnn)
         else:
-            raise ValueError('cell_type %s not implemented' % self.cell_type)
+            raise ValueError('cell_type %s not implemented' % str(self.cell_type))
 
+        # Word embedding and project gradient
         dW_embed = rnn_layers.word_embedding_backward(dx, cache_embedding)
         dW_proj = np.dot(features.T, dh0)
         db_proj = np.sum(dh0, axis=0)

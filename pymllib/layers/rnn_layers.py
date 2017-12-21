@@ -150,6 +150,7 @@ def rnn_backward(dh, cache):
 
     return dx, dh0, dWx, dWh, db
 
+
 def temporal_affine_forward(x, w, b):
     """
     Forward pass for a temporal affine layer. The input is a set
