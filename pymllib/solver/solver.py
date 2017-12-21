@@ -29,6 +29,12 @@ class Solver(object):
         TODO : Rest of docstring
         """
 
+        self.model = model
+        self.X_train = data['X_train']
+        self.y_train = data['y_train']
+        self.X_val = data['X_val']
+        self.y_val = data['y_val']
+
         # Unpack keyword args
         self.update_rule = kwargs.pop('update_rule', 'sgd')
         self.optim_config = kwargs.pop('optim_config', {})
@@ -169,7 +175,6 @@ class Solver(object):
 
         return checkpoint
 
-
     def _save_checkpoint(self):
         """
         Save the current training status
@@ -184,16 +189,6 @@ class Solver(object):
         with open(filename, 'wb') as fp:
             pickle.dump(checkpoint, fp)
 
-    def save(self, filename):
-        """
-        Save the solver object to a given filename. This method has the
-        same function as _save_checkpoint other than the fact that its
-        exposed to the caller.
-        """
-
-        checkpoint = self._get_checkpoint()
-        with open(filename, 'wb') as fp:
-            pickle.dump(checkpoint, fp)
 
     def load_checkpoint(self, fname):
         """
@@ -225,7 +220,40 @@ class Solver(object):
         self.enable_loss_window = cpoint_data.get('enable_loss_window', False)
         self.loss_window_len = cpoint_data.get('loss_window_len', 500)
         self.loss_window_eps = cpoint_data.get('loss_window_eps', 1e-4)
-            #self.loss_converge_window = cpoint_data['loss_converge_window']
+        #self.loss_converge_window = cpoint_data['loss_converge_window']
+
+    def save(self, filename):
+        params = self._get_checkpoint()
+
+        if self.verbose:
+            print("Saving model to file %s" % filename)
+        with open(filename, 'wb') as fp:
+            pickle.dump(params, fp)
+
+    def load(self, filename):
+        """
+        Load an entire model from disk
+        """
+
+        if self.verbose:
+            print("Loading model from file %s" % filename)
+
+        with open(filename, 'rb') as fp:
+            model_data = pickle.load(fp)
+            # Copy the params to this object
+            self.model = model_data['model']
+            self.update_rule = model_data['update_rule']
+            self.lr_decay = model_data['lr_decay']
+            self.optim_confi = model_data['optim_config']
+            self.batch_size = model_data['batch_size']
+            self.num_epochs = model_data['num_epochs']
+            self.print_every = model_data['print_every']
+            #self.num_train_samples = model_data['num_train_samples']
+            #self.num_val_samples = model_data['num_val_samples']
+            self.epoch = model_data['epoch']
+            self.loss_history = model_data['loss_history']
+            self.train_acc_history = model_data['train_acc_history']
+            self.val_acc_history = model_data['val_acc_history']
 
     def check_accuracy(self, X, y, num_samples=None, batch_size=100):
         """

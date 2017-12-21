@@ -51,7 +51,6 @@ def vis_grid_tensor(Xs, ubound=255.0, padding=1):
 
     return grid
 
-
 def vis_grid_img(Xs):
     """
     Visualize a grid of images
@@ -74,7 +73,6 @@ def vis_grid_img(Xs):
 
     return G
 
-
 def vis_nn(rows):
     """
     Visualize an array of arrays of images
@@ -96,7 +94,6 @@ def vis_nn(rows):
 
     return G
 
-
 def inspect_checkpoint(checkpoint_fname, verbose=False):
 
     csolver = solver.Solver(None, None)
@@ -116,9 +113,3 @@ def inspect_checkpoint(checkpoint_fname, verbose=False):
 
     fig, ax = get_fig_handle()
     ax.imshow(grid)
-
-
-
-
-if __name__ == "__main__":
-    print("TODO: Entry point for test")
