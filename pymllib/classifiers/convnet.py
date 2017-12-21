@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import numpy as np
 from pymllib.layers import layers
+from pymllib.layers import conv_layers
 
 # Debug
 #from pudb import set_trace; set_trace()
@@ -243,11 +244,11 @@ class ConvNetLayer(object):
                 beta = self.params['beta' + str(idx)]
                 gamma = self.params['gamma' + str(idx)]
                 bn_param = self.bn_params['bn_param' + str(idx)]
-                h, cache_h = layers.conv_norm_relu_pool_forward(h, W, b,
+                h, cache_h = conv_layers.conv_norm_relu_pool_forward(h, W, b,
                                                                 conv_param, pool_param,
                                                                 gamma, beta, bn_param)
             else:
-                h, cache_h = layers.conv_relu_pool_forward(h, W, b, conv_param, pool_param)
+                h, cache_h = conv_layers.conv_relu_pool_forward(h, W, b, conv_param, pool_param)
             blocks['h' + str(idx)] = h
             blocks['cache_h' + str(idx)] = cache_h
 
@@ -332,11 +333,11 @@ class ConvNetLayer(object):
                 dh = dh.reshape(*blocks['h' + str(idx)].shape)
 
             if self.use_batchnorm:
-                dh, dW, db, dgamma, dbeta = layers.conv_norm_relu_pool_backward(dh, h_cache)
+                dh, dW, db, dgamma, dbeta = conv_layers.conv_norm_relu_pool_backward(dh, h_cache)
                 blocks['dgamma' + str(idx)] = dgamma
                 blocks['dbeta' + str(idx)] = dbeta
             else:
-                dh, dW, db = layers.conv_relu_pool_backward(dh, h_cache)
+                dh, dW, db = conv_layers.conv_relu_pool_backward(dh, h_cache)
             blocks['dh' + str(idx-1)] = dh
             blocks['dW' + str(idx)] = dW
             blocks['db' + str(idx)] = db
@@ -493,7 +494,7 @@ class ThreeLayerConvNet(object):
         b = b1
         # Forward into the conv layer
         # TODO : batchnorm
-        conv_layer, cache_conv_layer = layers.conv_relu_pool_forward(x, w, b, conv_param, pool_param)
+        conv_layer, cache_conv_layer = conv_layers.conv_relu_pool_forward(x, w, b, conv_param, pool_param)
 
         N, F, Hp, Wp = conv_layer.shape     # Shape of output
 
@@ -534,7 +535,7 @@ class ThreeLayerConvNet(object):
 
         # Backprop into conv layer
         dx2 = dx2.reshape(N, F, Hp, Wp)           # Note - don't forget to reshape here...
-        dx, dW1, db1 = layers.conv_relu_pool_backward(dx2, cache_conv_layer)
+        dx, dW1, db1 = conv_layers.conv_relu_pool_backward(dx2, cache_conv_layer)
         dW1 += self.reg * W1
 
         grads.update({

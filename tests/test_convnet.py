@@ -15,12 +15,11 @@ from pymllib.utils import data_utils
 from pymllib.utils import check_gradient
 from pymllib.utils import error
 from pymllib.layers import layers
+from pymllib.layers import conv_layers
 from pymllib.classifiers import convnet
 from pymllib.solver import solver
 from pymllib.vis import vis_weights
 from pymllib.vis import vis_solver
-#import pymllib.solver.solver as solver
-#import pymllib.vis.vis_weights as vis_weights
 
 # Debug
 from pudb import set_trace; set_trace()
@@ -104,7 +103,7 @@ class TestConvNet(unittest.TestCase):
         b = np.linspace(-0.1, 0.2, num=3)
 
         conv_param = {'stride': 2, 'pad': 1}
-        out, _ = layers.conv_forward_naive(x, w, b, conv_param)
+        out, _ = conv_layers.conv_forward_naive(x, w, b, conv_param)
         correct_out = np.array([[[[[-0.08759809, -0.10987781],
                                    [-0.18387192, -0.2109216 ]],
                                   [[ 0.21027089,  0.21661097],
@@ -135,8 +134,8 @@ class TestConvNet(unittest.TestCase):
         dw_num = check_gradient.eval_numerical_gradient_array(lambda w: layers.conv_forward_naive(X, W, b, conv_param)[0], W, dout)
         db_num = check_gradient.eval_numerical_gradient_array(lambda b: layers.conv_forward_naive(X, W, b, conv_param)[0], b, dout)
 
-        out, cache = layers.conv_forward_naive(X, W, b, conv_param)
-        dx, dw, db = layers.conv_backward_naive(dout, cache)
+        out, cache = conv_layers.conv_forward_naive(X, W, b, conv_param)
+        dx, dw, db = conv_layers.conv_backward_naive(dout, cache)
 
         dx_error = error.rel_error(dx, dx_num)
         dw_error = error.rel_error(dw, dw_num)
@@ -426,12 +425,12 @@ class Test3LayerConvNet(unittest.TestCase):
         dout = np.random.randn(4, 2, 5, 5)
         conv_param = {'stride': 1, 'pad': 1}
 
-        dx_num = check_gradient.eval_numerical_gradient_array(lambda x: layers.conv_forward_naive(X, W, b, conv_param)[0], X, dout)
-        dw_num = check_gradient.eval_numerical_gradient_array(lambda w: layers.conv_forward_naive(X, W, b, conv_param)[0], W, dout)
-        db_num = check_gradient.eval_numerical_gradient_array(lambda b: layers.conv_forward_naive(X, W, b, conv_param)[0], b, dout)
+        dx_num = check_gradient.eval_numerical_gradient_array(lambda x: conv_layers.conv_forward_naive(X, W, b, conv_param)[0], X, dout)
+        dw_num = check_gradient.eval_numerical_gradient_array(lambda w: conv_layers.conv_forward_naive(X, W, b, conv_param)[0], W, dout)
+        db_num = check_gradient.eval_numerical_gradient_array(lambda b: conv_layers.conv_forward_naive(X, W, b, conv_param)[0], b, dout)
 
-        out, cache = layers.conv_forward_naive(X, W, b, conv_param)
-        dx, dw, db = layers.conv_backward_naive(dout, cache)
+        out, cache = conv_layers.conv_forward_naive(X, W, b, conv_param)
+        dx, dw, db = conv_layers.conv_backward_naive(dout, cache)
 
         dx_error = error.rel_error(dx, dx_num)
         dw_error = error.rel_error(dw, dw_num)

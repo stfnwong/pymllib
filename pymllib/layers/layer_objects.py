@@ -109,6 +109,7 @@ class SigmoidLayer(Layer):
         return self.__str__()
 
     def forward(self, X):
+        self.X = X          # cache input
         self.Z = np.dot(X, self.W) + self.b
         return 1 / (1 + np.exp(-self.Z))
 
@@ -116,5 +117,23 @@ class SigmoidLayer(Layer):
         p = self.forward(dz)
         return p * (1 - p)
 
-# TODO : Softmax scoring layer
+# Softmax scoring layer
+class SoftmaxLayer(Layer):
+    def __str__(self):
+        s = []
+        s.append('Softmax Layer\n\tinput dim : %d\n\t layer size : %d\n' %
+                 (self.W.shape[0], self.W.shape[1]))
+        return ''.join(s)
 
+    def forward(self, X, y):
+        probs = np.exp(X - np.max(X, axis=1, keepdims=True))
+        probs /= np.sum(probs, axis=1, keepdims=True)
+        N = X.shape[0]
+
+        l1 = np.log(probs[np.arange(N), y])
+        loss = -np.sum(l1) / N
+        dx = probs.copy()
+        dx[np.arange(N), y] -= 1
+        dx /= N
+
+        return loss, dx
