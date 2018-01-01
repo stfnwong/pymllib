@@ -1,7 +1,8 @@
 """
 EX_CAPTIONING_LSTM
-Example of a captioning LSTM
+Example usage of a captioning LSTM
 
+Stefan Wong 2017
 """
 
 import os
@@ -19,7 +20,7 @@ from pymllib.utils import image_utils
 # Debug
 #from pudb import set_trace; set_trace()
 
-def test_time_sampling(data, model, batch_size=16, plot_figures=False):
+def test_time_sampling(data, model, batch_size=8, plot_figures=False):
 
     for split in ['train', 'val']:
         minibatch = coco_utils.sample_coco_minibatch(data,
@@ -57,14 +58,14 @@ def ex_caption_lstm(verbose=False, plot_figures=False):
         small_lstm_model,
         test_data,
         update_rule='adam',
-        num_epochs=50,
+        num_epochs=2,
         batch_size=25,
         optim_config={'learning_rate': 5e-3},
         lr_decay=0.95,
         checkpoint_dir='examples',
-        checkpoint_name='caption-rnn-coco',
+        checkpoint_name='caption-lstm-coco',
         verbose=verbose,
-        print_every=100
+        print_every=10
     )
 
     solv.train()

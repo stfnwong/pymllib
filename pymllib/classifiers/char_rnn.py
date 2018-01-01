@@ -93,5 +93,7 @@ class CharRNN(object):
 
         return loss, grads
 
-    def sample(self, h, seed_idx):
-        pass        # shut linter up
+    def sample(self, features, max_length=30):
+        for t in range(max_length):
+            print('TOOD : Iterate over this sequence')
+
