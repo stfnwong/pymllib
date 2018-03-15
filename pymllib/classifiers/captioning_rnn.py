@@ -92,7 +92,7 @@ class CaptioningRNN(object):
         captions_out = captions[:, 1:]
 
         mask = (captions_out != self._null)
-        # Weights and bias for the arrine transform from image features to
+        # Weights and bias for the affine transform from image features to
         # initial hidden state
         W_proj = self.params['W_proj']
         b_proj = self.params['b_proj']

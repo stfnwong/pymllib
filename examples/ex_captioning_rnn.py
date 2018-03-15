@@ -18,7 +18,7 @@ from pymllib.utils import coco_utils
 from pymllib.utils import image_utils
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 def test_time_sampling(data, model, batch_size=16, plot_figures=False):
 

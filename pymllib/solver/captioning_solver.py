@@ -14,7 +14,7 @@ from pymllib.solver import optim
 from pymllib.utils import coco_utils
 
 # debug
-#from pudb import set_trace; set_trace()
+from pudb import set_trace; set_trace()
 
 # TODO : Debug function for model types
 def print_ptypes(model):
