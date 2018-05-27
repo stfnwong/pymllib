@@ -16,12 +16,12 @@ import numpy as np
 import unittest
 
 # Library imports
-import pymllib.util.data_utils as data_utils
+from pymllib.utils import data_utils
 #import pymllib.util.check_gradient as check_gradient
 #import pymllib.util.error as error
 #import pymllib.layers.layers as layers
-import pymllib.classifiers.fcnet as fcnet
-import pymllib.solver.solver as solver
+from pymllib.classifiers import fcnet
+from pymllib.solver import solver
 
 # Debug
 from pudb import set_trace; set_trace()
@@ -293,9 +293,11 @@ class TestFCNet(unittest.TestCase):
         while param_search:
             weight_scale = 10 ** (np.random.uniform(-6, -1))
             learning_rate = 10 ** (np.random.uniform(-4, -1))
+            reg = 10 ** (np.random.uniform(-2, 2))
             model = fcnet.FCNet(input_dim=input_dim,
                             hidden_dims=hidden_dims,
                             weight_scale=weight_scale,
+                            reg=reg,
                             dtype=np.float64)
             if self.verbose:
                 print(model)
@@ -312,15 +314,17 @@ class TestFCNet(unittest.TestCase):
                 param_search = False
                 lr = learning_rate
                 ws = weight_scale
+                r  = reg
                 print("Found parameters after %d epochs total (%d searches of %d epochs each)" % (num_searches * num_epochs, num_searches, num_epochs))
 
         print("Best learning rate is %f" % lr)
         print("Best weight scale is %f" % ws)
+        print('Best weight reg is %f' % r)
 
         # Plot results
-        if self.draw_plots:
+        if self.draw_plot:
             title = "Training loss history (5 layers) with lr=%f, ws=%f" % (lr, ws)
-            plt.plot(model_solver.loss_history, 'o')
+            plt.plot(model_solver.loss_history, '-')
             plt.title(title)
             plt.xlabel('Iteration')
             plt.ylabel('Training loss')

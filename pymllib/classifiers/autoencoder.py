@@ -9,33 +9,15 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
-
 import pymllib.layers.layers as layers
 #import pymllib.utils.data_utils as data_utils
 
 # Debug
 from pudb import set_trace; set_trace()
 
-
-# TODO : Write the loss function for sparse autoencoder
-def half_square_loss(X, y):
-
-    probs = np.exp(X - np.max(X, axis=1, keepdims=True))
-    probs /= np.sum(probs, axis=1, keepdims=True)
-    N = X.shape[0]
-
-    #s = np.sum(np.abs(X - y), axis=1, keepdims=True)
-    s = np.sum(np.abs(X - y))
-    loss = (0.5 * (s**2)) / N
-
-    # activations (a) are X here
-    dx = np.abs(X - y)
-
-    return loss, dx
-
 def sparse_autoencoder_loss(X, y, rho, beta=1.0, sparsity=0.05):
 
-    hs_loss, hs_dx = half_square_loss(X, y)
+    hs_loss, hs_dx = layers.half_square_loss(X, y)
     # Apply sparsity penalty
     s1 = sparsity
     s2 = (1.0 - sparsity)
@@ -88,8 +70,6 @@ def auto_affine_backward(dout, cache, rho, beta=1.0, s=0.05):
 
     return dx, dw, db
 
-
-
 class Autoencoder(object):
     def __init__(self, hidden_dims, input_dim, **kwargs):
                  #dropout=0, use_batchnorm=False, reg=0.0,
@@ -103,17 +83,17 @@ class Autoencoder(object):
         if type(hidden_dims) is not list:
             raise ValueError("hidden_dims must be a list")
 
-        self.verbose = kwargs.pop('verbose', False)
+        self.verbose       = kwargs.pop('verbose', False)
         self.use_batchnorm = kwargs.pop('use_batchnorm', False)
-        self.dropout = kwargs.pop('dropout', 0)
-        self.weight_scale = kwargs.pop('weight_scale', 1e-2)
-        self.weight_init = kwargs.pop('weight_init', 'gauss_sqrt')
-        self.use_dropout = self.dropout > 0
-        self.reg = kwargs.pop('reg', 0.0)
-        self.dtype = kwargs.pop('dtype', np.float32)
-        self.seed = kwargs.pop('seed', None)
-        self.num_layers = 1 + len(hidden_dims)
-        self.params = {}
+        self.dropout       = kwargs.pop('dropout', 0)
+        self.weight_scale  = kwargs.pop('weight_scale', 1e-2)
+        self.weight_init   = kwargs.pop('weight_init', 'gauss_sqrt')
+        self.reg           = kwargs.pop('reg', 0.0)
+        self.dtype         = kwargs.pop('dtype', np.float32)
+        self.seed          = kwargs.pop('seed', None)
+        self.num_layers    = 1 + len(hidden_dims)
+        self.params        = {}
+        self.use_dropout   = self.dropout > 0
 
         # Init the params of the network into the dictionary self.params
         dims = [input_dim] + hidden_dims + [input_dim]
@@ -121,7 +101,10 @@ class Autoencoder(object):
         # Init weights
         Ws = {}
         bs = {}
+        print('Dim pairs:')
         for i in range(len(dims) - 1):
+            # Debug : remove
+            print('W%d : (%d %d)' % (i+1, dims[i], dims[i+1]))
             Ws['W' + str(i+1)] = self._weight_init(dims[i], dims[i+1])
             bs['b' + str(i+1)] = np.zeros(dims[i+1])
 
@@ -130,7 +113,7 @@ class Autoencoder(object):
 
         # Cast params to correct data type
         if self.verbose:
-            print("Casting parameers to type %s" % self.dtype)
+            print("Casting parameters to type %s" % str(self.dtype))
         for k,v in self.params.items():
             self.params[k] = v.astype(self.dtype)
 
@@ -184,35 +167,23 @@ class Autoencoder(object):
         return ''.join(s)
 
     def loss(self, X, y=None):
-
+        """
+        LOSS
+        Compute forward and backward pass and produce loss and gradients
+        """
         X = X.astype(self.dtype)
-
         if y is None:
             mode = 'test'
         else:
             mode = 'train'
 
-        # Possibly reshape y
-        #if len(y.shape) == 4:
-        #    y = np.reshape(y, (y.shape[0], np.prod(y.shape[1:])))
+        y = np.reshape(y, (y.shape[0], np.prod(y.shape[1:]))).T
 
         # ===============================
         # FORWARD PASS
         # ===============================
         hidden = {}
         hidden['h0'] = X.reshape(X.shape[0], np.prod(X.shape[1:]))
-
-        # Do an initial pass to compute rho.
-        for l in range(self.num_layers):
-            idx = l + 1
-            w = self.params['W' + str(idx)]
-            b = self.params['b' + str(idx)]
-            h = hidden['h' + str(idx-1)]
-
-            h, cache_h = layers.affine_relu_forward(h, w, b)
-            rho = (1 / h.shape[0]) * np.sum(h, axis=0, keepdims=True)
-            hidden['rho' + str(idx-1)] = rho
-            hidden['h' + str(idx)] = h        # This data will be discarded in the 'true' forward pass
 
         # Forward pass with activations
         for l in range(self.num_layers):
@@ -225,8 +196,13 @@ class Autoencoder(object):
             else:
                 h = hidden['h' + str(idx-1)]
 
+            # TODO : Note that in general these will need to be smaller
+            # than either the input or the output
+            h, cache_h = layers.affine_relu_forward(h, w, b)
+            hidden['h' + str(idx)] = h
+            hidden['cache_h' + str(idx)] = cache_h
+
             # Compute the forward pass
-            # output layer is a special case
             if idx == self.num_layers:
                 h, cache_h = layers.affine_forward(h, w, b)
                 hidden['h' + str(idx)] = h
@@ -236,7 +212,6 @@ class Autoencoder(object):
                 hidden['h' + str(idx)] = h
                 hidden['cache_h' + str(idx)] = cache_h
 
-
         scores = hidden['h' + str(self.num_layers)]
 
         if mode == 'test':
@@ -244,14 +219,7 @@ class Autoencoder(object):
 
         loss = 0.0
         grads = {}
-        # Compute loss
-        # Here we don't want to use the softmax loss, rather
-        #data_loss, dscores = sparse_autoencoder_loss(scores, y)
-        rho = hidden['rho' + str(self.num_layers-1)]
-        if self.verbose:
-            print("rho : %f" % rho)
-        #data_loss, dscores = half_square_loss(scores, y)
-        data_loss, dscores = sparse_autoencoder_loss(scores, y, rho)
+        data_loss, dscores = layers.half_square_loss(scores, y)
         reg_loss = 0
         for f in self.params.keys():
             if f[0] == 'W':
@@ -269,9 +237,9 @@ class Autoencoder(object):
 
             if idx == self.num_layers:
                 # TODO : Make a change to loss computation here...
-                #dh, dw, db = layers.affine_backward(dh, h_cache)
-                rho = hidden['rho' + str(idx-1)]
-                dh, dw, db = auto_affine_backward(dh, h_cache, rho)
+                dh, dw, db = layers.affine_backward(dh, h_cache)
+                #rho = hidden['rho' + str(idx-1)]
+                #dh, dw, db = auto_affine_backward(dh, h_cache, rho)
                 hidden['dh' + str(idx-1)] = dh
                 hidden['dW' + str(idx)] = dw
                 hidden['db' + str(idx)] = db

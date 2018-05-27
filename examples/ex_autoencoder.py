@@ -22,7 +22,6 @@ from pudb import set_trace; set_trace()
 data_dir = 'datasets/cifar-10-batches-py'
 
 def get_flattened_data(data_dir, verbose=False):
-
     dataset = data_utils.get_CIFAR10_data(data_dir)
     flat_data = {}
 
@@ -46,12 +45,6 @@ def run_autoencoder(verbose=True):
         'X_val':   dataset['X_val'][:num_train],
         'y_val':   dataset['X_val'][:num_train]
     }
-    # Flatten the data here
-    for k, v in auto_data.items():
-        if k[0] == 'y':
-            auto_data[k] = np.reshape(v, (v.shape[0], np.prod(v.shape[1:])))
-
-    #auto_data = get_flattened_data(data_dir)
 
     if verbose:
         print('Items in dataset: (post reshape)')
@@ -66,8 +59,8 @@ def run_autoencoder(verbose=True):
     weight_scale = 1e-2
     seed = None
     # Solver hyperparameters
-    learning_rate=1e-3
-    batch_size=64
+    learning_rate=1e-5
+    batch_size=1
     update_rule='adam'
     # Get a model
     model = autoencoder.Autoencoder(hidden_dims=hidden_dims,
@@ -88,9 +81,6 @@ def run_autoencoder(verbose=True):
                          batch_size=batch_size,
                          num_epochs=20)
     solv.train()
-
-    # Display results ?
-
 
 if __name__ == '__main__':
     run_autoencoder()
