@@ -20,7 +20,7 @@ from  pymllib.layers import im2col
 import numpy as np
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 def affine_forward(X, w, b):
     """
@@ -277,8 +277,6 @@ def half_square_loss(X, y, eps=1e-6):
     return loss, dx
 
 
-
-
 # Sigmoid functions
 def sigmoid_forward(X, w, b):
     """
@@ -293,7 +291,6 @@ def sigmoid_forward(X, w, b):
     cache = (X, w, b)
 
     return out, cache
-
 
 def sigmoid_backward(dout, cache):
     """

@@ -1,10 +1,7 @@
 """
 TEST_AUTOENCODER
-<<<<<<< HEAD
 
 Stefan Wong 2017
-=======
->>>>>>> 7e4f28342c8b18c3a11a4f85efcab5ad5028f3b3
 """
 
 import os
@@ -128,7 +125,7 @@ class TestAutoencoder(unittest.TestCase):
                                     small_data,
                                     print_every=10,
                                     num_epochs=30,
-                                    batch_size=50,     # previously 25
+                                    batch_size=25,     # previously 25
                                     update_rule='sgd',
                                     optim_config={'learning_rate': learning_rate})
         auto_solver.train()

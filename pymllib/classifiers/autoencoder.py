@@ -10,7 +10,6 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 import pymllib.layers.layers as layers
-#import pymllib.utils.data_utils as data_utils
 
 # Debug
 from pudb import set_trace; set_trace()
@@ -28,35 +27,11 @@ def sparse_autoencoder_loss(X, y, rho, beta=1.0, sparsity=0.05):
 
     return loss, hs_dx
 
-# TODO : This might not be needed here
 def stable_softmax(X):
     exps = np.exp(X) - np.max(X)
     loss = exps/ np.sum(exps)
 
     return loss
-
-
-#def auto_loss(X, y, rho, beta=1.0, sparsity=0.05):
-#
-#    N = X.shape[0]
-#    eps = 1e-8
-#    probs = np.exp(X - np.max(X, axis=1, keepdims=True))
-#    probs /= np.sum(probs, axis=1, keepdims=True)
-#    #loss = np.sum(np.abs(X - y), axis=1, keepdims=True)
-#    loss = np.sum(np.abs(X - y))
-#    loss /= N
-#
-#    # Sparsity penalty
-#    s1 = sparsity
-#    s2 = (1.0 - sparsity)
-#    p_loss = np.sum(s1 * np.log(s1 / rho) + s2 * np.log(s2 / (1 - rho)), axis=0)
-#    #p_loss = np.sum(s1 * np.log(s1 / rho) + s2 * np.log(s2 / (1 - rho)), axis=0, keepdims=True)
-#    # final loss
-#    loss += beta * p_loss
-#    dx = np.abs(X - y)
-#
-#
-#    return loss, dx
 
 def auto_affine_backward(dout, cache, rho, beta=1.0, s=0.05):
     """
@@ -70,6 +45,8 @@ def auto_affine_backward(dout, cache, rho, beta=1.0, s=0.05):
 
     return dx, dw, db
 
+
+# TODO : need to check the layer shapes here c
 class Autoencoder(object):
     def __init__(self, hidden_dims, input_dim, **kwargs):
                  #dropout=0, use_batchnorm=False, reg=0.0,
@@ -91,25 +68,42 @@ class Autoencoder(object):
         self.reg           = kwargs.pop('reg', 0.0)
         self.dtype         = kwargs.pop('dtype', np.float32)
         self.seed          = kwargs.pop('seed', None)
-        self.num_layers    = 1 + len(hidden_dims)
+        self.num_layers    = 1 + len(hidden_dims)       # The FCNet formuation is 1+len(hidden_dims)
         self.params        = {}
         self.use_dropout   = self.dropout > 0
 
         # Init the params of the network into the dictionary self.params
         dims = [input_dim] + hidden_dims + [input_dim]
+        print('DEBUG: len(dims) = %d' % len(dims))
 
         # Init weights
-        Ws = {}
-        bs = {}
-        print('Dim pairs:')
-        for i in range(len(dims) - 1):
-            # Debug : remove
-            print('W%d : (%d %d)' % (i+1, dims[i], dims[i+1]))
-            Ws['W' + str(i+1)] = self._weight_init(dims[i], dims[i+1])
-            bs['b' + str(i+1)] = np.zeros(dims[i+1])
+        #Ws = {}
+        #bs = {}
+        if self.verbose:
+            print('Dim pairs:')
+        # generate layers
+        for i in range(len(dims)-1):
+            W = self._weight_init(dims[i], dims[i+1])
+            b = np.zeros(dims[i+1])
 
-        self.params.update(bs)
-        self.params.update(Ws)
+            self.params.update({'W' + str(i+1): W,
+                                'b' + str(i+1): b})
+
+        #for i in range(len(dims)):
+        #    # Debug : remove
+        #    #if self.verbose:
+        #    #    print('W%d : (%d %d)' % (i+1, dims[i], dims[i+1]))
+
+        #    print(i)
+        #    if i == (len(dims)-1):
+        #        Ws['W' + str(i+1)] = self._weight_init(dims[i], 1)
+        #        bs['b' + str(i+1)] = np.zeros(1)
+        #    else:
+        #        Ws['W' + str(i+1)] = self._weight_init(dims[i], dims[i+1])
+        #        bs['b' + str(i+1)] = np.zeros(dims[i+1])
+
+        #self.params.update(bs)
+        #self.params.update(Ws)
 
         # Cast params to correct data type
         if self.verbose:
@@ -158,7 +152,6 @@ class Autoencoder(object):
 
     # TODO : This is for debugging only, remove
     def print_weight_sizes(self):
-
         s = []
         for k, v in sorted(self.params.items()):
             if k[:1] == 'W':
@@ -178,7 +171,6 @@ class Autoencoder(object):
             mode = 'train'
 
         y = np.reshape(y, (y.shape[0], np.prod(y.shape[1:]))).T
-
         # ===============================
         # FORWARD PASS
         # ===============================
@@ -198,21 +190,16 @@ class Autoencoder(object):
 
             # TODO : Note that in general these will need to be smaller
             # than either the input or the output
-            h, cache_h = layers.affine_relu_forward(h, w, b)
+            h, cache_h = layers.affine_forward(h, w, b)
             hidden['h' + str(idx)] = h
             hidden['cache_h' + str(idx)] = cache_h
 
-            # Compute the forward pass
-            if idx == self.num_layers:
-                h, cache_h = layers.affine_forward(h, w, b)
-                hidden['h' + str(idx)] = h
-                hidden['cache_h' + str(idx)] = cache_h
-            else:
-                h, cache_h = layers.affine_relu_forward(h, w, b)
-                hidden['h' + str(idx)] = h
-                hidden['cache_h' + str(idx)] = cache_h
-
         scores = hidden['h' + str(self.num_layers)]
+        print('scores.shape : %s' % str(scores.shape))
+        print('y.shape      : %s' % (str(y.shape)))
+        # TODO: debug, remove
+        for k in range(self.num_layers):
+            print('%s : %s' % ('h' + str(k), str(hidden['h' + str(k)].shape)))
 
         if mode == 'test':
             return scores
@@ -235,20 +222,25 @@ class Autoencoder(object):
             dh = hidden['dh' + str(idx)]
             h_cache = hidden['cache_h' + str(idx)]
 
-            if idx == self.num_layers:
-                # TODO : Make a change to loss computation here...
-                dh, dw, db = layers.affine_backward(dh, h_cache)
-                #rho = hidden['rho' + str(idx-1)]
-                #dh, dw, db = auto_affine_backward(dh, h_cache, rho)
-                hidden['dh' + str(idx-1)] = dh
-                hidden['dW' + str(idx)] = dw
-                hidden['db' + str(idx)] = db
-            else:
-                # TODO: Batchnorm, etc
-                dh, dw, db = layers.affine_relu_backward(dh, h_cache)
-                hidden['dh' + str(idx-1)] = dh
-                hidden['dW' + str(idx)] = dw
-                hidden['db' + str(idx)] = db
+            dh, dw, db = layers.affine_backward(dh, h_cache)
+            hidden['dh' + str(idx-1)] = dh
+            hidden['dW' + str(idx)] = dw
+            hidden['db' + str(idx)] = db
+
+            #if idx == self.num_layers:
+            #    # TODO : Make a change to loss computation here...
+            #    dh, dw, db = layers.affine_backward(dh, h_cache)
+            #    #rho = hidden['rho' + str(idx-1)]
+            #    #dh, dw, db = auto_affine_backward(dh, h_cache, rho)
+            #    hidden['dh' + str(idx-1)] = dh
+            #    hidden['dW' + str(idx)] = dw
+            #    hidden['db' + str(idx)] = db
+            #else:
+            #    # TODO: Batchnorm, etc
+            #    dh, dw, db = layers.affine_relu_backward(dh, h_cache)
+            #    hidden['dh' + str(idx-1)] = dh
+            #    hidden['dW' + str(idx)] = dw
+            #    hidden['db' + str(idx)] = db
 
         # Update all parameters
         dw_list = {}

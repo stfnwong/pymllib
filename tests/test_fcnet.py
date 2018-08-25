@@ -463,7 +463,6 @@ class TestFCNetDropout(unittest.TestCase):
                             dtype=np.float64,
                             verbose=True)
         print(model)
-        # TODO : Update solver for object oriented design
         model_solver = solver.Solver(model,
                                      small_data,
                                      print_every=10,
@@ -472,7 +471,6 @@ class TestFCNetDropout(unittest.TestCase):
                                      update_rule='sgd',
                                      optim_config={'learning_rate': learning_rate})
         model_solver.train()
-
         # Plot results
         if self.draw_plots:
             plt.plot(model_solver.loss_history, 'o')
@@ -481,14 +479,16 @@ class TestFCNetDropout(unittest.TestCase):
             plt.ylabel('Training loss')
             plt.show()
 
-
-
-
-
         print("======== TestFCNetDropout.test_fcnet_3layer_dropout: <END> ")
 
-
 class TestFCNetObject(unittest.TestCase):
+    def setUp(self):
+        self.data_dir = 'datasets/cifar-10-batches-py'
+        self.verbose = True
+        self.eps = 1e-6
+        self.draw_plot = True
+        self.num_classes = 10
+        self.never_cheat = False   # implement cheat switch
 
     def test_fcnet_3layer_overfit(self):
         print("\n======== TestFCNetObject.test_fcnet_3layer_overfit:")
