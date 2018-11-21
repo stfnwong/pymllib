@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from pymllib.classifiers import convnet
 from pymllib.solver import solver
 from pymllib.vis import vis_solver
+from pymllib.utils import data_utils
 
 # Debug
 from pudb import set_trace; set_trace()
