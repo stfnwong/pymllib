@@ -1,0 +1,7 @@
+# Ignore swap files 
+*.swp
+# Ignore images 
+*.png
+*.ppm
+*.tiff
+*.jpg
