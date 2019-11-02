@@ -74,7 +74,7 @@ class TestSolver(unittest.TestCase):
     def setUp(self):
         self.eps = 1e-6
         self.data_dir = 'datasets/cifar-10-batches-py'
-        self.draw_fig = True
+        self.draw_fig = False
         self.verbose = False
         self.draw_plots = False
 
@@ -192,7 +192,7 @@ class TestSolverFCNet(unittest.TestCase):
     def setUp(self):
         self.eps = 1e-6
         self.data_dir = 'datasets/cifar-10-batches-py'
-        self.draw_fig = True
+        self.draw_fig = False
         self.verbose = False
 
     def test_rmsprop_fcnet(self):
@@ -355,7 +355,7 @@ class TestSolverCheckpoint(unittest.TestCase):
     def setUp(self):
         self.eps = 1e-6
         self.data_dir = 'datasets/cifar-10-batches-py'
-        self.draw_fig = True
+        self.draw_fig = False
         self.verbose = False
 
     def test_model_restore(self):
@@ -421,7 +421,7 @@ class TestSolverCompare(unittest.TestCase):
     def setUp(self):
         self.eps = 1e-6
         self.data_dir = 'datasets/cifar-10-batches-py'
-        self.draw_fig = True
+        self.draw_fig = False
         self.verbose = False
         self.draw_plots = False
 

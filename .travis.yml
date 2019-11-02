@@ -13,3 +13,4 @@ install:
 script:
     - python3 tests/test_fcnet.py
     - python3 tests/test_convnet.py
+    - python3 tests/test_solver.py

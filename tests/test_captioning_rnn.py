@@ -30,7 +30,7 @@ class TestCaptioningRNN(unittest.TestCase):
         self.eps = 1e-6
         self.dtype = np.float64
         self.verbose = True
-        self.draw_figures = True
+        self.draw_figures = False
 
     def test_step_forward(self):
         print("\n======== TestCaptioningRNN.test_step_forward:")
