@@ -11,5 +11,5 @@ install:
 # TODO : flake8/linting, 
 
 script:
-    - python3 test/test_fcnet.py
-    - python3 test/test_convnet.py
+    - python3 tests/test_fcnet.py
+    - python3 tests/test_convnet.py
