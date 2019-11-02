@@ -423,7 +423,7 @@ class TestSolverCompare(unittest.TestCase):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.draw_fig = True
         self.verbose = False
-        self.draw_plots = True
+        self.draw_plots = False
 
     def test_3layer_nets(self):
         print("\n======== TestSolverCompare.test_3layer_nets:")

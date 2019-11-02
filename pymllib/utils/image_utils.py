@@ -9,7 +9,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from scipy.misc import imread
+from PIL import Image
 import numpy as np
 import urllib
 import tempfile
@@ -101,7 +101,7 @@ def image_from_url(url):
 
         with open(fname, 'wb') as fp:
             fp.write(f.read())
-        img = imread(fname)
+        img = Image.open(fname)
         os.remove(fname)
 
         return img

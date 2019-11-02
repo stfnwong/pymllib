@@ -22,7 +22,7 @@ from pymllib.vis import vis_weights
 from pymllib.vis import vis_solver
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 # TODO : Once an arbitrary layer convnet is implemented,
 # replace the three layer convnet with the arbitrary convnet

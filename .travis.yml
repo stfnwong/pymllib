@@ -8,3 +8,10 @@ install:
     pip install -r requirements.txt
 
 # TODO : flake8/linting, 
+
+before_install:
+    python3 setup.py build_ext --inplace
+
+script:
+    - python3 test/test_fcnet.py
+    - python3 test/test_convnet.py

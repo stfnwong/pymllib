@@ -5,3 +5,6 @@
 *.ppm
 *.tiff
 *.jpg
+
+# Ignore *.pyc's 
+*.pyc

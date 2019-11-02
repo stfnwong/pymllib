@@ -22,7 +22,7 @@ from pymllib.solver import solver
 from pymllib.vis import vis_solver
 
 # Debug
-from pudb import set_trace; set_trace()
+#from pudb import set_trace; set_trace()
 
 
 # Since we don't need to load a dataset for every test, don't put
@@ -88,7 +88,7 @@ class TestFCNet(unittest.TestCase):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.verbose = True
         self.eps = 1e-6
-        self.draw_plot = True
+        self.draw_plot = False
         self.num_classes = 10
         self.never_cheat = False   # implement cheat switch
 
@@ -488,7 +488,7 @@ class TestFCNetDropout(unittest.TestCase):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.verbose = True
         self.eps = 1e-6
-        self.draw_plot = True
+        self.draw_plot = False
         self.num_classes = 10
         self.never_cheat = False   # implement cheat switch
 
