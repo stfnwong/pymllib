@@ -10,7 +10,9 @@ install:
 
 # TODO : flake8/linting, 
 
+# For now the setup just downloads the cifar10 data
 script:
+    - setup.sh
     - python3 tests/test_fcnet.py
     - python3 tests/test_convnet.py
     - python3 tests/test_solver.py
