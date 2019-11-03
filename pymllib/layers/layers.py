@@ -6,6 +6,7 @@ layers in Caffe.
 
 import os
 import sys
+import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 try:
@@ -22,7 +23,7 @@ import numpy as np
 # Debug
 #from pudb import set_trace; set_trace()
 
-def affine_forward(X, w, b):
+def affine_forward(X:np.ndarray, w:np.ndarray, b:np.ndarray) -> tuple:
     """
     Compute forward pass for an affine layer
 
@@ -36,7 +37,7 @@ def affine_forward(X, w, b):
     return out, cache
 
 
-def affine_backward(dout, cache):
+def affine_backward(dout:np.ndarray, cache:tuple) -> tuple:
     """
     Compute the backward pass for an affine layer
     """
@@ -48,7 +49,7 @@ def affine_backward(dout, cache):
     return dx, dw, db
 
 
-def relu_forward(X):
+def relu_forward(X:np.ndarray) -> tuple:
     """
     Computes the forward pass for a layer of rectified linear units
     """
@@ -58,7 +59,7 @@ def relu_forward(X):
     return out, cache
 
 
-def relu_backward(dout, cache):
+def relu_backward(dout:np.ndarray, cache:tuple) -> np.ndarray:
     """
     Compute the backward pass for a layer of rectified linear units
     """
@@ -69,7 +70,7 @@ def relu_backward(dout, cache):
     return dx
 
 
-def dropout_forward(X, dropout_param):
+def dropout_forward(X:np.ndarray, dropout_param:dict) -> tuple:
     """
     Compute the forward pass for (inverted) drop out
     """
@@ -95,7 +96,7 @@ def dropout_forward(X, dropout_param):
     return out, cache
 
 
-def dropout_backward(dout, cache):
+def dropout_backward(dout:np.ndarray, cache:tuple) -> np.ndarray:
     """
     Compute the backward pass for (inverted) dropout
     """
@@ -112,7 +113,7 @@ def dropout_backward(dout, cache):
     return dx
 
 
-def batchnorm_forward(X, gamma, beta, bn_param):
+def batchnorm_forward(X:np.ndarray, gamma:float, beta:float, bn_param:dict) -> tuple:
     """
     Forward pass for batch normalization
     """
@@ -164,7 +165,7 @@ def batchnorm_forward(X, gamma, beta, bn_param):
     return out, cache
 
 
-def batchnorm_backward(dout, cache):
+def batchnorm_backward(dout:np.ndarray, cache:tuple) -> tuple:
     """
     Compute the backward pass for batch normalizationc
     """
@@ -197,7 +198,7 @@ def batchnorm_backward(dout, cache):
 
 
 # ==== Convenience layers
-def affine_relu_forward(X, w, b):
+def affine_relu_forward(X:np.ndarray, w,:np.ndarray b:np.ndarray) -> tuple:
     """
     Affine transform followed by ReLU, forward pass
     """
@@ -208,7 +209,7 @@ def affine_relu_forward(X, w, b):
     return out, cache
 
 
-def affine_relu_backward(dout, cache):
+def affine_relu_backward(dout:np.ndarray, cache:tuple) -> tuple:
     """
     Affine transform followed by ReLU, backward pass
     """
@@ -216,10 +217,15 @@ def affine_relu_backward(dout, cache):
     da = relu_backward(dout, relu_cache)
     dx, dw, db = affine_backward(da, fc_cache)
 
-    return dx, dw, db
+    return (dx, dw, db)
 
 
-def affine_norm_relu_forward(X, w, b, gamma, beta, bn_param):
+def affine_norm_relu_forward(X:np.ndarray,
+                             w:np.ndarray,
+                             b:np.ndarray,
+                             gamma:float,
+                             beta:float,
+                             bn_param:dict) -> tuple:
     """
     Performs an affine transform followed by a ReLU
 
@@ -241,17 +247,17 @@ def affine_norm_relu_forward(X, w, b, gamma, beta, bn_param):
     return hnormrelu, cache
 
 
-def affine_norm_relu_backward(dout, cache):
+def affine_norm_relu_backward(dout:np.ndarray, cache:dict) -> tuple:
 
     h_cache, hnorm_cache, relu_cache = cache
     dnormrelu = relu_backward(dout, relu_cache)
     dnorm, dgamma, dbeta = batchnorm_backward(dnormrelu, hnorm_cache)
     dx, dw, db, = affine_backward(dnorm, h_cache)
 
-    return dx, dw, db, dgamma, dbeta
+    return (dx, dw, db, dgamma, dbeta)
 
 
-def softmax_loss(X, y):
+def softmax_loss(X:np.ndarray, y:np.ndarray) -> tuple:
     """
     Compute loss and gradient for softmax classification
     """
@@ -265,13 +271,13 @@ def softmax_loss(X, y):
     dx[np.arange(N), y] -= 1
     dx /= N
 
-    return loss, dx
+    return (loss, dx)
 
 
 
 
 # Sigmoid functions
-def sigmoid_forward(X, w, b):
+def sigmoid_forward(X:np.ndarray, w:np.ndarray, b:np.ndarray) -> tuple:
     """
     Compute forward pass of sigmoid function
     """
@@ -283,10 +289,10 @@ def sigmoid_forward(X, w, b):
     out = 1 / (1 + np.exp(-z))
     cache = (X, w, b)
 
-    return out, cache
+    return (out, cache)
 
 
-def sigmoid_backward(dout, cache):
+def sigmoid_backward(dout:np.ndarray, cache:tuple) -> tuple:
     """
     Compute backward pass of sigmoid function
     """
@@ -300,6 +306,4 @@ def sigmoid_backward(dout, cache):
     #dx = np.dot(ddot, w.T).reshape(X.shape)
     #dw = np.dot(X.reshape(X.shape[0], np.prod(X.shape[1:])).T, ddot)
 
-    return dx, dw, db
-
-
+    return (dx, dw, db)
