@@ -1,8 +1,9 @@
 language: python
+
+# Worry about Python 3.8 later
 python:
     - "3.6"
     - "3.7"
-    - "3.8"
 
 install:
     - pip install --upgrade pip && pip install -r requirements.txt
@@ -11,6 +12,8 @@ install:
 # TODO : flake8/linting, 
 
 # For now the setup just downloads the cifar10 data
+# NOTE: There is no way the gradient check test can fail by itself. If this 
+# fails then there must be some issue with how I am configuring travis
 script:
     - ./setup.sh
     - python3 tests/test_gradient_check.py
