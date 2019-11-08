@@ -7,7 +7,8 @@ python:
 
 install:
     - pip install --upgrade pip && pip install -r requirements.txt
-    - python3 setup.py build_ext --inplace
+    - ./setup.sh
+      #- python3 setup.py build_ext --inplace
 
 # TODO : flake8/linting, 
 
@@ -15,7 +16,6 @@ install:
 # NOTE: There is no way the gradient check test can fail by itself. If this 
 # fails then there must be some issue with how I am configuring travis
 script:
-    - ./setup.sh
     - python3 tests/test_gradient_check.py
       #- python3 tests/test_fcnet.py
       #- python3 tests/test_convnet.py
