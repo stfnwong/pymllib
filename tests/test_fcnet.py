@@ -537,50 +537,50 @@ class TestFCNetDropout(unittest.TestCase):
 
         print("======== TestFCNetDropout.test_fcnet_2layer_dropout: <END> ")
 
-    def test_fcnet_3layer_dropout(self):
-        print("\n======== TestFCNetDropout.test_fcnet_3layer_dropout :")
+    #def test_fcnet_3layer_dropout(self):
+    #    print("\n======== TestFCNetDropout.test_fcnet_3layer_dropout :")
 
-        dataset = load_data(self.data_dir, self.verbose)
-        num_train = 10
-        small_data = {
-            'X_train': dataset['X_train'][:num_train],
-            'y_train': dataset['y_train'][:num_train],
-            'X_val':   dataset['X_val'][:num_train],
-            'y_val':   dataset['y_val'][:num_train]
-        }
-        input_dim = 32 * 32 * 3
-        hidden_dims = [100, 100]
-        layer_types = ['relu', 'relu']
-        weight_scale = 0.079564
-        learning_rate = 0.003775
+    #    dataset = load_data(self.data_dir, self.verbose)
+    #    num_train = 10
+    #    small_data = {
+    #        'X_train': dataset['X_train'][:num_train],
+    #        'y_train': dataset['y_train'][:num_train],
+    #        'X_val':   dataset['X_val'][:num_train],
+    #        'y_val':   dataset['y_val'][:num_train]
+    #    }
+    #    input_dim = 32 * 32 * 3
+    #    hidden_dims = [100, 100]
+    #    layer_types = ['relu', 'relu']
+    #    weight_scale = 0.079564
+    #    learning_rate = 0.003775
 
-        # Get model and solver
-        model = fcnet.FCNetObject(input_dim=input_dim,
-                            hidden_dims=hidden_dims,
-                            layer_types=layer_types,
-                            weight_scale=weight_scale,
-                            dtype=np.float64,
-                            verbose=True)
-        print(model)
-        # TODO : Update solver for object oriented design
-        model_solver = solver.Solver(model,
-                                     small_data,
-                                     print_every=10,
-                                     num_epochs=30,
-                                     batch_size=50,     # previously 25
-                                     update_rule='sgd',
-                                     optim_config={'learning_rate': learning_rate})
-        model_solver.train()
+    #    # Get model and solver
+    #    model = fcnet.FCNetObject(input_dim=input_dim,
+    #                        hidden_dims=hidden_dims,
+    #                        layer_types=layer_types,
+    #                        weight_scale=weight_scale,
+    #                        dtype=np.float64,
+    #                        verbose=True)
+    #    print(model)
+    #    # TODO : Update solver for object oriented design
+    #    model_solver = solver.Solver(model,
+    #                                 small_data,
+    #                                 print_every=10,
+    #                                 num_epochs=30,
+    #                                 batch_size=50,     # previously 25
+    #                                 update_rule='sgd',
+    #                                 optim_config={'learning_rate': learning_rate})
+    #    model_solver.train()
 
-        # Plot results
-        if self.draw_plots:
-            plt.plot(model_solver.loss_history, 'o')
-            plt.title('Training loss history (3 layers)')
-            plt.xlabel('Iteration')
-            plt.ylabel('Training loss')
-            plt.show()
+    #    # Plot results
+    #    if self.draw_plots:
+    #        plt.plot(model_solver.loss_history, 'o')
+    #        plt.title('Training loss history (3 layers)')
+    #        plt.xlabel('Iteration')
+    #        plt.ylabel('Training loss')
+    #        plt.show()
 
-        print("======== TestFCNetDropout.test_fcnet_3layer_dropout: <END> ")
+    #    print("======== TestFCNetDropout.test_fcnet_3layer_dropout: <END> ")
 
 
 #class TestFCNetObject(unittest.TestCase):
