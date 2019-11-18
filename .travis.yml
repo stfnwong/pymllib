@@ -3,7 +3,14 @@ language: python
 # Worry about Python 3.8 later
 python:
     - "3.6"
-    - "3.7"
+      # Issue with 3.7 seems to be that h5py requires Cython, and there is some race
+      # condition to do with the order that these modules are built.
+      #- "3.7"
+
+branches:
+    only:
+        - master 
+        - travis-ci
 
 install:
     - pip install --upgrade pip && pip install -r requirements.txt
