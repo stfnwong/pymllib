@@ -5,7 +5,7 @@ python:
     - "3.6"
       # Issue with 3.7 seems to be that h5py requires Cython, and there is some race
       # condition to do with the order that these modules are built.
-    - "3.7"
+      #- "3.7"
 
 branches:
     only:
@@ -16,7 +16,6 @@ install:
     - pip install Cython        # if we get Cython seperately can we build python 3.7 stuff and pass the tests?
     - pip install --upgrade pip && pip install -r requirements.txt
     - ./setup.sh
-      #- python3 setup.py build_ext --inplace
 
 # TODO : flake8/linting, 
 

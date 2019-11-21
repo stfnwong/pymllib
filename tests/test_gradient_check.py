@@ -21,11 +21,7 @@ def rel_error(x, y):
 
 class TestGradientCheck(unittest.TestCase):
 
-    def setUp(self):
-        pass
-
     def test_gradient(self):
-
         x = np.random.randn(10, 2, 3)
         w = np.random.randn(6, 5)
         b = np.random.randn(5)

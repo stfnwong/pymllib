@@ -91,6 +91,7 @@ class TestFCNet(unittest.TestCase):
         self.draw_plots = False
         self.num_classes = 10
         self.never_cheat = False   # implement cheat switch
+        self.print_every = 1000
 
     def test_fcnet_loss(self):
         print("\n======== TestFCNet.test_fcnet_loss:")
@@ -172,7 +173,7 @@ class TestFCNet(unittest.TestCase):
         print(model)
         model_solver = solver.Solver(model,
                                      small_data,
-                                     print_every=10,
+                                     print_every=self.print_every,
                                      num_epochs=30,
                                      batch_size=50,     # previously 25
                                      update_rule='sgd',
@@ -216,7 +217,7 @@ class TestFCNet(unittest.TestCase):
         print(model)
         model_solver = solver.Solver(model,
                                      small_data,
-                                     print_every=10,
+                                     print_every=self.print_every,
                                      num_epochs=50,
                                      batch_size=50,     # previously 25
                                      update_rule='sgd',
@@ -251,7 +252,7 @@ class TestFCNet(unittest.TestCase):
         print(model)
         model_solver = solver.Solver(model,
                                      small_data,
-                                     print_every=10,
+                                     print_every=self.print_every,
                                      num_epochs=50,
                                      batch_size=50,     # previously 25
                                      update_rule='sgd',
@@ -299,7 +300,7 @@ class TestFCNet(unittest.TestCase):
                 print(model)
             model_solver = solver.Solver(model,
                                         small_data,
-                                        print_every=10,
+                                        print_every=self.print_every,
                                         num_epochs=num_epochs,
                                         batch_size=50,     # previously 25
                                         update_rule='sgd',
@@ -357,7 +358,7 @@ class TestFCNet(unittest.TestCase):
                 print(model)
             model_solver = solver.Solver(model,
                                         small_data,
-                                        print_every=100,
+                                        print_every=self.print_every,
                                         num_epochs=num_epochs,
                                         batch_size=batch_size,     # previously 25
                                         update_rule=update_rule,
@@ -407,7 +408,7 @@ class TestFCNet(unittest.TestCase):
                                   update_rule=update_rule,
                                   optim_config={'learning_rate': learning_rate},
                                   verbose=True,
-                                  print_every=200)
+                                  print_every=self.print_every)
         print("Training with batchnorm")
         bn_solver.train()
         fc_model = fcnet.FCNet(input_dim=input_dim,
@@ -421,7 +422,7 @@ class TestFCNet(unittest.TestCase):
                                   update_rule=update_rule,
                                   optim_config={'learning_rate': learning_rate},
                                   verbose=True,
-                                  print_every=200)
+                                  print_every=self.print_every)
         print("Training without batchnorm")
         fc_solver.train()
 
@@ -464,7 +465,7 @@ class TestFCNet(unittest.TestCase):
 
             solv = solver.Solver(m,
                                 small_data,
-                                print_every=100,
+                                print_every=self.print_every,
                                 num_epochs=num_epochs,
                                 batch_size=batch_size,     # previously 25
                                 update_rule=update_rule,
@@ -491,6 +492,7 @@ class TestFCNetDropout(unittest.TestCase):
         self.draw_plots = False
         self.num_classes = 10
         self.never_cheat = False   # implement cheat switch
+        self.print_every = 1000
 
     def test_fcnet_2layer_dropout(self):
         print("\n======== TestFCNetDropout.test_fcnet_2layer_dropout :")
@@ -523,7 +525,7 @@ class TestFCNetDropout(unittest.TestCase):
                               update_rule='adam',
                               optim_config = {'learning_rate': 5e-4},
                               verbose=True,
-                              print_every=500)
+                              print_every=self.print_every)
             print("Training with dropout %f" % d)
             s.train()
             solvers['p=' + str(d)] = s
@@ -565,7 +567,7 @@ class TestFCNetDropout(unittest.TestCase):
     #    # TODO : Update solver for object oriented design
     #    model_solver = solver.Solver(model,
     #                                 small_data,
-    #                                 print_every=10,
+    #                                 print_every=self.print_every,
     #                                 num_epochs=30,
     #                                 batch_size=50,     # previously 25
     #                                 update_rule='sgd',
