@@ -73,9 +73,8 @@ def plot_test_result(ax, solver_dict, num_epochs=None):
         ax[i].legend(loc='upper right', ncol=4)
 
 def plot_3layer_activations(ax, weight_dict):
-
-    assert len(ax) == 3, "Need 3 axis"
-    #assert len(weight_dict.keys()) == 3, "Need 3 sets of weights"
+    if len(ax) != 3:
+        raise ValueError('Need 3 axis for this method')
 
     for n in range(len(ax)):
         grid = vis_weights.vis_grid_img(weight_dict['W' + str(n+1)].transpose(0, 2, 3, 1))
@@ -84,14 +83,13 @@ def plot_3layer_activations(ax, weight_dict):
         ax[n].set_title(title)
 
 
-
 class TestConvNet(unittest.TestCase):
-
     def setUp(self):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.eps = 1e-7
         self.verbose = True
         self.draw_plots = False
+        self.print_every = 500
 
     def test_conv_forward_naive(self):
         print("\n======== TestConvNet.test_conv_forward_naive:")
@@ -237,7 +235,7 @@ class TestConvNet(unittest.TestCase):
                                     batch_size=batch_size,
                                     update_rule=update_rule,
                                     optim_config={'learning_rate': learning_rate},
-                                    print_every=10,
+                                    print_every=self.print_every,
                                     verbose=self.verbose)
         conv_solver.train()
         conv_dict = {"convnet": conv_solver}
@@ -284,7 +282,7 @@ class TestConvNet(unittest.TestCase):
                 print(model)
             model_solver = solver.Solver(model,
                                         small_data,
-                                        print_every=10,
+                                        print_every=self.print_every,
                                         num_epochs=num_epochs,
                                         batch_size=50,     # previously 25
                                         update_rule='adam',
@@ -358,7 +356,7 @@ class TestConvNet(unittest.TestCase):
                 print(m)
             solv = solver.Solver(m,
                                  small_data,
-                                 print_every=10,
+                                 print_every=self.print_every,
                                  num_epochs=num_epochs,
                                  batch_size=batch_size,
                                  update_rule=update_rule,
@@ -387,6 +385,7 @@ class Test3LayerConvNet(unittest.TestCase):
         self.eps = 1e-7
         self.verbose = True
         self.draw_plots = True
+        self.print_every = 500
 
     def test_conv_forward_naive(self):
         print("\n======== Test3LayerConvNet.test_conv_forward_naive:")
@@ -527,7 +526,7 @@ class Test3LayerConvNet(unittest.TestCase):
                                     batch_size=batch_size,
                                     update_rule=update_rule,
                                     optim_config={'learning_rate': learning_rate},
-                                    print_every=10,
+                                    print_every=self.print_every,
                                     verbose=self.verbose)
         conv_solver.train()
         conv_dict = {"convnet": conv_solver}

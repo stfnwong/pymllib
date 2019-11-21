@@ -194,6 +194,7 @@ class TestSolverFCNet(unittest.TestCase):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.draw_fig = False
         self.verbose = False
+        self.print_every = 500      # make the solver a bit more quiet
 
     def test_rmsprop_fcnet(self):
         print("\n======== TestSolverFCNet.test_rmsprop_fcnet:")
@@ -223,7 +224,7 @@ class TestSolverFCNet(unittest.TestCase):
             print(model)
         model_solver = solver.Solver(model,
                                     small_data,
-                                    print_every=100,
+                                    print_every=self.print_every,
                                     num_epochs=num_epochs,
                                     batch_size=batch_size,     # previously 25
                                     update_rule=update_rule,
@@ -273,7 +274,7 @@ class TestSolverFCNet(unittest.TestCase):
                 print(model)
             model_solver = solver.Solver(model,
                                         small_data,
-                                        print_every=100,
+                                        print_every=self.print_every,
                                         num_epochs=num_epochs,
                                         batch_size=batch_size,     # previously 25
                                         update_rule=u,
@@ -328,7 +329,7 @@ class TestSolverFCNet(unittest.TestCase):
                 print(model)
             model_solver = solver.Solver(model,
                                         small_data,
-                                        print_every=100,
+                                        print_every=self.print_every,
                                         num_epochs=num_epochs,
                                         batch_size=batch_size,     # previously 25
                                         update_rule=update_rule,
@@ -357,6 +358,7 @@ class TestSolverCheckpoint(unittest.TestCase):
         self.data_dir = 'datasets/cifar-10-batches-py'
         self.draw_fig = False
         self.verbose = False
+        self.print_every = 500
 
     def test_model_restore(self):
         print("\n======== TestSolverCheckpoint.test_model_restore:")
@@ -387,7 +389,7 @@ class TestSolverCheckpoint(unittest.TestCase):
             print(model)
         ref_solver = solver.Solver(model,
                                     small_data,
-                                    print_every=100,
+                                    print_every=self.print_every,
                                     num_epochs=num_epochs,
                                     batch_size=batch_size,     # previously 25
                                     update_rule=update_rule,
@@ -424,6 +426,7 @@ class TestSolverCompare(unittest.TestCase):
         self.draw_fig = False
         self.verbose = False
         self.draw_plots = False
+        self.print_every = 500
 
     def test_3layer_nets(self):
         print("\n======== TestSolverCompare.test_3layer_nets:")
@@ -476,6 +479,7 @@ class TestSolverCompare(unittest.TestCase):
                                  optim_config={'learning_rate': learning_rate},
                                  num_epochs=num_epochs,
                                  batch_size=batch_size,
+                                 print_every = self.print_every,
                                  verbose=True)
             solv.train()
             solver_dict[k] = solv
@@ -485,7 +489,6 @@ class TestSolverCompare(unittest.TestCase):
             fig, ax = vis_solver.get_train_fig()
             vis_solver.plot_solver_compare(ax, solver_dict)
             plt.show()
-
 
         print("======== TestSolverCompare.test_3layer_nets : <END> ")
 
