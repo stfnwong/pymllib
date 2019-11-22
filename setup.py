@@ -13,6 +13,8 @@ extensions = [
               ),
 ]
 
+install_requires=['Cython', 'h5py']
+
 setup(
     packages=['pymllib', 'tests'],
     ext_modules = cythonize(extensions),

@@ -1,0 +1,30 @@
+language: python
+
+# Worry about Python 3.8 later
+python:
+    - "3.6"
+      # Issue with 3.7 seems to be that h5py requires Cython, and there is some race
+      # condition to do with the order that these modules are built.
+      #- "3.7"
+
+branches:
+    only:
+        - master 
+        - travis-ci
+
+install:
+    - pip install Cython        # if we get Cython seperately can we build python 3.7 stuff and pass the tests?
+    - pip install --upgrade pip && pip install -r requirements.txt
+    - ./setup.sh
+
+# TODO : flake8/linting, 
+
+# For now the setup just downloads the cifar10 data
+# NOTE: There is no way the gradient check test can fail by itself. If this 
+# fails then there must be some issue with how I am configuring travis
+script:
+    - python3 tests/test_gradient_check.py
+    - python3 tests/test_fcnet.py
+    - python3 tests/test_layers.py
+    - python3 tests/test_convnet.py
+    - python3 tests/test_solver.py
