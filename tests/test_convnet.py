@@ -90,6 +90,7 @@ class TestConvNet(unittest.TestCase):
         self.verbose = True
         self.draw_plots = False
         self.print_every = 500
+        self.num_epochs = 10
 
     def test_conv_forward_naive(self):
         print("\n======== TestConvNet.test_conv_forward_naive:")
@@ -216,7 +217,6 @@ class TestConvNet(unittest.TestCase):
         #learning_rate = 1e-3
         weight_scale = 0.06
         learning_rate = 0.077
-        num_epochs = 50
         batch_size = 50
         update_rule='adam'
 
@@ -231,7 +231,7 @@ class TestConvNet(unittest.TestCase):
         # Get a solver
         conv_solver = solver.Solver(model,
                                     small_data,
-                                    num_epochs=num_epochs,
+                                    num_epochs=self.num_epochs,
                                     batch_size=batch_size,
                                     update_rule=update_rule,
                                     optim_config={'learning_rate': learning_rate},
@@ -242,7 +242,7 @@ class TestConvNet(unittest.TestCase):
         # Plot figures
         if self.draw_plots is True:
             fig, ax = get_figure_handles()
-            plot_test_result(ax, conv_dict, num_epochs)
+            plot_test_result(ax, conv_dict, self.num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()
@@ -266,7 +266,6 @@ class TestConvNet(unittest.TestCase):
         }
         #input_dim = small_data['X_train'].shape[0]
         input_dim = (3, 32, 32)
-        num_epochs = 50
 
         param_search = True
         num_searches = 0
@@ -283,7 +282,7 @@ class TestConvNet(unittest.TestCase):
             model_solver = solver.Solver(model,
                                         small_data,
                                         print_every=self.print_every,
-                                        num_epochs=num_epochs,
+                                        num_epochs=self.num_epochs,
                                         batch_size=50,     # previously 25
                                         update_rule='adam',
                                         optim_config={'learning_rate': learning_rate})
@@ -293,7 +292,7 @@ class TestConvNet(unittest.TestCase):
                 param_search = False
                 lr = learning_rate
                 ws = weight_scale
-                print("Found parameters after %d epochs total (%d searches of %d epochs each)" % (num_searches * num_epochs, num_searches, num_epochs))
+                print("Found parameters after %d epochs total (%d searches of %d epochs each)" % (num_searches * self.num_epochs, num_searches, self.num_epochs))
 
         print("Best learning rate is %f" % lr)
         print("Best weight scale is %f" % ws)
@@ -332,7 +331,6 @@ class TestConvNet(unittest.TestCase):
         #learning_rate = 0.007
         weight_scale = 1e-3
         learning_rate = 1e-3
-        num_epochs = 50
         batch_size = 50
         update_rule='adam'
 
@@ -357,12 +355,12 @@ class TestConvNet(unittest.TestCase):
             solv = solver.Solver(m,
                                  small_data,
                                  print_every=self.print_every,
-                                 num_epochs=num_epochs,
+                                 num_epochs=self.num_epochs,
                                  batch_size=batch_size,
                                  update_rule=update_rule,
                                  optim_config={'learning_rate': learning_rate})
             solv.train()
-            fname = '%s-solver-%d-epochs.pkl' % (k, int(num_epochs))
+            fname = '%s-solver-%d-epochs.pkl' % (k, int(self.num_epochs))
             solv.save(fname)
             skey = '%s-%s' % (m.__repr__(), k)
             solver_dict[skey] = solv
@@ -510,7 +508,6 @@ class Test3LayerConvNet(unittest.TestCase):
         }
         weight_scale = 0.07
         learning_rate = 0.007
-        num_epochs = 20
         batch_size = 50
         update_rule='adam'
 
@@ -522,7 +519,7 @@ class Test3LayerConvNet(unittest.TestCase):
         # Get a solver
         conv_solver = solver.Solver(model,
                                     small_data,
-                                    num_epochs=num_epochs,
+                                    num_epochs=self.num_epochs,
                                     batch_size=batch_size,
                                     update_rule=update_rule,
                                     optim_config={'learning_rate': learning_rate},

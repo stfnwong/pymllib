@@ -195,6 +195,7 @@ class TestSolverFCNet(unittest.TestCase):
         self.draw_fig = False
         self.verbose = False
         self.print_every = 500      # make the solver a bit more quiet
+        self.num_epochs = 10
 
     def test_rmsprop_fcnet(self):
         print("\n======== TestSolverFCNet.test_rmsprop_fcnet:")
@@ -212,7 +213,6 @@ class TestSolverFCNet(unittest.TestCase):
         hidden_dims = [100, 50, 10]     # just some random dims
         weight_scale = 5e-2
         learning_rate = 1e-2
-        num_epochs = 20
         batch_size = 50
         update_rule = 'rmsprop'
 
@@ -225,7 +225,7 @@ class TestSolverFCNet(unittest.TestCase):
         model_solver = solver.Solver(model,
                                     small_data,
                                     print_every=self.print_every,
-                                    num_epochs=num_epochs,
+                                    num_epochs=self.num_epochs,
                                     batch_size=batch_size,     # previously 25
                                     update_rule=update_rule,
                                     optim_config={'learning_rate': learning_rate})
@@ -234,7 +234,7 @@ class TestSolverFCNet(unittest.TestCase):
         if self.draw_fig is True:
             solvers = {'rmsprop': model_solver}
             fig, ax = get_figure_handles()
-            plot_test_result(ax, solvers, num_epochs)
+            plot_test_result(ax, solvers, self.num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()
@@ -257,7 +257,6 @@ class TestSolverFCNet(unittest.TestCase):
         #hidden_dims = [100, 100, 100, 100, 100]
         hidden_dims = [100, 100, 100, 100, 100]
         weight_scale = 5e-2
-        num_epochs = 20
         batch_size = 50
         reg = 1e-1
         lr = {'rmsprop': 1e-4, 'adam': 1e-3}
@@ -275,7 +274,7 @@ class TestSolverFCNet(unittest.TestCase):
             model_solver = solver.Solver(model,
                                         small_data,
                                         print_every=self.print_every,
-                                        num_epochs=num_epochs,
+                                        num_epochs=self.num_epochs,
                                         batch_size=batch_size,     # previously 25
                                         update_rule=u,
                                         optim_config={'learning_rate': lr[u]})
@@ -284,7 +283,7 @@ class TestSolverFCNet(unittest.TestCase):
 
         if self.draw_fig is True:
             fig, ax = get_figure_handles()
-            plot_test_result(ax, solvers, num_epochs)
+            plot_test_result(ax, solvers, self.num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()
@@ -310,7 +309,6 @@ class TestSolverFCNet(unittest.TestCase):
         #hidden_dims = [100, 50, 10]     # just some random dims
         weight_scale = 5e-2
         reg = 1e-1
-        num_epochs = 30
         batch_size = 50
         solvers = {}
 
@@ -330,7 +328,7 @@ class TestSolverFCNet(unittest.TestCase):
             model_solver = solver.Solver(model,
                                         small_data,
                                         print_every=self.print_every,
-                                        num_epochs=num_epochs,
+                                        num_epochs=self.num_epochs,
                                         batch_size=batch_size,     # previously 25
                                         update_rule=update_rule,
                                         optim_config={'learning_rate': lr[update_rule]})
@@ -340,7 +338,7 @@ class TestSolverFCNet(unittest.TestCase):
         # get some figure handles and plot the data
         if self.draw_plots:
             fig, ax = get_figure_handles()
-            plot_test_result(ax, solvers, num_epochs)
+            plot_test_result(ax, solvers, self.num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()
@@ -377,7 +375,6 @@ class TestSolverCheckpoint(unittest.TestCase):
         hidden_dims = [100, 50, 10]     # just some random dims
         weight_scale = 5e-2
         learning_rate = 1e-2
-        num_epochs = 20
         batch_size = 50
         update_rule = 'adam'
 
@@ -390,7 +387,7 @@ class TestSolverCheckpoint(unittest.TestCase):
         ref_solver = solver.Solver(model,
                                     small_data,
                                     print_every=self.print_every,
-                                    num_epochs=num_epochs,
+                                    num_epochs=self.num_epochs,
                                     batch_size=batch_size,     # previously 25
                                     update_rule=update_rule,
                                     optim_config={'learning_rate': learning_rate})
@@ -445,7 +442,6 @@ class TestSolverCompare(unittest.TestCase):
         weight_scale = 1e-2
         learning_rate = 1e-3
         reg = 0.0
-        num_epochs = 50
         batch_size = 50
         update_rule='adam'
 
@@ -477,7 +473,7 @@ class TestSolverCompare(unittest.TestCase):
         for k, m in model_dict.items():
             solv = solver.Solver(m, small_data,
                                  optim_config={'learning_rate': learning_rate},
-                                 num_epochs=num_epochs,
+                                 num_epochs=self.num_epochs,
                                  batch_size=batch_size,
                                  print_every = self.print_every,
                                  verbose=True)

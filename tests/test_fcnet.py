@@ -90,6 +90,7 @@ class TestFCNet(unittest.TestCase):
         self.eps = 1e-6
         self.draw_plots = False
         self.num_classes = 10
+        self.num_epochs = 10
         self.never_cheat = False   # implement cheat switch
         self.print_every = 1000
 
@@ -174,7 +175,7 @@ class TestFCNet(unittest.TestCase):
         model_solver = solver.Solver(model,
                                      small_data,
                                      print_every=self.print_every,
-                                     num_epochs=30,
+                                     num_epochs=self.num_epochs,
                                      batch_size=50,     # previously 25
                                      update_rule='sgd',
                                      optim_config={'learning_rate': learning_rate})
@@ -218,7 +219,7 @@ class TestFCNet(unittest.TestCase):
         model_solver = solver.Solver(model,
                                      small_data,
                                      print_every=self.print_every,
-                                     num_epochs=50,
+                                     num_epochs=self.num_epochs,
                                      batch_size=50,     # previously 25
                                      update_rule='sgd',
                                      optim_config={'learning_rate': learning_rate})
@@ -253,7 +254,7 @@ class TestFCNet(unittest.TestCase):
         model_solver = solver.Solver(model,
                                      small_data,
                                      print_every=self.print_every,
-                                     num_epochs=50,
+                                     num_epochs=self.num_epochs,
                                      batch_size=50,     # previously 25
                                      update_rule='sgd',
                                      optim_config={'learning_rate': learning_rate})
@@ -285,7 +286,6 @@ class TestFCNet(unittest.TestCase):
         #input_dim = small_data['X_train'].shape[0]
         input_dim = 3 * 32 * 32
         hidden_dims = [100, 100, 100, 100]
-        num_epochs = 20
 
         param_search = True
         num_searches = 0
@@ -301,7 +301,7 @@ class TestFCNet(unittest.TestCase):
             model_solver = solver.Solver(model,
                                         small_data,
                                         print_every=self.print_every,
-                                        num_epochs=num_epochs,
+                                        num_epochs=self.num_epochs,
                                         batch_size=50,     # previously 25
                                         update_rule='sgd',
                                         optim_config={'learning_rate': learning_rate})
@@ -311,7 +311,6 @@ class TestFCNet(unittest.TestCase):
                 param_search = False
                 lr = learning_rate
                 ws = weight_scale
-                print("Found parameters after %d epochs total (%d searches of %d epochs each)" % (num_searches * num_epochs, num_searches, num_epochs))
 
         print("Best learning rate is %f" % lr)
         print("Best weight scale is %f" % ws)
@@ -344,7 +343,6 @@ class TestFCNet(unittest.TestCase):
         hidden_dims = [100, 100, 100, 100, 100]
         weight_scale = 5e-2
         learning_rate = 1e-2
-        num_epochs = 20
         batch_size = 100
         solvers = {}
 
@@ -359,7 +357,7 @@ class TestFCNet(unittest.TestCase):
             model_solver = solver.Solver(model,
                                         small_data,
                                         print_every=self.print_every,
-                                        num_epochs=num_epochs,
+                                        num_epochs=self.num_epochs,
                                         batch_size=batch_size,     # previously 25
                                         update_rule=update_rule,
                                         optim_config={'learning_rate': learning_rate})
@@ -393,7 +391,6 @@ class TestFCNet(unittest.TestCase):
         hidden_dims = [100, 100, 100, 100, 100, 100]
         weight_scale = 2e-2
         learning_rate = 1e-3
-        num_epochs=30
         update_rule='adam'
         #weight_scale = 0.079564
         #learning_rate = 0.003775
@@ -404,7 +401,7 @@ class TestFCNet(unittest.TestCase):
                                use_batchnorm=True)
         bn_solver = solver.Solver(bn_model,
                                   small_data,
-                                  num_epochs=num_epochs,
+                                  num_epochs=self.num_epochs,
                                   update_rule=update_rule,
                                   optim_config={'learning_rate': learning_rate},
                                   verbose=True,
@@ -418,7 +415,7 @@ class TestFCNet(unittest.TestCase):
 
         fc_solver = solver.Solver(fc_model,
                                   small_data,
-                                  num_epochs=num_epochs,
+                                  num_epochs=self.num_epochs,
                                   update_rule=update_rule,
                                   optim_config={'learning_rate': learning_rate},
                                   verbose=True,
@@ -444,7 +441,6 @@ class TestFCNet(unittest.TestCase):
         weight_scale = 2e-2
         reg = 2e-2
         learning_rate = 1e-3
-        num_epochs=20
         batch_size = 50
         update_rule='adam'
         weight_init = ['gauss', 'gauss_sqrt2', 'xavier']
@@ -466,7 +462,7 @@ class TestFCNet(unittest.TestCase):
             solv = solver.Solver(m,
                                 small_data,
                                 print_every=self.print_every,
-                                num_epochs=num_epochs,
+                                num_epochs=self.num_epochs,
                                 batch_size=batch_size,     # previously 25
                                 update_rule=update_rule,
                                 optim_config={'learning_rate': learning_rate})
@@ -508,7 +504,6 @@ class TestFCNetDropout(unittest.TestCase):
         #input_dim = small_data['X_train'].shape[0]
         input_dim = 3 * 32 * 32
         #hidden_dims = [100, 100, 100, 100]
-        num_epochs = 20
         batch_size = 100
         solvers = {}
         dropout_probs = [0.0, 0.3, 0.5, 0.7]
@@ -520,7 +515,7 @@ class TestFCNetDropout(unittest.TestCase):
                                 dropout=d,
                                 weight_scale=2e-2)
             s = solver.Solver(model, small_data,
-                              num_epochs=num_epochs,
+                              num_epochs=self.num_epochs,
                               batch_size=batch_size,
                               update_rule='adam',
                               optim_config = {'learning_rate': 5e-4},
@@ -532,7 +527,7 @@ class TestFCNetDropout(unittest.TestCase):
 
         if self.draw_plots:
             fig, ax = get_figure_handles()
-            plot_test_result(ax, solvers, num_epochs)
+            plot_test_result(ax, solvers, self.num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()
