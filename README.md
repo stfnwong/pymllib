@@ -1,5 +1,7 @@
 # PYMLLIB ™ 
 
+[![Build Status](https://travis-ci.org/stfnwong/pymllib.svg?branch=master)](https://travis-ci.org/stfnwong/pymllib)
+
 ## A machine learning library built on Numpy
 
 This is a simple machine learning library written in Python. I wrote this while following the 2015/2016 version of CS231n. In effect, this is a solution to that version of the class but packaged like a library. 
