@@ -24,6 +24,6 @@ install:
 # fails then there must be some issue with how I am configuring travis
 script:
     - python3 tests/test_fcnet.py
-      #- python3 tests/test_layers.py
-      #- python3 tests/test_convnet.py
-      #- python3 tests/test_solver.py
+    - python3 tests/test_layers.py
+    #- python3 tests/test_convnet.py
+    #- python3 tests/test_solver.py
