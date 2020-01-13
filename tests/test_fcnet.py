@@ -381,6 +381,7 @@ class TestFCNetDropout(unittest.TestCase):
         self.num_classes = 10
         self.never_cheat = False   # implement cheat switch
         self.print_every = 1000
+        self.num_epochs  = 10
 
     def test_fcnet_2layer_dropout(self):
         print("\n======== TestFCNetDropout.test_fcnet_2layer_dropout :")
