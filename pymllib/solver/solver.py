@@ -159,6 +159,7 @@ class Solver(object):
             'batch_size': self.batch_size,
             'epoch': self.epoch,
             'num_epochs': self.num_epochs,
+            'print_every' : self.print_every,
             # Solution data
             'loss_history': self.loss_history,
             'train_acc_history': self.train_acc_history,
