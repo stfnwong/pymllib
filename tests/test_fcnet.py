@@ -90,6 +90,7 @@ class TestFCNet(unittest.TestCase):
         self.eps = 1e-6
         self.draw_plots = False
         self.num_classes = 10
+        self.num_epochs = 10
         self.never_cheat = False   # implement cheat switch
         self.print_every = 1000
 
@@ -159,9 +160,9 @@ class TestFCNet(unittest.TestCase):
             'y_val':   dataset['y_val'][:num_train]
         }
         #input_dim = small_data['X_train'].shape[0]
-        input_dim = 3 * 32 * 32
-        hidden_dims = [100, 100]
-        weight_scale = 0.079564
+        input_dim     = 3 * 32 * 32
+        hidden_dims   = [100, 100]
+        weight_scale  = 0.079564
         learning_rate = 0.003775
 
         # Get model and solver
@@ -174,7 +175,7 @@ class TestFCNet(unittest.TestCase):
         model_solver = solver.Solver(model,
                                      small_data,
                                      print_every=self.print_every,
-                                     num_epochs=30,
+                                     num_epochs=self.num_epochs,
                                      batch_size=50,     # previously 25
                                      update_rule='sgd',
                                      optim_config={'learning_rate': learning_rate})
@@ -203,9 +204,9 @@ class TestFCNet(unittest.TestCase):
             'y_val':   dataset['y_val'][:num_train]
         }
         #input_dim = small_data['X_train'].shape[0]
-        input_dim = 3 * 32 * 32
-        hidden_dims = [100, 100, 100, 100]
-        weight_scale = 1e-2
+        input_dim     = 3 * 32 * 32
+        hidden_dims   = [100, 100, 100, 100]
+        weight_scale  = 1e-2
         learning_rate = 1e-2
 
         # Get model and solver
@@ -218,7 +219,7 @@ class TestFCNet(unittest.TestCase):
         model_solver = solver.Solver(model,
                                      small_data,
                                      print_every=self.print_every,
-                                     num_epochs=50,
+                                     num_epochs=self.num_epochs,
                                      batch_size=50,     # previously 25
                                      update_rule='sgd',
                                      optim_config={'learning_rate': learning_rate})
@@ -239,9 +240,9 @@ class TestFCNet(unittest.TestCase):
             'y_val':   dataset['y_val'][:num_train]
         }
         #input_dim = small_data['X_train'].shape[0]
-        input_dim = 3 * 32 * 32
-        hidden_dims = [100, 100, 100, 100]
-        weight_scale = 1e-2
+        input_dim     = 3 * 32 * 32
+        hidden_dims   = [100, 100, 100, 100]
+        weight_scale  = 1e-2
         learning_rate = 1e-2
 
         # Get model and solver
@@ -253,7 +254,7 @@ class TestFCNet(unittest.TestCase):
         model_solver = solver.Solver(model,
                                      small_data,
                                      print_every=self.print_every,
-                                     num_epochs=50,
+                                     num_epochs=self.num_epochs,
                                      batch_size=50,     # previously 25
                                      update_rule='sgd',
                                      optim_config={'learning_rate': learning_rate})
@@ -269,115 +270,6 @@ class TestFCNet(unittest.TestCase):
 
         print("======== TestFCNet.test_fcnet_5layer_overfit: <END> ")
 
-    # TODO : 3 layer search?
-    def test_fcnet_5layer_param_search(self):
-        print("\n======== TestFCNet.test_fcnet_5layer_param_search :")
-
-        dataset = load_data(self.data_dir, self.verbose)
-        num_train = 50
-
-        small_data = {
-            'X_train': dataset['X_train'][:num_train],
-            'y_train': dataset['y_train'][:num_train],
-            'X_val':   dataset['X_val'][:num_train],
-            'y_val':   dataset['y_val'][:num_train]
-        }
-        #input_dim = small_data['X_train'].shape[0]
-        input_dim = 3 * 32 * 32
-        hidden_dims = [100, 100, 100, 100]
-        num_epochs = 20
-
-        param_search = True
-        num_searches = 0
-        while param_search:
-            weight_scale = 10 ** (np.random.uniform(-6, -1))
-            learning_rate = 10 ** (np.random.uniform(-4, -1))
-            model = fcnet.FCNet(input_dim=input_dim,
-                            hidden_dims=hidden_dims,
-                            weight_scale=weight_scale,
-                            dtype=np.float64)
-            if self.verbose:
-                print(model)
-            model_solver = solver.Solver(model,
-                                        small_data,
-                                        print_every=self.print_every,
-                                        num_epochs=num_epochs,
-                                        batch_size=50,     # previously 25
-                                        update_rule='sgd',
-                                        optim_config={'learning_rate': learning_rate})
-            model_solver.train()
-            num_searches += 1
-            if max(model_solver.train_acc_history) >= 1.0:
-                param_search = False
-                lr = learning_rate
-                ws = weight_scale
-                print("Found parameters after %d epochs total (%d searches of %d epochs each)" % (num_searches * num_epochs, num_searches, num_epochs))
-
-        print("Best learning rate is %f" % lr)
-        print("Best weight scale is %f" % ws)
-
-        # Plot results
-        if self.draw_plots:
-            title = "Training loss history (5 layers) with lr=%f, ws=%f" % (lr, ws)
-            plt.plot(model_solver.loss_history, 'o')
-            plt.title(title)
-            plt.xlabel('Iteration')
-            plt.ylabel('Training loss')
-            plt.show()
-
-        print("======== TestFCNet.test_fcnet_5layer_param_search: <END> ")
-
-    def test_fcnet_6layer_overfit(self):
-        print("\n======== TestFCNet.test_fcnet_6layer_overfit :")
-
-        dataset = load_data(self.data_dir, self.verbose)
-        num_train = 200
-
-        small_data = {
-            'X_train': dataset['X_train'][:num_train],
-            'y_train': dataset['y_train'][:num_train],
-            'X_val':   dataset['X_val'][:num_train],
-            'y_val':   dataset['y_val'][:num_train]
-        }
-        #input_dim = small_data['X_train'].shape[0]
-        input_dim = 3 * 32 * 32
-        hidden_dims = [100, 100, 100, 100, 100]
-        weight_scale = 5e-2
-        learning_rate = 1e-2
-        num_epochs = 20
-        batch_size = 100
-        solvers = {}
-
-        for update_rule in ['sgd', 'sgd_momentum']:
-            print("Using update rule %s" % update_rule)
-            model = fcnet.FCNet(input_dim=input_dim,
-                            hidden_dims=hidden_dims,
-                            weight_scale=weight_scale,
-                            dtype=np.float64)
-            if self.verbose:
-                print(model)
-            model_solver = solver.Solver(model,
-                                        small_data,
-                                        print_every=self.print_every,
-                                        num_epochs=num_epochs,
-                                        batch_size=batch_size,     # previously 25
-                                        update_rule=update_rule,
-                                        optim_config={'learning_rate': learning_rate})
-            if self.verbose:
-                print(model_solver)
-            solvers[update_rule] = model_solver
-            model_solver.train()
-
-        # Plot the training results on a common graph
-        if self.draw_plots:
-            fig, ax = get_figure_handles()
-            plot_test_result(ax, solvers)
-            fig.set_size_inches(8,8)
-            fig.tight_layout()
-            plt.show()
-
-        print("======== TestFCNet.test_fcnet_6layer_overfit: <END> ")
-
     def test_batchnorm(self):
         print("\n======== TestFCNet.test_batchnorm :")
 
@@ -389,14 +281,11 @@ class TestFCNet(unittest.TestCase):
             'X_val':   dataset['X_val'][:num_train],
             'y_val':   dataset['y_val'][:num_train]
         }
-        input_dim = 32 * 32 * 3
-        hidden_dims = [100, 100, 100, 100, 100, 100]
-        weight_scale = 2e-2
+        input_dim     = 32 * 32 * 3
+        hidden_dims   = [100, 100, 100, 100, 100, 100]
+        weight_scale  = 2e-2
         learning_rate = 1e-3
-        num_epochs=30
-        update_rule='adam'
-        #weight_scale = 0.079564
-        #learning_rate = 0.003775
+        update_rule   = 'adam'
 
         bn_model = fcnet.FCNet(input_dim=input_dim,
                                hidden_dims=hidden_dims,
@@ -404,7 +293,7 @@ class TestFCNet(unittest.TestCase):
                                use_batchnorm=True)
         bn_solver = solver.Solver(bn_model,
                                   small_data,
-                                  num_epochs=num_epochs,
+                                  num_epochs=self.num_epochs,
                                   update_rule=update_rule,
                                   optim_config={'learning_rate': learning_rate},
                                   verbose=True,
@@ -418,7 +307,7 @@ class TestFCNet(unittest.TestCase):
 
         fc_solver = solver.Solver(fc_model,
                                   small_data,
-                                  num_epochs=num_epochs,
+                                  num_epochs=self.num_epochs,
                                   update_rule=update_rule,
                                   optim_config={'learning_rate': learning_rate},
                                   verbose=True,
@@ -444,7 +333,6 @@ class TestFCNet(unittest.TestCase):
         weight_scale = 2e-2
         reg = 2e-2
         learning_rate = 1e-3
-        num_epochs=20
         batch_size = 50
         update_rule='adam'
         weight_init = ['gauss', 'gauss_sqrt2', 'xavier']
@@ -466,7 +354,7 @@ class TestFCNet(unittest.TestCase):
             solv = solver.Solver(m,
                                 small_data,
                                 print_every=self.print_every,
-                                num_epochs=num_epochs,
+                                num_epochs=self.num_epochs,
                                 batch_size=batch_size,     # previously 25
                                 update_rule=update_rule,
                                 optim_config={'learning_rate': learning_rate})
@@ -493,6 +381,7 @@ class TestFCNetDropout(unittest.TestCase):
         self.num_classes = 10
         self.never_cheat = False   # implement cheat switch
         self.print_every = 1000
+        self.num_epochs  = 10
 
     def test_fcnet_2layer_dropout(self):
         print("\n======== TestFCNetDropout.test_fcnet_2layer_dropout :")
@@ -508,7 +397,6 @@ class TestFCNetDropout(unittest.TestCase):
         #input_dim = small_data['X_train'].shape[0]
         input_dim = 3 * 32 * 32
         #hidden_dims = [100, 100, 100, 100]
-        num_epochs = 20
         batch_size = 100
         solvers = {}
         dropout_probs = [0.0, 0.3, 0.5, 0.7]
@@ -520,7 +408,7 @@ class TestFCNetDropout(unittest.TestCase):
                                 dropout=d,
                                 weight_scale=2e-2)
             s = solver.Solver(model, small_data,
-                              num_epochs=num_epochs,
+                              num_epochs=self.num_epochs,
                               batch_size=batch_size,
                               update_rule='adam',
                               optim_config = {'learning_rate': 5e-4},
@@ -532,7 +420,7 @@ class TestFCNetDropout(unittest.TestCase):
 
         if self.draw_plots:
             fig, ax = get_figure_handles()
-            plot_test_result(ax, solvers, num_epochs)
+            plot_test_result(ax, solvers, self.num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()

@@ -74,42 +74,42 @@ class TestSolver(unittest.TestCase):
     def setUp(self):
         self.eps = 1e-6
         self.data_dir = 'datasets/cifar-10-batches-py'
-        self.draw_fig = False
+        self.draw_plots = False
         self.verbose = False
         self.draw_plots = False
 
     # CS231n test
-    def test_sgd_momentum(self):
-        print("\n======== TestSolver.test_sgd_momentum:")
+    #def test_sgd_momentum(self):
+    #    print("\n======== TestSolver.test_sgd_momentum:")
 
-        N = 4
-        D = 5
-        w = np.linspace(-0.4, 0.6, num=N*D).reshape(N, D)
-        dw = np.linspace(-0.6, 0.4, num=N*D).reshape(N, D)
-        v = np.linspace(0.6, 0.9, num=N*D).reshape(N, D)
+    #    N = 4
+    #    D = 5
+    #    w = np.linspace(-0.4, 0.6, num=N*D).reshape(N, D)
+    #    dw = np.linspace(-0.6, 0.4, num=N*D).reshape(N, D)
+    #    v = np.linspace(0.6, 0.9, num=N*D).reshape(N, D)
 
-        config = {'learning_rate': 1e-3, 'velocity': v}
-        next_w, _ = optim.sgd_momentum(w, dw, config=config)
-        expected_next_w = np.asarray([
-        [ 0.1406,      0.20738947,  0.27417895,  0.34096842,  0.40775789],
-        [ 0.47454737,  0.54133684,  0.60812632,  0.67491579,  0.74170526],
-        [ 0.80849474,  0.87528421,  0.94207368,  1.00886316,  1.07565263],
-        [ 1.14244211,  1.20923158,  1.27602105,  1.34281053,  1.4096    ]])
-        expected_velocity = np.asarray([
-        [ 0.5406,      0.55475789,  0.56891579,  0.58307368,  0.59723158],
-        [ 0.61138947,  0.62554737,  0.63970526,  0.65386316,  0.66802105],
-        [ 0.68217895,  0.69633684,  0.71049474,  0.72465263,  0.73881053],
-        [ 0.75296842,  0.76712632,  0.78128421,  0.79544211,  0.8096    ]])
+    #    config = {'learning_rate': 1e-3, 'velocity': v}
+    #    next_w, _ = optim.sgd_momentum(w, dw, config=config)
+    #    expected_next_w = np.asarray([
+    #    [ 0.1406,      0.20738947,  0.27417895,  0.34096842,  0.40775789],
+    #    [ 0.47454737,  0.54133684,  0.60812632,  0.67491579,  0.74170526],
+    #    [ 0.80849474,  0.87528421,  0.94207368,  1.00886316,  1.07565263],
+    #    [ 1.14244211,  1.20923158,  1.27602105,  1.34281053,  1.4096    ]])
+    #    expected_velocity = np.asarray([
+    #    [ 0.5406,      0.55475789,  0.56891579,  0.58307368,  0.59723158],
+    #    [ 0.61138947,  0.62554737,  0.63970526,  0.65386316,  0.66802105],
+    #    [ 0.68217895,  0.69633684,  0.71049474,  0.72465263,  0.73881053],
+    #    [ 0.75296842,  0.76712632,  0.78128421,  0.79544211,  0.8096    ]])
 
-        next_w_error = error.rel_error(next_w, expected_next_w)
-        velocity_error = error.rel_error(config['velocity'], expected_velocity)
+    #    next_w_error = error.rel_error(next_w, expected_next_w)
+    #    velocity_error = error.rel_error(config['velocity'], expected_velocity)
 
-        print("next_w_error = %f" % next_w_error)
-        print("velocity_error = %f" % velocity_error)
-        self.assertLessEqual(next_w_error, self.eps)
-        self.assertLessEqual(velocity_error, self.eps)
+    #    print("next_w_error = %f" % next_w_error)
+    #    print("velocity_error = %f" % velocity_error)
+    #    self.assertLessEqual(next_w_error, self.eps)
+    #    self.assertLessEqual(velocity_error, self.eps)
 
-        print("======== TestSolver.test_sgd_momentum: <END> ")
+    #    print("======== TestSolver.test_sgd_momentum: <END> ")
 
     # CS231n test
     def test_rmsprop(self):
@@ -192,9 +192,11 @@ class TestSolverFCNet(unittest.TestCase):
     def setUp(self):
         self.eps = 1e-6
         self.data_dir = 'datasets/cifar-10-batches-py'
-        self.draw_fig = False
+        self.draw_plots = False
+        self.draw_plots = False
         self.verbose = False
         self.print_every = 500      # make the solver a bit more quiet
+        self.num_epochs = 10
 
     def test_rmsprop_fcnet(self):
         print("\n======== TestSolverFCNet.test_rmsprop_fcnet:")
@@ -212,7 +214,6 @@ class TestSolverFCNet(unittest.TestCase):
         hidden_dims = [100, 50, 10]     # just some random dims
         weight_scale = 5e-2
         learning_rate = 1e-2
-        num_epochs = 20
         batch_size = 50
         update_rule = 'rmsprop'
 
@@ -225,16 +226,16 @@ class TestSolverFCNet(unittest.TestCase):
         model_solver = solver.Solver(model,
                                     small_data,
                                     print_every=self.print_every,
-                                    num_epochs=num_epochs,
+                                    num_epochs=self.num_epochs,
                                     batch_size=batch_size,     # previously 25
                                     update_rule=update_rule,
                                     optim_config={'learning_rate': learning_rate})
         model_solver.train()
 
-        if self.draw_fig is True:
+        if self.draw_plots is True:
             solvers = {'rmsprop': model_solver}
             fig, ax = get_figure_handles()
-            plot_test_result(ax, solvers, num_epochs)
+            plot_test_result(ax, solvers, self.num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()
@@ -257,7 +258,6 @@ class TestSolverFCNet(unittest.TestCase):
         #hidden_dims = [100, 100, 100, 100, 100]
         hidden_dims = [100, 100, 100, 100, 100]
         weight_scale = 5e-2
-        num_epochs = 20
         batch_size = 50
         reg = 1e-1
         lr = {'rmsprop': 1e-4, 'adam': 1e-3}
@@ -275,16 +275,16 @@ class TestSolverFCNet(unittest.TestCase):
             model_solver = solver.Solver(model,
                                         small_data,
                                         print_every=self.print_every,
-                                        num_epochs=num_epochs,
+                                        num_epochs=self.num_epochs,
                                         batch_size=batch_size,     # previously 25
                                         update_rule=u,
                                         optim_config={'learning_rate': lr[u]})
             solvers[u] = model_solver
             model_solver.train()
 
-        if self.draw_fig is True:
+        if self.draw_plots is True:
             fig, ax = get_figure_handles()
-            plot_test_result(ax, solvers, num_epochs)
+            plot_test_result(ax, solvers, self.num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()
@@ -310,7 +310,6 @@ class TestSolverFCNet(unittest.TestCase):
         #hidden_dims = [100, 50, 10]     # just some random dims
         weight_scale = 5e-2
         reg = 1e-1
-        num_epochs = 30
         batch_size = 50
         solvers = {}
 
@@ -330,7 +329,7 @@ class TestSolverFCNet(unittest.TestCase):
             model_solver = solver.Solver(model,
                                         small_data,
                                         print_every=self.print_every,
-                                        num_epochs=num_epochs,
+                                        num_epochs=self.num_epochs,
                                         batch_size=batch_size,     # previously 25
                                         update_rule=update_rule,
                                         optim_config={'learning_rate': lr[update_rule]})
@@ -340,7 +339,7 @@ class TestSolverFCNet(unittest.TestCase):
         # get some figure handles and plot the data
         if self.draw_plots:
             fig, ax = get_figure_handles()
-            plot_test_result(ax, solvers, num_epochs)
+            plot_test_result(ax, solvers, self.num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()
@@ -356,9 +355,10 @@ class TestSolverCheckpoint(unittest.TestCase):
     def setUp(self):
         self.eps = 1e-6
         self.data_dir = 'datasets/cifar-10-batches-py'
-        self.draw_fig = False
+        self.draw_plots = False
         self.verbose = False
         self.print_every = 500
+        self.num_epochs = 10
 
     def test_model_restore(self):
         print("\n======== TestSolverCheckpoint.test_model_restore:")
@@ -377,7 +377,6 @@ class TestSolverCheckpoint(unittest.TestCase):
         hidden_dims = [100, 50, 10]     # just some random dims
         weight_scale = 5e-2
         learning_rate = 1e-2
-        num_epochs = 20
         batch_size = 50
         update_rule = 'adam'
 
@@ -390,7 +389,7 @@ class TestSolverCheckpoint(unittest.TestCase):
         ref_solver = solver.Solver(model,
                                     small_data,
                                     print_every=self.print_every,
-                                    num_epochs=num_epochs,
+                                    num_epochs=self.num_epochs,
                                     batch_size=batch_size,     # previously 25
                                     update_rule=update_rule,
                                     optim_config={'learning_rate': learning_rate})
@@ -423,10 +422,10 @@ class TestSolverCompare(unittest.TestCase):
     def setUp(self):
         self.eps = 1e-6
         self.data_dir = 'datasets/cifar-10-batches-py'
-        self.draw_fig = False
-        self.verbose = False
         self.draw_plots = False
+        self.verbose = False
         self.print_every = 500
+        self.num_epochs = 10
 
     def test_3layer_nets(self):
         print("\n======== TestSolverCompare.test_3layer_nets:")
@@ -445,7 +444,6 @@ class TestSolverCompare(unittest.TestCase):
         weight_scale = 1e-2
         learning_rate = 1e-3
         reg = 0.0
-        num_epochs = 50
         batch_size = 50
         update_rule='adam'
 
@@ -477,7 +475,7 @@ class TestSolverCompare(unittest.TestCase):
         for k, m in model_dict.items():
             solv = solver.Solver(m, small_data,
                                  optim_config={'learning_rate': learning_rate},
-                                 num_epochs=num_epochs,
+                                 num_epochs=self.num_epochs,
                                  batch_size=batch_size,
                                  print_every = self.print_every,
                                  verbose=True)

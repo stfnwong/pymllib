@@ -90,6 +90,7 @@ class TestConvNet(unittest.TestCase):
         self.verbose = True
         self.draw_plots = False
         self.print_every = 500
+        self.num_epochs = 10
 
     def test_conv_forward_naive(self):
         print("\n======== TestConvNet.test_conv_forward_naive:")
@@ -216,7 +217,6 @@ class TestConvNet(unittest.TestCase):
         #learning_rate = 1e-3
         weight_scale = 0.06
         learning_rate = 0.077
-        num_epochs = 50
         batch_size = 50
         update_rule='adam'
 
@@ -231,7 +231,7 @@ class TestConvNet(unittest.TestCase):
         # Get a solver
         conv_solver = solver.Solver(model,
                                     small_data,
-                                    num_epochs=num_epochs,
+                                    num_epochs=self.num_epochs,
                                     batch_size=batch_size,
                                     update_rule=update_rule,
                                     optim_config={'learning_rate': learning_rate},
@@ -242,7 +242,7 @@ class TestConvNet(unittest.TestCase):
         # Plot figures
         if self.draw_plots is True:
             fig, ax = get_figure_handles()
-            plot_test_result(ax, conv_dict, num_epochs)
+            plot_test_result(ax, conv_dict, self.num_epochs)
             fig.set_size_inches(8,8)
             fig.tight_layout()
             plt.show()
@@ -252,128 +252,65 @@ class TestConvNet(unittest.TestCase):
 
         # TODO : Next up, spatial batch normalization
 
-    def test_conv_4layer_param_search(self):
-        print("\n======== TestConvNet.test_conv_4layer_param_search :")
+    #def test_xavier_overfit(self):
+    #    print("\n======== TestConvNet.test_xavier_overfit:")
+    #    dataset = load_data(self.data_dir, self.verbose)
+    #    num_train = 1500
 
-        dataset = load_data(self.data_dir, self.verbose)
-        num_train = 100
+    #    small_data = {
+    #        'X_train': dataset['X_train'][:num_train],
+    #        'y_train': dataset['y_train'][:num_train],
+    #        'X_val':   dataset['X_val'][:num_train],
+    #        'y_val':   dataset['y_val'][:num_train]
+    #    }
+    #    input_dim = (3, 32, 32)
+    #    hidden_dims = [256, 256]
+    #    num_filters = [16, 32]
+    #    #weight_scale = 0.07
+    #    #learning_rate = 0.007
+    #    weight_scale = 1e-3
+    #    learning_rate = 1e-3
+    #    batch_size = 50
+    #    update_rule='adam'
 
-        small_data = {
-            'X_train': dataset['X_train'][:num_train],
-            'y_train': dataset['y_train'][:num_train],
-            'X_val':   dataset['X_val'][:num_train],
-            'y_val':   dataset['y_val'][:num_train]
-        }
-        #input_dim = small_data['X_train'].shape[0]
-        input_dim = (3, 32, 32)
-        num_epochs = 50
+    #    weight_init = ['gauss', 'gauss_sqrt', 'xavier']
+    #    model_dict = {}
 
-        param_search = True
-        num_searches = 0
-        while param_search:
-            weight_scale = 10 ** (np.random.uniform(-6, -1))
-            learning_rate = 10 ** (np.random.uniform(-4, -1))
-            model = convnet.ConvNetLayer(input_dim=input_dim,
-                            hidden_dims=[256, 256],
-                            num_filters = [16, 32, 64, 128],
-                            weight_scale=weight_scale,
-                            dtype=np.float32)
-            if self.verbose:
-                print(model)
-            model_solver = solver.Solver(model,
-                                        small_data,
-                                        print_every=self.print_every,
-                                        num_epochs=num_epochs,
-                                        batch_size=50,     # previously 25
-                                        update_rule='adam',
-                                        optim_config={'learning_rate': learning_rate})
-            model_solver.train()
-            num_searches += 1
-            if max(model_solver.train_acc_history) >= 1.0:
-                param_search = False
-                lr = learning_rate
-                ws = weight_scale
-                print("Found parameters after %d epochs total (%d searches of %d epochs each)" % (num_searches * num_epochs, num_searches, num_epochs))
+    #    for w in weight_init:
+    #        model = convnet.ConvNetLayer(input_dim=input_dim,
+    #                        hidden_dims=hidden_dims,
+    #                        num_filters = num_filters,
+    #                        weight_scale=weight_scale,
+    #                        user_xavier=True,
+    #                        verbose=True,
+    #                        dtype=np.float32)
+    #        model_dict[w] = model
 
-        print("Best learning rate is %f" % lr)
-        print("Best weight scale is %f" % ws)
+    #    solver_dict = {}
 
-        save_solver = True
-        if save_solver is True:
-            solver_fname = "conv-lr-%f-ws-%f.pkl" % (lr, ws)
-            model_solver.save(solver_fname)
+    #    for k, m in model_dict.items():
+    #        if self.verbose:
+    #            print(m)
+    #        solv = solver.Solver(m,
+    #                             small_data,
+    #                             print_every=self.print_every,
+    #                             num_epochs=self.num_epochs,
+    #                             batch_size=batch_size,
+    #                             update_rule=update_rule,
+    #                             optim_config={'learning_rate': learning_rate})
+    #        solv.train()
+    #        fname = '%s-solver-%d-epochs.pkl' % (k, int(self.num_epochs))
+    #        solv.save(fname)
+    #        skey = '%s-%s' % (m.__repr__(), k)
+    #        solver_dict[skey] = solv
 
-        # Plot results
-        if self.draw_plots:
-            title = "Training loss history (5 layers) with lr=%f, ws=%f" % (lr, ws)
-            plt.plot(model_solver.loss_history, 'o')
-            plt.title(title)
-            plt.xlabel('Iteration')
-            plt.ylabel('Training loss')
-            plt.show()
+    #    # Plot results
+    #    if self.draw_plots is True:
+    #        fig, ax = vis_solver.get_train_fig()
+    #        vis_solver.plot_solver_compare(ax, solver_dict)
+    #        plt.show()
 
-        print("======== TestConvNet.test_conv_4layer_param_search: <END> ")
-
-    def test_xavier_overfit(self):
-        print("\n======== TestConvNet.test_xavier_overfit:")
-        dataset = load_data(self.data_dir, self.verbose)
-        num_train = 1500
-
-        small_data = {
-            'X_train': dataset['X_train'][:num_train],
-            'y_train': dataset['y_train'][:num_train],
-            'X_val':   dataset['X_val'][:num_train],
-            'y_val':   dataset['y_val'][:num_train]
-        }
-        input_dim = (3, 32, 32)
-        hidden_dims = [256, 256]
-        num_filters = [16, 32]
-        #weight_scale = 0.07
-        #learning_rate = 0.007
-        weight_scale = 1e-3
-        learning_rate = 1e-3
-        num_epochs = 50
-        batch_size = 50
-        update_rule='adam'
-
-        weight_init = ['gauss', 'gauss_sqrt', 'xavier']
-        model_dict = {}
-
-        for w in weight_init:
-            model = convnet.ConvNetLayer(input_dim=input_dim,
-                            hidden_dims=hidden_dims,
-                            num_filters = num_filters,
-                            weight_scale=weight_scale,
-                            user_xavier=True,
-                            verbose=True,
-                            dtype=np.float32)
-            model_dict[w] = model
-
-        solver_dict = {}
-
-        for k, m in model_dict.items():
-            if self.verbose:
-                print(m)
-            solv = solver.Solver(m,
-                                 small_data,
-                                 print_every=self.print_every,
-                                 num_epochs=num_epochs,
-                                 batch_size=batch_size,
-                                 update_rule=update_rule,
-                                 optim_config={'learning_rate': learning_rate})
-            solv.train()
-            fname = '%s-solver-%d-epochs.pkl' % (k, int(num_epochs))
-            solv.save(fname)
-            skey = '%s-%s' % (m.__repr__(), k)
-            solver_dict[skey] = solv
-
-        # Plot results
-        if self.draw_plots is True:
-            fig, ax = vis_solver.get_train_fig()
-            vis_solver.plot_solver_compare(ax, solver_dict)
-            plt.show()
-
-        print("======== TestConvNet.test_xavier_overfit: <END> ")
+    #    print("======== TestConvNet.test_xavier_overfit: <END> ")
 
 """
 All the old tests have been temporarily moved here
@@ -510,7 +447,6 @@ class Test3LayerConvNet(unittest.TestCase):
         }
         weight_scale = 0.07
         learning_rate = 0.007
-        num_epochs = 20
         batch_size = 50
         update_rule='adam'
 
@@ -522,7 +458,7 @@ class Test3LayerConvNet(unittest.TestCase):
         # Get a solver
         conv_solver = solver.Solver(model,
                                     small_data,
-                                    num_epochs=num_epochs,
+                                    num_epochs=self.num_epochs,
                                     batch_size=batch_size,
                                     update_rule=update_rule,
                                     optim_config={'learning_rate': learning_rate},
