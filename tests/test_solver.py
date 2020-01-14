@@ -358,6 +358,7 @@ class TestSolverCheckpoint(unittest.TestCase):
         self.draw_plots = False
         self.verbose = False
         self.print_every = 500
+        self.num_epochs = 10
 
     def test_model_restore(self):
         print("\n======== TestSolverCheckpoint.test_model_restore:")
