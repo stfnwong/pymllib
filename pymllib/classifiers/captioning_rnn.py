@@ -15,7 +15,7 @@ from typing import Tuple
 # Debug
 #from pudb import set_trace; set_trace()
 
-class CaptioningRNN(object):
+class CaptioningRNN:
     def __init__(self, word_to_idx:Dict[str, int], **kwargs) -> None:
         """
         CAPTIONING RNN

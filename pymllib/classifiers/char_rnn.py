@@ -8,23 +8,29 @@ Stefan Wong 2017
 import numpy as np
 from pymllib.layers import rnn_layers
 
-class CharRNN(object):
+from typing import Any
+from typing import Dict
+from typing import Tuple
+from typing import Union
+
+
+class CharRNN:
     """
     TODO: Docstring
     """
-    def __init__(self, word_to_idx, **kwargs):
-        self.verbose = kwargs.pop('verbose', False)
-        self.clip = kwargs.pop('clip', True)
-        self.word_to_idx = word_to_idx
-        self.hidden_dims = kwargs.pop('hidden_dims', 100)
-        self.vocab_size = kwargs.pop('vocab_size', 100)
+    def __init__(self, word_to_idx:Dict[str, int], **kwargs) -> None:
+        self.verbose      = kwargs.pop('verbose', False)
+        self.clip         = kwargs.pop('clip', True)
+        self.word_to_idx  = word_to_idx
+        self.hidden_dims  = kwargs.pop('hidden_dims', 100)
+        self.vocab_size   = kwargs.pop('vocab_size', 100)
         self.weight_scale = kwargs.pop('weight_scale', 0.01)
-        self.dtype = kwargs.pop('dtype', np.float32)
+        self.dtype        = kwargs.pop('dtype', np.float32)
 
         # internal previous hidden state
         self.h_prev = None
 
-        self.params = {}
+        self.params:Dict[str, Any]= {}
         # For now this implementation is fixed at one hidden layer
         # Weights
         self.params['Wxh'] = np.random.randn(self.hidden_dims, self.vocab_size)
@@ -42,7 +48,10 @@ class CharRNN(object):
         for k, v in self.params.items():
             self.params[k] = v.astype(self.dtype)
 
-    def loss(self, inputs, targets, hprev=None):
+    def loss(self,
+             inputs:np.ndarray,
+             targets:np.ndarray,
+             hprev:Union[None, np.ndarray]=None) -> Tuple[Any, Any]:
 
         if hprev is not None:
             self.hprev = np.copy(hprev)
@@ -62,14 +71,8 @@ class CharRNN(object):
         loss, dscores = rnn_layers.temporal_softmax_loss(
             scores, targets, verbose=self.verbose)
 
-
-
         # Backward pass
-        dx, dh0, dWxh, dWhh, dbh = rnn_layers.rnn_backward(dh, cache_rnn)
-
-
-
-
+        dx, dh0, dWxh, dWhh, dbh = rnn_layers.rnn_backward(dscores, cache_rnn)
 
         # ==== FORWARD PASS ==== #
         for t in range(len(inputs)):
@@ -111,7 +114,7 @@ class CharRNN(object):
         grads['dh'] = dh
 
         if self.clip:       # Mitigate exploding gradients
-            for k, p in self.grads.items():
+            for k, p in grads.items():
                 if k[0] == 'd':
                     np.clip(p, -5, 5, out=p)
                     if self.verbose:

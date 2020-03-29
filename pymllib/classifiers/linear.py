@@ -4,10 +4,11 @@ LINEAR CLASSIFIER
 """
 
 import numpy as np
+from typing import Tuple
 
 
-class LinearClassifier(object):
-    def __init__(self, reg=5e-6, ss=1e-3):
+class LinearClassifier:
+    def __init__(self, reg:float=5e-6, ss:float=1e-3) -> None:
         self.step_size = ss
         self.reg = reg       # regularization strength
         self.num_iter = 200
@@ -16,15 +17,14 @@ class LinearClassifier(object):
         self.dscores = None
         self.loss = None
 
-    def init_params(self, D, K):
-
+    def init_params(self, D:int, K:int) -> None:
         # K = number of classes
         # D = dimension of data
 
         self.W = 0.01 * np.random.randn(D, K)
         self.b = np.zeros((1,K))
 
-    def forward_iter(self, X, y):
+    def forward_iter(self, X:np.ndarray, y:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         num_examples = X.shape[0]
         self.scores = np.dot(X, self.W) + self.b
 
@@ -45,9 +45,9 @@ class LinearClassifier(object):
         self.loss = loss
         self.dscores = dscores
 
-        return loss, dscores
+        return (loss, dscores)
 
-    def backward_iter(self, X):
+    def backward_iter(self, X:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         # backprop the gradient params
         dW = np.dot(X.T, self.dscores)
         db = np.sum(self.dscores, axis=0, keepdims=True)
@@ -57,4 +57,4 @@ class LinearClassifier(object):
         self.W -= self.step_size * dW
         self.b -= self.step_size * db
 
-        return self.W, self.b
+        return (self.W, self.b)

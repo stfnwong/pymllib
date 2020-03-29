@@ -3,15 +3,12 @@ CONVNET
 Some basic convolutional networks
 
 """
-
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import numpy as np
 from pymllib.layers import layers
 from pymllib.layers import conv_layers
 from pymllib.utils import layer_utils
+
+from typing import Dict
 
 # Debug
 #from pudb import set_trace; set_trace()
@@ -28,7 +25,8 @@ def print_layers(params, layer_type='W'):
         if k[:1] == layer_type:
             print("%s : %s " % (str(k), str(v.shape)))
 
-class ConvNetLayer(object):
+
+class ConvNetLayer:
     """
     An L-layer convolutional network with the following architecture
 
@@ -39,7 +37,7 @@ class ConvNetLayer(object):
     channels
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         """
         Init a new network
         """
@@ -143,7 +141,7 @@ class ConvNetLayer(object):
             W = Wp
             return self._size_conv(stride_conv, filter_size, H, W, n_conv-1)
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = []
         s.append("%d layer network\n" % self.num_layers)
         s.append('weight init : %s\n' % self.weight_init)
@@ -157,7 +155,7 @@ class ConvNetLayer(object):
 
         return ''.join(s)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         s = []
         conv_layers = []
         fc_layers = []
@@ -174,7 +172,7 @@ class ConvNetLayer(object):
 
         return ''.join(s)
 
-    def _weight_init(self, N, D, fsize=None):
+    def _weight_init(self, N:int, D:int, fsize=None) -> np.ndarray:
         """
         WEIGHT_INIT
         Set up the weights for a given layer.
@@ -374,7 +372,7 @@ class ConvNetLayer(object):
         return loss, grads
 
 
-class ThreeLayerConvNet(object):
+class ThreeLayerConvNet:
     """
     A three layer convolutional network with the following architecture
 

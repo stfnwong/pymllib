@@ -12,3 +12,6 @@
 # Ignore generated souce and shared object files 
 *.c
 *.so
+
+# Ignore archive files 
+*.gz

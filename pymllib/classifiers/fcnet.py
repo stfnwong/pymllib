@@ -5,39 +5,40 @@ A more modular design in the style of Caffe
 TODO : Implement the layers as objects and produce an object oriented design
 """
 
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import numpy as np
 from pymllib.layers import layers
+
+from typing import Any
+from typing import Dict
+from typing import Sized
+from typing import Union
 
 # Debug
 #from pudb import set_trace; set_trace()
 
 
-class FCNet(object):
+class FCNet:
     """
     TODO: Docstring
     """
-    def __init__(self, input_dim, hidden_dims, **kwargs):
+    def __init__(self, input_dim:int, hidden_dims:int, **kwargs) -> None:
 
-        self.verbose = kwargs.pop('verbose', False)
-        self.use_batchnorm = kwargs.pop('use_batchnorm', False)
+        self.verbose       :bool  = kwargs.pop('verbose', False)
+        self.use_batchnorm :bool  = kwargs.pop('use_batchnorm', False)
         #self.use_xavier = kwargs.pop('use_xavier', False)
-        self.weight_init = kwargs.pop('weight_init', 'gauss')
-        self.reg = kwargs.pop('reg', 0.0)
-        self.dtype = kwargs.pop('dtype', np.float32)
-        self.weight_scale = kwargs.pop('weight_scale', 1e-2)
-        self.num_layers = 1 + len(hidden_dims)
+        self.weight_init   :str   = kwargs.pop('weight_init', 'gauss')
+        self.reg           :float = kwargs.pop('reg', 0.0)
+        self.dtype                = kwargs.pop('dtype', np.float32)
+        self.weight_scale  :float = kwargs.pop('weight_scale', 1e-2)
+        self.num_layers    :int   = 1 + len(hidden_dims)
 
         # Other params
-        seed = kwargs.pop('seed', None)
-        num_classes = kwargs.pop('num_classes', 10)
-        dropout = kwargs.pop('dropout', 0)
-        self.use_dropout = dropout > 0
+        seed                    = kwargs.pop('seed', None)
+        num_classes      :int   = kwargs.pop('num_classes', 10)
+        dropout          :float = kwargs.pop('dropout', 0)
+        self.use_dropout :bool  = dropout > 0
         # Dict to store weights, activations, biases, etc
-        self.params = {}
+        self.params:Dict[str, np.ndarray] = dict()
 
         # Initialize the parameters of the network, storing all values into a
         # dictionary at self.params. The keys to the dictionary are W1, b1 fo
@@ -45,7 +46,7 @@ class FCNet(object):
         if type(hidden_dims) is not list:
             raise ValueError('hidden_dim must be a list')
 
-        dims = [input_dim] + hidden_dims + [num_classes]
+        dims :int = [input_dim] + hidden_dims + [num_classes]
         #Ws = {'W' + str(i+1) : self.weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
         #bs = {'b' + str(i+1) : np.zeros(dims[i+1]) for i in range(len(dims)-1)}
         #self.params.update(bs)
@@ -61,7 +62,7 @@ class FCNet(object):
         # When using dropout, we must pass a dropout_param dict to each dropout
         # layer so that the layer knows the dropout probability and the mode
         # (train/test).
-        self.dropout_param = {}
+        self.dropout_param:Dict[str, Any] = {}
         if self.use_dropout:
             self.dropout_param = {'mode' : 'train', 'p' : dropout}
             if self.verbose:
@@ -97,10 +98,11 @@ class FCNet(object):
             for k in self.bn_params.keys():
                 print(k)
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = []
         s.append('%d layer network\n' % self.num_layers)
         s.append('weight init : %s\n' % self.weight_init)
+
         for k, v in self.params.items():
             if k[:1] == 'W':
                 w = self.params[k]
@@ -108,17 +110,15 @@ class FCNet(object):
 
         return ''.join(s)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         s = []
         for k in sorted(self.params.keys()):
             if k[:1] == 'W':
                 s.append('fc%d-' % int(self.params[k].shape[1]))
         s.append('-net')
-
         return ''.join(s)
 
-
-    def _weight_init(self, N, D):
+    def _weight_init(self, N:int, D:int) -> np.ndarray:
         """
         WEIGHT_INIT
         Set up the weights for a given layer.
@@ -137,7 +137,7 @@ class FCNet(object):
 
         return W
 
-    def loss(self, X, y=None):
+    def loss(self, X:np.ndarray, y:Union[np.ndarray, None]=None) -> Union[np.ndarray, Any]:
         """
         LOSS
         Compute loss and gradients for the fully connected network
@@ -287,7 +287,8 @@ class FCNet(object):
 
 
 
-class FCNetObject(object):
+# TODO: get rid of this...
+class FCNetObject:
     def __init__(self, hidden_dims, input_dim, layer_types, num_classes=10,
                  dropout=0, use_batchnorm=False, reg=0.0,
                  weight_scale=1e-2, dtype=np.float32, seed=None,

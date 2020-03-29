@@ -258,6 +258,7 @@ def max_pool_forward_im2col(x:np.ndarray, pool_param:np.ndarray) -> Tuple[np.nda
     out_width =  int(1 + (W - pool_w) / stride)
 
     x_split = x.reshape(N * C, 1, H, W)
+    # TODO : what is the correct call here?
     x_cols = im2col(x_split, pool_h, pool_w, padding=0, stride=stride)
     x_cols_argmax = np.argmax(x_cols, axis=0)
     x_cols_max = x_cols[x_cols_argmax, np.arange(x_cols.shape[1])]
