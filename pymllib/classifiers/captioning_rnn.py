@@ -1,21 +1,22 @@
 """
 CAPTIONING_RNN
 
+Stefan Wong 2018 - 2020
 """
-
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
 from pymllib.layers import layers
 from pymllib.layers import rnn_layers
 
+# typing
+from typing import Dict
+from typing import Tuple
+
 # Debug
 #from pudb import set_trace; set_trace()
 
 class CaptioningRNN(object):
-    def __init__(self, word_to_idx, **kwargs):
+    def __init__(self, word_to_idx:Dict[str, int], **kwargs) -> None:
         """
         CAPTIONING RNN
 
@@ -25,28 +26,28 @@ class CaptioningRNN(object):
             range [0, V)
             - input_dim : Dimension D of input feature vectors
         """
-        self.verbose = kwargs.pop('verbose', False)
+        self.verbose:bool = kwargs.pop('verbose', False)
 
         # Keyword params
-        self.word_to_idx = word_to_idx
-        self.input_dim = kwargs.pop('input_dim', 512)
-        self.wordvec_dim = kwargs.pop('wordvec_dim', 128)
-        self.hidden_dim = kwargs.pop('hidden_dim', 128)
-        self.cell_type = kwargs.pop('cell_type', 'rnn')
-        self.dtype = kwargs.pop('dtype', np.float32)
+        self.word_to_idx:Dict[str, int] = word_to_idx
+        self.input_dim:int   = kwargs.pop('input_dim', 512)
+        self.wordvec_dim:int = kwargs.pop('wordvec_dim', 128)
+        self.hidden_dim:int  = kwargs.pop('hidden_dim', 128)
+        self.cell_type:str   = kwargs.pop('cell_type', 'rnn')
+        self.dtype           = kwargs.pop('dtype', np.float32)
 
-        if self.cell_type not in {'rnn', 'lstm'}:
+        if self.cell_type not in ('rnn', 'lstm'):
             raise ValueError('Invalid cell type %s' % self.cell_type)
 
         # Internal params
-        self.idx_to_word = {i: w for w, i, in self.word_to_idx.items()}
-        self.params = {}
+        self.idx_to_word:Dict[int, str] = {i: w for w, i, in self.word_to_idx.items()}
+        self.params:dict = {}
 
         vocab_size = len(word_to_idx)
         # Special tokens
-        self._null = self.word_to_idx['<NULL>']
+        self._null  = self.word_to_idx['<NULL>']
         self._start = self.word_to_idx.get('<START>', None)
-        self._end = self.word_to_idx.get('<END>', None)
+        self._end   = self.word_to_idx.get('<END>', None)
         # Init word vectors
         self.params['W_embed'] = np.random.randn(vocab_size, self.wordvec_dim)
         self.params['W_embed'] /= 100
@@ -70,7 +71,9 @@ class CaptioningRNN(object):
         for k, v in self.params.items():
             self.params[k] = v.astype(self.dtype)
 
-    def loss(self, features, captions):
+    def loss(self,
+             features:np.ndarray,
+             captions:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute training time loss.
 
@@ -158,7 +161,7 @@ class CaptioningRNN(object):
 
         return loss, grads
 
-    def sample(self, features, max_length=30):
+    def sample(self, features:np.ndarray, max_length:int=30) -> np.ndarray:
         """
         Run a test-time forward pass for the model, sampling captions for input
         feature vectors.
@@ -184,21 +187,21 @@ class CaptioningRNN(object):
             not the <START> token.
         """
 
-        N = features.shape[0]
-        captions = self._null * np.ones((N, max_length), dtype=self.dtype)
+        N:int               = features.shape[0]
+        captions:np.ndarray = self._null * np.ones((N, max_length), dtype=self.dtype)
 
         # Unpack parameters
-        W_proj = self.params['W_proj']
-        b_proj = self.params['b_proj']
-        W_embed = self.params['W_embed']
-        Wx = self.params['Wx']
-        Wh = self.params['Wh']
-        b = self.params['b']
-        W_vocab = self.params['W_vocab']
-        b_vocab = self.params['b_vocab']
+        W_proj  :np.ndarray = self.params['W_proj']
+        b_proj  :np.ndarray = self.params['b_proj']
+        W_embed :np.ndarray = self.params['W_embed']
+        Wx      :np.ndarray = self.params['Wx']
+        Wh      :np.ndarray = self.params['Wh']
+        b       :np.ndarray = self.params['b']
+        W_vocab :np.ndarray = self.params['W_vocab']
+        b_vocab :np.ndarray = self.params['b_vocab']
 
         # Get first hidden state
-        h0 = np.dot(features, W_proj) + b_proj
+        h0             = np.dot(features, W_proj) + b_proj
         captions[:, 0] = self._start
         # init previous state
         prev_h = h0

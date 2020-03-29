@@ -1,18 +1,26 @@
 language: python
+
+# Worry about Python 3.8 later
 python:
     - "3.6"
-    - "3.7"
-    - "3.8"
+      # Issue with 3.7 seems to be that h5py requires Cython, and there is some race
+      # condition to do with the order that these modules are built.
+      #- "3.7"
+
+branches:
+    only:
+        - master 
+        - travis-ci
 
 install:
+    - pip install Cython        
     - pip install --upgrade pip && pip install -r requirements.txt
-    - python3 setup.py build_ext --inplace
+    - ./setup.sh
 
-# TODO : flake8/linting, 
+# TODO : flake8/linting/mypy
 
 # For now the setup just downloads the cifar10 data
 script:
-    - setup.sh
     - python3 tests/test_fcnet.py
-    - python3 tests/test_convnet.py
+    - python3 tests/test_layers.py
     - python3 tests/test_solver.py

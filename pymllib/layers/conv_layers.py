@@ -3,10 +3,6 @@ CONV_LAYERS
 Convolutional Layers. Adapted (stolen) from CS231n
 """
 
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 try:
     from pymllib.layers.im2col_cython import col2im_cython, im2col_cython
     from pymllib.layers.im2col_cython import col2im_6d_cython
@@ -15,12 +11,19 @@ except ImportError:
     print("been run with build_ext --inplace.")
     print("eg: python3 setup.py build_ext --inplace")
 
+# TODO: how can I ensure that the above imports are scoped?
+
 from  pymllib.layers import im2col
 import numpy as np
 # Ordinary layers
 from pymllib.layers import layers
 
-def conv_forward_naive(X, w, b, conv_param):
+from typing import Tuple
+
+def conv_forward_naive(X:np.ndarray,
+                       w:np.ndarray,
+                       b:np.ndarray,
+                       conv_param:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     N, C, H, W = X.shape
     F, C, HH, WW = w.shape
@@ -43,10 +46,10 @@ def conv_forward_naive(X, w, b, conv_param):
                     #out[n, f, k, l] = np.sum(pad * w[f, :]) + b[f]
     cache = (X, w, b, conv_param)
 
-    return out, cache
+    return (out, cache)
 
 
-def conv_backward_naive(dout, cache):
+def conv_backward_naive(dout:np.ndarray, cache:np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Naive implementation of backward pass for convolutional layer
     """
@@ -104,7 +107,7 @@ def conv_backward_naive(dout, cache):
 
 
 # ======== FAST CONV LAYERS ======== #
-def conv_forward_im2col(x, w, b, conv_param):
+def conv_forward_im2col(x:np.ndarray, w:np.ndarray, b:np.ndarray, conv_param:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     A fast implementation of the forward pass for a convolutional layer
     based on im2col and col2im
@@ -129,9 +132,10 @@ def conv_forward_im2col(x, w, b, conv_param):
 
     cache = (x, w, b, conv_param, x_cols)
 
-    return out, cache
+    return (out, cache)
 
-def conv_backward_im2col(dout, cache):
+
+def conv_backward_im2col(dout:np.ndarray, cache:np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     A fast implementation of the backward pass for a convolutional layer
     """
@@ -152,10 +156,10 @@ def conv_backward_im2col(dout, cache):
     dx_cols.shape = (C, HH, WW, N, out_h, out_w)
     dx = col2img_6d_cython(dx_cols, N, C, H, W, HH, WW, pad, stride)
 
-    return dx, dw, db
+    return (dx, dw, db)
 
 
-def conv_forward_strides(x, w, b, conv_param):
+def conv_forward_strides(x:np.ndarray, w:np.ndarray, b:np.ndarray, conv_param:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     N, C, H, W = x.shape
     F, _, HH, WW = w.shape
     stride = conv_param['stride']
@@ -191,15 +195,15 @@ def conv_forward_strides(x, w, b, conv_param):
 
     cache = (x, w, b, conv_param, x_cols)
 
-    return out, cache
+    return (out, cache)
 
 
-def conv_backward_strides(dout, cache):
+def conv_backward_strides(dout:np.ndarray, cache:np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     x, w, b, conv_param, x_cols = cache
     stride = conv_param['stride']
-    pad = conv_param['pad']
+    pad    = conv_param['pad']
 
-    N, C, H, W = x.shape
+    N, C, H, W   = x.shape
     F, _, HH, WW = w.shape
     _, _, out_h, out_w = dout.shape
 
@@ -211,11 +215,11 @@ def conv_backward_strides(dout, cache):
     dx_cols.shape = (C, HH, WW, N, out_h, out_w)
     dx = col2im_6d_cython(dx_cols, N, C, H, W, HH, WW, pad, stride)
 
-    return dx, dw, db
+    return (dx, dw, db)
 
 
 # Util layer forward passes
-def max_pool_forward_reshape(x, pool_param):
+def max_pool_forward_reshape(x:np.ndarray, pool_param:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Fast implementation of max pooling that uses some clever reshaping
     """
@@ -233,10 +237,10 @@ def max_pool_forward_reshape(x, pool_param):
     out = x_reshaped.max(axis=3).max(axis=4)
     cache = (x, x_reshaped, out)
 
-    return out, cache
+    return (out, cache)
 
 
-def max_pool_forward_im2col(x, pool_param):
+def max_pool_forward_im2col(x:np.ndarray, pool_param:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     An implementation of the forward pass for maxpooling based
     on im2col. Not much faster than the naive version
@@ -261,10 +265,10 @@ def max_pool_forward_im2col(x, pool_param):
 
     cache = (x, x_cols, x_cols_argmax, pool_param)
 
-    return out, cache
+    return (out, cache)
 
 
-def max_pool_forward_fast(x, pool_param):
+def max_pool_forward_fast(x:np.ndarray, pool_param:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Fast implementation of the max pool forward pass
 
@@ -287,12 +291,11 @@ def max_pool_forward_fast(x, pool_param):
     return out, cache
 
 
-def max_pool_backward_fast(dout, cache):
+def max_pool_backward_fast(dout:np.ndarray, cache:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     A fast implementation of the backward pass for a max pool layer
-
-
     """
+
     method, real_cache = cache
     if method == 'reshape':
         return max_pool_backward_reshape(dout, real_cache)
@@ -303,7 +306,7 @@ def max_pool_backward_fast(dout, cache):
 
 
 # Util layer backward passes
-def max_pool_backward_reshape(dout, cache):
+def max_pool_backward_reshape(dout:np.ndarray, cache:np.ndarray) -> np.ndarray:
     """
     Fast implementation of the max_pool_reshape backward pass. This
     function can only be used if the forward pass was computed using
@@ -325,7 +328,7 @@ def max_pool_backward_reshape(dout, cache):
     return dx
 
 
-def max_pool_backward_im2col(dout, cache):
+def max_pool_backward_im2col(dout:np.ndarray, cache:np.ndarray) -> np.ndarray:
     """
     An implementation of the backward pass for max pooling based on
     im2col.
@@ -346,10 +349,11 @@ def max_pool_backward_im2col(dout, cache):
     return dx
 
 
-
 # Spatial batchnorm
-
-def spatial_batchnorm_forward(x, gamma, beta, bn_param):
+def spatial_batchnorm_forward(x:np.ndarray,
+                              gamma:np.ndarray,
+                              beta:np.ndarray,
+                              bn_param:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     N, C, H, W = x.shape
     mode = bn_param['mode']
@@ -384,10 +388,11 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     else:
         raise ValueError('Invalid forward batchnorm mode %s' % str(mode))
 
-    return out, cache
+    return (out, cache)
 
 
-def spatial_batchnorm_backward(dout, cache):
+def spatial_batchnorm_backward(dout:np.ndarray,
+                               cache:Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     mu, var, x, xhat, gamma, beta, bn_param = cache
     N, C, H, W = x.shape
     mode = bn_param['mode']
@@ -402,10 +407,15 @@ def spatial_batchnorm_backward(dout, cache):
     Nt = N * H * W
     dx = (1.0 / Nt) * gamma * (var + eps)**(-1.0 / 2.0) * (Nt * dout - np.sum(dout, axis=(0, 2, 3)).reshape(1, C, 1, 1) - (x - mu) * (var + eps)**(-1.0) * np.sum(dout * (x - mu), axis=(0, 2, 3)).reshape(1, C, 1, 1))
 
-    return dx, dgamma, dbeta
+    return (dx, dgamma, dbeta)
+
 
 # Combinational convolution functions
-def conv_relu_pool_forward(x, w, b, conv_param, pool_param):
+def conv_relu_pool_forward(x:np.ndarray,
+                           w:np.ndarray,
+                           b:np.ndarray,
+                           conv_param:np.ndarray,
+                           pool_param:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Convenience layer that performs a convolution, a relu, and a pool.
 
@@ -413,16 +423,15 @@ def conv_relu_pool_forward(x, w, b, conv_param, pool_param):
     """
 
     # TODO : implement Cython versions
-    #a, conv_cache = conv_forward_naive(x, w, b, conv_param)
-    a, conv_cache = conv_forward_strides(x, w, b, conv_param)
-    s, relu_cache = layers.relu_forward(a)
+    a, conv_cache   = conv_forward_strides(x, w, b, conv_param)
+    s, relu_cache   = layers.relu_forward(a)
     out, pool_cache = max_pool_forward_fast(s, pool_param)
     cache = (conv_cache, relu_cache, pool_cache)
 
-    return out, cache
+    return (out, cache)
 
 
-def conv_relu_pool_backward(dout, cache):
+def conv_relu_pool_backward(dout:np.ndarray, cache:np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Backward pass for the conv_relu_pool layer
     """
@@ -432,10 +441,17 @@ def conv_relu_pool_backward(dout, cache):
     dx, dw, db = conv_backward_strides(da, conv_cache)
     #dx, dw, db = conv_backward_naive(da, conv_cache)
 
-    return dx, dw, db
+    return (dx, dw, db)
 
 
-def conv_norm_relu_pool_forward(x, w, b, conv_param, pool_param, gamma, beta, bn_param):
+def conv_norm_relu_pool_forward(x:np.ndarray,
+                                w:np.ndarray,
+                                b:np.ndarray,
+                                conv_param:np.ndarray,
+                                pool_param:np.ndarray,
+                                gamma:np.ndarray,
+                                beta:np.ndarray,
+                                bn_param:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     conv, conv_cache = conv_forward_strides(x, w, b, conv_param)
     norm, norm_cache = spatial_batchnorm_forward(conv, gamma, beta, bn_param)
@@ -444,11 +460,11 @@ def conv_norm_relu_pool_forward(x, w, b, conv_param, pool_param, gamma, beta, bn
 
     cache = (conv_cache, norm_cache, relu_cache, pool_cache)
 
-    return out, cache
+    return (out, cache)
 
 
-def conv_norm_relu_pool_backward(dout, cache):
-
+def conv_norm_relu_pool_backward(dout:np.ndarray,
+                                 cache:Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     conv_cache, norm_cache, relu_cache, pool_cache = cache
 
     dpool = max_pool_backward_fast(dout, pool_cache)

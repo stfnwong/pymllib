@@ -8,3 +8,7 @@
 
 # Ignore *.pyc's 
 *.pyc
+
+# Ignore generated souce and shared object files 
+*.c
+*.so
