@@ -4,13 +4,14 @@ Encapsulates logic required for training image captioning models
 
 """
 
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 #import numpy as np
 from pymllib.solver import optim
 from pymllib.utils import coco_utils
+
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 # debug
 #from pudb import set_trace; set_trace()
@@ -20,24 +21,25 @@ def print_ptypes(model):
     for k, v in model.params.items():
         print('%s : %s' % (k, type(v)))
 
-class CaptioningSolver(object):
-    def __init__(self, model, data, **kwargs):
+
+class CaptioningSolver:
+    def __init__(self, model:Any, data:Dict[str, Any], **kwargs) -> None:
         """
         Construct a new CaptioningSolver instance.
 
         """
-        self.update_rule = kwargs.pop('update_rule', 'sgd')
+        self.update_rule  = kwargs.pop('update_rule', 'sgd')
         self.optim_config = kwargs.pop('optim_config', {})
-        self.lr_decay = kwargs.pop('lr_decay', 1.0)
-        self.batch_size = kwargs.pop('batch_size', 128)
-        self.num_epochs = kwargs.pop('num_epochs', 10)
+        self.lr_decay     = kwargs.pop('lr_decay', 1.0)
+        self.batch_size   = kwargs.pop('batch_size', 128)
+        self.num_epochs   = kwargs.pop('num_epochs', 10)
         # Debug, pring
-        self.print_every = kwargs.pop('print_every', 10)
-        self.verbose = kwargs.pop('verbose', True)
+        self.print_every  = kwargs.pop('print_every', 10)
+        self.verbose      = kwargs.pop('verbose', True)
 
         # Keep reference to data and model
         self.model = model
-        self.data = data
+        self.data  = data
 
         # Check for extra keyword args
         if len(kwargs) > 0:
@@ -53,31 +55,28 @@ class CaptioningSolver(object):
 
         self._reset()
 
-    def _reset(self):
+    def _reset(self) -> None:
         """
         Do some internal bookkeping
         """
-
         self.epoch = 0.0
         self.best_val_acc = 0.0
-        self.best_params = {}
-        self.loss_history = []
-        self.train_acc_history = []
-        self.val_acc_history = []
+        self.best_params :Dict[str, Any] = {}
+        self.loss_history :List[float] = []
+        self.train_acc_history :List[float] = []
+        self.val_acc_history :List[float] = []
 
         # Make a deep copy of the optim config
         # for each parameter
-        self.optim_configs = {}
+        self.optim_configs :Dict[str, Any] = {}
         for p in self.model.params:
             d = {k: v for k, v in self.optim_config.items()}
             self.optim_configs[p] = d
 
-
-    def _step(self):
+    def _step(self) -> None:
         """
         Make a single gradient update
         """
-
         # create a minibatch of data
         minibatch = coco_utils.sample_coco_minibatch(self.data,
                                     batch_size=self.batch_size,
@@ -96,7 +95,7 @@ class CaptioningSolver(object):
             self.optim_configs[p] = next_config
 
 
-    def train(self):
+    def train(self) -> None:
         """
         Run optimization to train the model
 
@@ -123,4 +122,3 @@ class CaptioningSolver(object):
                     self.optim_configs[k]['learning_rate'] *= self.lr_decay
 
             # TODO : check accuracy
-

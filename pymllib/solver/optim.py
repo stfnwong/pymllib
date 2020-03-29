@@ -6,8 +6,12 @@ TODO : Docstrings
 """
 
 import numpy as np
+from typing import Any
+from typing import Dict
+from typing import Tuple
 
-def sgd(w, dw, config=None):
+
+def sgd(w:np.ndarray, dw:np.ndarray, config:Dict[str, Any]=None) -> Tuple[np.ndarray, Dict[str, Any]]:
     """
     Perform vanilla stochastic gradient descent
 
@@ -22,7 +26,8 @@ def sgd(w, dw, config=None):
 
     return next_w, config
 
-def sgd_momentum(w, dw, config=None):
+
+def sgd_momentum(w:np.ndarray, dw:np.ndarray, config:Dict[str, Any]=None) -> Tuple[str, Dict[str,Any]]:
     """
     Perform stochastic gradient descent with momentum
 
@@ -40,8 +45,8 @@ def sgd_momentum(w, dw, config=None):
 
     return next_w, config
 
-def rmsprop(x, dx, config=None):
 
+def rmsprop(x:np.ndarray, dx:np.ndarray, config:Dict[str, Any]=None) -> Tuple[np.ndarray, Dict[str, Any]]:
     if config is None:
         config = {}
     config.setdefault('learning_rate', 1e-2)
@@ -56,7 +61,8 @@ def rmsprop(x, dx, config=None):
 
     return next_x, config
 
-def adam(x, dx, config=None):
+
+def adam(x:np.ndarray, dx:np.ndarray, config:Dict[str, Any]=None) -> Tuple[np.ndarray, Dict[str, Any]]:
 
     if config is None:
         config = {}
@@ -82,8 +88,3 @@ def adam(x, dx, config=None):
     next_x = x - lr * mt_hat / (np.sqrt(vt_hat + eps))
 
     return next_x, config
-
-
-
-    #next_x = x - config['learning_rate'] * dx / (np.sqrt(mnsqr + config['epsilon'])
-

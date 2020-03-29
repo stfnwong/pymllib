@@ -6,61 +6,61 @@ Caffe/CS231n
 Stefan Wong 2017
 """
 
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import numpy as np
 import pickle
-import pymllib.solver.optim as optim
+from pymllib.solver import optim
+
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Union
 
 # Debug
 #from pudb import set_trace; set_trace()
 
-class Solver(object):
+class Solver:
     """
     TODO : Docstring
     """
 
-    def __init__(self, model, data, **kwargs):
+    def __init__(self, model:Any, data:Dict[str, Any], **kwargs) -> None:
         """
         Construct a new solver instance
 
         TODO : Rest of docstring
         """
-
-        self.model = model
-        self.X_train = data['X_train']
-        self.y_train = data['y_train']
-        self.X_val = data['X_val']
-        self.y_val = data['y_val']
+        self.model   :Any        = model
+        self.X_train :np.ndarray = data['X_train']
+        self.y_train :np.ndarray = data['y_train']
+        self.X_val   :np.ndarray = data['X_val']
+        self.y_val   :np.ndarray = data['y_val']
 
         # Unpack keyword args
-        self.update_rule = kwargs.pop('update_rule', 'sgd')
-        self.optim_config = kwargs.pop('optim_config', {})
-        self.lr_decay = kwargs.pop('lr_decay', 0.95)
-        self.batch_size = kwargs.pop('batch_size', 100)
-        self.num_epochs = kwargs.pop('num_epochs', 10)
+        self.update_rule  :str            = kwargs.pop('update_rule', 'sgd')
+        self.optim_config :Dict[str, Any] = kwargs.pop('optim_config', {})
+        self.lr_decay     :float          = kwargs.pop('lr_decay', 0.95)
+        self.batch_size   :float          = kwargs.pop('batch_size', 100)
+        self.num_epochs   :float          = kwargs.pop('num_epochs', 10)
 
-        self.check_point_every = kwargs.pop('check_point_every', 1)
-        self.checkpoint_name = kwargs.pop('checkpoint_name', None)
-        self.print_every = kwargs.pop('print_every', 10)
-        self.verbose = kwargs.pop('verbose', True)
-        self.checkpoint_dir = kwargs.pop('checkpoint_dir', 'checkpoint')
+        self.check_point_every :int  = kwargs.pop('check_point_every', 1)
+        self.checkpoint_name   :str  = kwargs.pop('checkpoint_name', None)
+        self.print_every       :int  = kwargs.pop('print_every', 10)
+        self.verbose           :bool = kwargs.pop('verbose', True)
+        self.checkpoint_dir    :str  = kwargs.pop('checkpoint_dir', 'checkpoint')
         # The idea here is that if the loss doesn't change by eps for more than
         # 500 iters we quit
         self.enable_loss_window = kwargs.pop('enable_loss_window', False)
-        self.loss_window_len = kwargs.pop('loss_window_len', 500)
-        self.loss_window_eps = kwargs.pop('loss_window_eps', 1e-3)
+        self.loss_window_len    = kwargs.pop('loss_window_len', 500)
+        self.loss_window_eps    = kwargs.pop('loss_window_eps', 1e-3)
         #self.loss_converge_window = kwargs.pop('loss_converge_window', 1e4)
 
         if model is None or data is None:
             # assume we are loading from file
-            self.model = None
-            self.X_train = None
-            self.y_train = None
-            self.X_val = None
-            self.y_val = None
+            self.model   :Any= None
+            self.X_train :Union[np.ndarray, None] = None
+            self.y_train :Union[np.ndarray, None] = None
+            self.X_val   :Union[np.ndarray, None] = None
+            self.y_val   :Union[np.ndarray, None] = None
 
             return
 
@@ -79,10 +79,10 @@ class Solver(object):
         # with actual function
         if not hasattr(optim, self.update_rule):
             raise ValueError('Invalid update rule "%s"' % (self.update_rule))
-        self.update_rule = getattr(optim, self.update_rule)
+        self.update_rule = getattr(optim, self.update_rule)()
         self._reset()
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = []
         if self.X_train is not None:
             # print the size of the dataset attached to the solver
@@ -107,34 +107,33 @@ class Solver(object):
 
         return ''.join(s)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def _reset(self):
+    def _reset(self) -> None:
         """
         Set up some bookkeeping variables for optimization
         """
-
         self.epoch = 0
         self.best_val_acc = 0
-        self.best_params = {}
-        self.loss_history = []
-        self.train_acc_history = []
-        self.val_acc_history = []
+        self.best_params : Dict[str, Any]= {}
+        self.loss_history :List[float] = []
+        self.train_acc_history :List[float] = []
+        self.val_acc_history :List[float] = []
         # Make a deep copy of optim for each parameter
         self.optim_configs = {}
         for p in self.model.params:
             d = {k: v for k, v in self.optim_config.items()}
             self.optim_configs[p] = d
 
-    def _step(self):
+    def _step(self) -> None:
         """
         Make a single gradient update
         """
-        num_train = self.X_train.shape[0]
+        num_train  = self.X_train.shape[0]
         batch_mask = np.random.choice(num_train, self.batch_size)
-        X_batch = self.X_train[batch_mask]
-        y_batch = self.y_train[batch_mask]
+        X_batch    = self.X_train[batch_mask]
+        y_batch    = self.y_train[batch_mask]
 
         # Compute the loss, gradients
         loss, grads = self.model.loss(X_batch, y_batch)
@@ -148,7 +147,7 @@ class Solver(object):
             self.model.params[p] = next_w
             self.optim_configs[p] = next_config
 
-    def _get_checkpoint(self):
+    def _get_checkpoint(self) -> Dict[str, Any]:
         checkpoint = {
             # Model data
             'model': self.model,
@@ -175,7 +174,7 @@ class Solver(object):
 
         return checkpoint
 
-    def _save_checkpoint(self):
+    def _save_checkpoint(self) -> None:
         """
         Save the current training status
         """
@@ -189,8 +188,7 @@ class Solver(object):
         with open(filename, 'wb') as fp:
             pickle.dump(checkpoint, fp)
 
-
-    def load_checkpoint(self, fname):
+    def load_checkpoint(self, fname:str) -> None:
         """
         LOAD_CHECKPOINT
         Load a saved checkpoint from disk into a solver object.
@@ -222,7 +220,7 @@ class Solver(object):
         self.loss_window_eps = cpoint_data.get('loss_window_eps', 1e-4)
         #self.loss_converge_window = cpoint_data['loss_converge_window']
 
-    def save(self, filename):
+    def save(self, filename:str) -> None:
         params = self._get_checkpoint()
 
         if self.verbose:
@@ -230,7 +228,7 @@ class Solver(object):
         with open(filename, 'wb') as fp:
             pickle.dump(params, fp)
 
-    def load(self, filename):
+    def load(self, filename:str) -> None:
         """
         Load an entire model from disk
         """
@@ -255,7 +253,11 @@ class Solver(object):
             self.train_acc_history = model_data['train_acc_history']
             self.val_acc_history = model_data['val_acc_history']
 
-    def check_accuracy(self, X, y, num_samples=None, batch_size=100):
+    def check_accuracy(self,
+                       X:np.ndarray,
+                       y:np.ndarray,
+                       num_samples:Union[None, int]=None,
+                       batch_size:int=100) -> float:
         """
         Check accuracy of the model on the provided data.
 
@@ -291,11 +293,10 @@ class Solver(object):
 
         return acc
 
-    def train(self):
+    def train(self) -> None:
         """
         Run optimization to train the model
         """
-
         num_train = self.X_train.shape[0]
         iterations_per_epoch = max(num_train / self.batch_size, 1)
         num_iterations = int(self.num_epochs * iterations_per_epoch)
