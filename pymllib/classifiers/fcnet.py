@@ -10,6 +10,7 @@ from pymllib.layers import layers
 
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Sized
 from typing import Union
 
@@ -21,8 +22,7 @@ class FCNet:
     """
     TODO: Docstring
     """
-    def __init__(self, input_dim:int, hidden_dims:int, **kwargs) -> None:
-
+    def __init__(self, input_dim:int, hidden_dims:List[int], **kwargs) -> None:
         self.verbose       :bool  = kwargs.pop('verbose', False)
         self.use_batchnorm :bool  = kwargs.pop('use_batchnorm', False)
         #self.use_xavier = kwargs.pop('use_xavier', False)
@@ -46,7 +46,7 @@ class FCNet:
         if type(hidden_dims) is not list:
             raise ValueError('hidden_dim must be a list')
 
-        dims :int = [input_dim] + hidden_dims + [num_classes]
+        dims :List[int] = [input_dim] + hidden_dims + [num_classes]
         #Ws = {'W' + str(i+1) : self.weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
         #bs = {'b' + str(i+1) : np.zeros(dims[i+1]) for i in range(len(dims)-1)}
         #self.params.update(bs)
@@ -212,7 +212,7 @@ class FCNet:
             return scores
 
         loss = 0.0
-        grads = {}
+        grads :Dict[str, Any] = {}
         # Compute loss
         data_loss, dscores = layers.softmax_loss(scores, y)
         reg_loss = 0

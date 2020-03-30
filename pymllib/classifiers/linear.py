@@ -5,17 +5,18 @@ LINEAR CLASSIFIER
 
 import numpy as np
 from typing import Tuple
+from typing import Union
 
 
 class LinearClassifier:
     def __init__(self, reg:float=5e-6, ss:float=1e-3) -> None:
-        self.step_size = ss
-        self.reg = reg       # regularization strength
-        self.num_iter = 200
-        self.W = None
-        self.scores = None
-        self.dscores = None
-        self.loss = None
+        self.step_size :float = ss
+        self.reg       :float = reg       # regularization strength
+        self.num_iter  :int   = 200
+        self.W         :np.ndarray = None
+        self.scores    :np.ndarray = None
+        self.dscores   :np.ndarray = None
+        self.loss      :np.ndarray = None
 
     def init_params(self, D:int, K:int) -> None:
         # K = number of classes
@@ -33,9 +34,9 @@ class LinearClassifier:
         probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
 
         correct_logprobs = -np.log(probs[range(num_examples), y])
-        data_loss = np.sum(correct_logprobs) / num_examples
-        reg_loss = 0.5 * self.reg * np.sum(self.W * self.W)
-        loss = data_loss + reg_loss
+        data_loss        = np.sum(correct_logprobs) / num_examples
+        reg_loss         = 0.5 * self.reg * np.sum(self.W * self.W)
+        loss             = data_loss + reg_loss
 
         dscores = probs
         dscores[range(num_examples), y] -= 1

@@ -98,20 +98,20 @@ class CaptioningRNN:
         mask = (captions_out != self._null)
         # Weights and bias for the arrine transform from image features to
         # initial hidden state
-        W_proj = self.params['W_proj']
-        b_proj = self.params['b_proj']
+        W_proj  = self.params['W_proj']
+        b_proj  = self.params['b_proj']
         # Word embedding matrix
         W_embed = self.params['W_embed']
         # Input to hidden, hidden-to-hidden, and biases for the RNN
-        Wx = self.params['Wx']
-        Wh = self.params['Wh']
-        b = self.params['b']
+        Wx      = self.params['Wx']
+        Wh      = self.params['Wh']
+        b       = self.params['b']
         # Weight and bias for hidden-to-vocab transformation
         W_vocab = self.params['W_vocab']
         b_vocab = self.params['b_vocab']
 
         loss = 0.0
-        grads = {}
+        grads :Dict[str, Any] = {}
 
         # ===============================
         # FORWARD PASS

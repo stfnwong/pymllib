@@ -5,47 +5,51 @@ Find suitable parameters for convolutional neural network
 Stefan Wong 2017
 """
 
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 # Lib
 from pymllib.solver import solver
 from pymllib.classifiers import convnet
 from pymllib.utils import data_utils
 
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
+from typing import Union
+
+
 # Debug
 #from pudb import set_trace; set_trace()
 
-class ConvParamSearch(object):
-    def __init__(self, data, model, **kwargs):
+class ConvParamSearch:
+    def __init__(self, data:Any, model:Any, **kwargs) -> None:
         # Reserve names for model and solver
 
         # Search params
-        self.max_searches = kwargs.pop('max_searches', 1e3)
-        self.num_train = kwargs.pop('num_train', 500)
-        self.ws_range = kwargs.pop('ws_range', [-6, 1])
-        self.lr_range = kwargs.pop('lr_range', [-5, 1])
-        self.reg_range = kwargs.pop('reg_range', [-3, 1])
+        self.max_searches :int             = kwargs.pop('max_searches', 1e3)
+        self.num_train    :int             = kwargs.pop('num_train', 500)
+        self.ws_range     :Tuple[int, int] = kwargs.pop('ws_range', [-6, 1])
+        self.lr_range     :Tuple[int, int] = kwargs.pop('lr_range', [-5, 1])
+        self.reg_range    :Tuple[int, int] = kwargs.pop('reg_range', [-3, 1])
         # Model params
-        self.model_input_dim = kwargs.pop('input_dim', (3, 32, 32))
-        self.model_hidden_dims = kwargs.pop('hidden_dims', [256, 256])
-        self.model_num_filters = kwargs.pop('num_filters', [16, 32, 64, 128])
-        self.model_num_classes = kwargs.pop('num_classes', 10)
-        self.model_use_batchnorm = kwargs.pop('use_batchnorm', True)
+        self.model_input_dim     :Tuple[int, int, int] = kwargs.pop('input_dim', (3, 32, 32))
+        self.model_hidden_dims   :List[int] = kwargs.pop('hidden_dims', [256, 256])
+        self.model_num_filters   :List[int] = kwargs.pop('num_filters', [16, 32, 64, 128])
+        self.model_num_classes   :int       = kwargs.pop('num_classes', 10)
+        self.model_use_batchnorm :bool      = kwargs.pop('use_batchnorm', True)
         # Solver params
-        self.solver_num_epochs = kwargs.pop('num_epochs', 100)
-        self.solver_batch_size = kwargs.pop('batch_size', 20)
-        self.solver_update_rule = kwargs.pop('update_rule', 'adam')
+        self.solver_num_epochs      = kwargs.pop('num_epochs', 100)
+        self.solver_batch_size      = kwargs.pop('batch_size', 20)
+        self.solver_update_rule     = kwargs.pop('update_rule', 'adam')
         self.solver_checkpoint_name = kwargs.pop('checkpoint_name', None)
-        self.solver_checkpoint_dir = kwargs.pop('checkpoint_dir', '.')
-        self.solver_print_every = kwargs.pop('print_every', 20)
+        self.solver_checkpoint_dir  = kwargs.pop('checkpoint_dir', '.')
+        self.solver_print_every     = kwargs.pop('print_every', 20)
         # Output params
-        self.lr_output = 0.0
-        self.ws_output = 0.0
-        self.reg_output = 0.0
+        self.lr_output  :float = 0.0
+        self.ws_output  :float = 0.0
+        self.reg_output :float = 0.0
         # Other params
-        self.verbose = kwargs.pop('verbose', False)
+        self.verbose    :bool  = kwargs.pop('verbose', False)
 
         # Internal params
         self.solv = None
@@ -57,12 +61,10 @@ class ConvParamSearch(object):
             return
 
         # TODO : Split as per solver?
-        self.model = model
-        self.data = data
+        self.model:Any = model
+        self.data :Dict[str, Any] = data
 
-
-
-    def __str__(self):
+    def __str__(self) -> str:
         s = []
         s.append("Model parameters\n")
 
@@ -96,12 +98,12 @@ class ConvParamSearch(object):
 
         return ''.join(s)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def load_data(self, data_dir):
+    def load_data(self, data_dir:str) -> None:
         self.dataset = data_utils.get_CIFAR10_data(data_dir)
-        self.train_data = {
+        self.train_data :Dict[str, Any] = {
             'X_train': self.dataset['X_train'][:self.num_train],
             'y_train': self.dataset['y_train'][:self.num_train],
             'X_val':   self.dataset['X_val'][:self.num_train],
@@ -112,7 +114,7 @@ class ConvParamSearch(object):
             for k, v in self.dataset.items():
                 print("%s : %s " % (k, v.shape))
 
-    def init_model(self, weight_scale, reg):
+    def init_model(self, weight_scale:float, reg:float) -> None:
         self.model = convnet.ConvNetLayer(input_dim=self.model_input_dim,
                                             hidden_dims=self.model_hidden_dims,
                                             num_filters=self.model_num_filters,
@@ -121,8 +123,7 @@ class ConvParamSearch(object):
                                             weight_scale=weight_scale,
                                             verbose=self.verbose)
 
-    def init_solver(self, data, learning_rate=1e-3, num_epochs=None):
-
+    def init_solver(self, data:Dict[str, Any], learning_rate:float=1e-3, num_epochs:Union[None, int]=None) -> None:
         if num_epochs is None:
             num_epochs = self.solver_num_epochs
         self.solv = solver.Solver(self.model,
