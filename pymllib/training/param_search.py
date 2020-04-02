@@ -56,7 +56,7 @@ class ConvParamSearch:
         self.train_data = None
         if data is None or model is None:
             self.model = None
-            self.dataset = None
+            self.dataset :Union[None, Dict[str, Any]] = None
 
             return
 

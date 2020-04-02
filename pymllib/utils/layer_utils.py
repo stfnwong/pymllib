@@ -9,7 +9,7 @@ import numpy as np
 # list of available weight init methods
 valid_init_methods = ['gauss', 'gauss_sqrt', 'gauss_sqrt2', 'xavier']
 
-def fc_layer_weight_init(weight_scale, weight_init, N, D):
+def fc_layer_weight_init(weight_scale:float, weight_init:str, N:int, D:int) -> np.ndarray:
     """
     FC_LAYER_WEIGHT_INIT
 
@@ -32,7 +32,7 @@ def fc_layer_weight_init(weight_scale, weight_init, N, D):
     return W
 
 
-def conv_layer_weight_init(weight_scale, weight_init, N, D, f):
+def conv_layer_weight_init(weight_scale:float, weight_init:str, N:int, D:int, f:int) -> np.ndarray:
     """
     CONV_LAYER_WEIGHT_INIT
 
@@ -53,7 +53,3 @@ def conv_layer_weight_init(weight_scale, weight_init, N, D, f):
         raise ValueError('Invalid weight init method %s' % weight_init)
 
     return W
-
-
-
-

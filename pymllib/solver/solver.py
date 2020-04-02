@@ -23,7 +23,7 @@ class Solver:
     TODO : Docstring
     """
 
-    def __init__(self, model:Any, data:Dict[str, Any], **kwargs) -> None:
+    def __init__(self, model:Any, data:Union[Dict[str, Any], None], **kwargs) -> None:
         """
         Construct a new solver instance
 
@@ -64,11 +64,11 @@ class Solver:
 
             return
 
-        self.model = model
-        self.X_train = data['X_train']
-        self.y_train = data['y_train']
-        self.X_val = data['X_val']
-        self.y_val = data['y_val']
+        self.model   :Any        = model
+        self.X_train :np.ndarray = data['X_train']
+        self.y_train :np.ndarray = data['y_train']
+        self.X_val   :np.ndarray = data['X_val']
+        self.y_val   :np.ndarray = data['y_val']
 
         # Make sure there are no additional arguments
         if len(kwargs) > 0:
@@ -79,7 +79,7 @@ class Solver:
         # with actual function
         if not hasattr(optim, self.update_rule):
             raise ValueError('Invalid update rule "%s"' % (self.update_rule))
-        self.update_rule = getattr(optim, self.update_rule)()
+        self.update = getattr(optim, self.update_rule)()       # TODO: is this not the correct syntax for this?
         self._reset()
 
     def __str__(self) -> str:
@@ -114,14 +114,14 @@ class Solver:
         """
         Set up some bookkeeping variables for optimization
         """
-        self.epoch = 0
-        self.best_val_acc = 0
+        self.epoch :int = 0
+        self.best_val_acc :float = 0
         self.best_params : Dict[str, Any]= {}
         self.loss_history :List[float] = []
         self.train_acc_history :List[float] = []
         self.val_acc_history :List[float] = []
         # Make a deep copy of optim for each parameter
-        self.optim_configs = {}
+        self.optim_configs :Dict[str, Any] = {}
         for p in self.model.params:
             d = {k: v for k, v in self.optim_config.items()}
             self.optim_configs[p] = d
@@ -143,7 +143,7 @@ class Solver:
         for p, w in self.model.params.items():
             dw = grads[p]
             config = self.optim_configs[p]
-            next_w, next_config = self.update_rule(w, dw, config)
+            next_w, next_config = self.update(w, dw, config)
             self.model.params[p] = next_w
             self.optim_configs[p] = next_config
 
