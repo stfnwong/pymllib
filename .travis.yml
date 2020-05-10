@@ -13,17 +13,14 @@ branches:
         - travis-ci
 
 install:
-    - pip install Cython        # if we get Cython seperately can we build python 3.7 stuff and pass the tests?
+    - pip install Cython        
     - pip install --upgrade pip && pip install -r requirements.txt
     - ./setup.sh
 
-# TODO : flake8/linting, 
+# TODO : flake8/linting/mypy
 
 # For now the setup just downloads the cifar10 data
-# NOTE: There is no way the gradient check test can fail by itself. If this 
-# fails then there must be some issue with how I am configuring travis
 script:
     - python3 tests/test_fcnet.py
     - python3 tests/test_layers.py
-    #- python3 tests/test_convnet.py
     - python3 tests/test_solver.py

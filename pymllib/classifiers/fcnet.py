@@ -5,39 +5,37 @@ A more modular design in the style of Caffe
 TODO : Implement the layers as objects and produce an object oriented design
 """
 
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import numpy as np
 from pymllib.layers import layers
 
-# Debug
-#from pudb import set_trace; set_trace()
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Sized
+from typing import Union
 
 
-class FCNet(object):
+class FCNet:
     """
     TODO: Docstring
     """
-    def __init__(self, input_dim, hidden_dims, **kwargs):
-
-        self.verbose = kwargs.pop('verbose', False)
-        self.use_batchnorm = kwargs.pop('use_batchnorm', False)
+    def __init__(self, input_dim:int, hidden_dims:List[int], **kwargs) -> None:
+        self.verbose       :bool  = kwargs.pop('verbose', False)
+        self.use_batchnorm :bool  = kwargs.pop('use_batchnorm', False)
         #self.use_xavier = kwargs.pop('use_xavier', False)
-        self.weight_init = kwargs.pop('weight_init', 'gauss')
-        self.reg = kwargs.pop('reg', 0.0)
-        self.dtype = kwargs.pop('dtype', np.float32)
-        self.weight_scale = kwargs.pop('weight_scale', 1e-2)
-        self.num_layers = 1 + len(hidden_dims)
+        self.weight_init   :str   = kwargs.pop('weight_init', 'gauss')
+        self.reg           :float = kwargs.pop('reg', 0.0)
+        self.dtype                = kwargs.pop('dtype', np.float32)
+        self.weight_scale  :float = kwargs.pop('weight_scale', 1e-2)
+        self.num_layers    :int   = 1 + len(hidden_dims)
 
         # Other params
-        seed = kwargs.pop('seed', None)
-        num_classes = kwargs.pop('num_classes', 10)
-        dropout = kwargs.pop('dropout', 0)
-        self.use_dropout = dropout > 0
+        seed                    = kwargs.pop('seed', None)
+        num_classes      :int   = kwargs.pop('num_classes', 10)
+        dropout          :float = kwargs.pop('dropout', 0)
+        self.use_dropout :bool  = dropout > 0
         # Dict to store weights, activations, biases, etc
-        self.params = {}
+        self.params:Dict[str, np.ndarray] = dict()
 
         # Initialize the parameters of the network, storing all values into a
         # dictionary at self.params. The keys to the dictionary are W1, b1 fo
@@ -45,7 +43,7 @@ class FCNet(object):
         if type(hidden_dims) is not list:
             raise ValueError('hidden_dim must be a list')
 
-        dims = [input_dim] + hidden_dims + [num_classes]
+        dims :List[int] = [input_dim] + hidden_dims + [num_classes]
         #Ws = {'W' + str(i+1) : self.weight_scale * np.random.randn(dims[i], dims[i+1]) for i in range(len(dims)-1)}
         #bs = {'b' + str(i+1) : np.zeros(dims[i+1]) for i in range(len(dims)-1)}
         #self.params.update(bs)
@@ -61,7 +59,7 @@ class FCNet(object):
         # When using dropout, we must pass a dropout_param dict to each dropout
         # layer so that the layer knows the dropout probability and the mode
         # (train/test).
-        self.dropout_param = {}
+        self.dropout_param:Dict[str, Any] = {}
         if self.use_dropout:
             self.dropout_param = {'mode' : 'train', 'p' : dropout}
             if self.verbose:
@@ -97,10 +95,11 @@ class FCNet(object):
             for k in self.bn_params.keys():
                 print(k)
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = []
         s.append('%d layer network\n' % self.num_layers)
         s.append('weight init : %s\n' % self.weight_init)
+
         for k, v in self.params.items():
             if k[:1] == 'W':
                 w = self.params[k]
@@ -108,17 +107,15 @@ class FCNet(object):
 
         return ''.join(s)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         s = []
         for k in sorted(self.params.keys()):
             if k[:1] == 'W':
                 s.append('fc%d-' % int(self.params[k].shape[1]))
         s.append('-net')
-
         return ''.join(s)
 
-
-    def _weight_init(self, N, D):
+    def _weight_init(self, N:int, D:int) -> np.ndarray:
         """
         WEIGHT_INIT
         Set up the weights for a given layer.
@@ -137,7 +134,7 @@ class FCNet(object):
 
         return W
 
-    def loss(self, X, y=None):
+    def loss(self, X:np.ndarray, y:Union[np.ndarray, None]=None) -> Union[np.ndarray, Any]:
         """
         LOSS
         Compute loss and gradients for the fully connected network
@@ -212,7 +209,7 @@ class FCNet(object):
             return scores
 
         loss = 0.0
-        grads = {}
+        grads :Dict[str, Any] = {}
         # Compute loss
         data_loss, dscores = layers.softmax_loss(scores, y)
         reg_loss = 0
@@ -287,172 +284,170 @@ class FCNet(object):
 
 
 
-#class FCNetObject(object):
-#    def __init__(self, hidden_dims, input_dim, layer_types, num_classes=10,
-#                 dropout=0, use_batchnorm=False, reg=0.0,
-#                 weight_scale=1e-2, dtype=np.float32, seed=None,
-#                 verbose=False):
-#
-#        self.verbose = verbose
-#        self.use_batchnorm = use_batchnorm
-#        self.use_dropout = dropout > 0
-#        self.reg = reg
-#        self.num_layers = 1 + len(hidden_dims)
-#        self.dtype = dtype
-#        self.params = {}
-#
-#        # Initialize the parameters of the network, storing all values into a
-#        # dictionary at self.params. The keys to the dictionary are W1, b1 fo
-#        # layer 1, W2, b2 for layer 2, and so on.
-#        if type(hidden_dims) is not list:
-#            raise ValueError('hidden_dim must be a list')
-#
-#        if type(layer_types) is not list:
-#            raise ValueError("layer_types must be a list")
-#
-#        if len(hidden_dims) <= 0:
-#            raise ValueError("hidden_dims cannot be an empty list")
-#
-#        if len(layer_types) <= 0:
-#            raise ValueError("layer_types cannot be an empty list")
-#
-#        if len(hidden_dims) != len(layer_types):
-#            print('DEBUG : len(hidden_dims) != len(layer_types)')
-#
-#        dims = [input_dim] + hidden_dims + [num_classes]
-#        layer_types = layer_types + ['affine']
-#        self.layers = []
-#
-#        # TODO ; Debug - remove
-#        if self.verbose:
-#            print(len(dims))
-#            print(dims)
-#
-#        # Init the layers
-#        for i in range(len(dims)-1):
-#            if(self.verbose):
-#                print("Adding layer %d" % (i+1))
-#            if layer_types[i] == 'affine':
-#                l = layers.AffineLayer(dims[i], dims[i+1], weight_scale)
-#            elif layer_types[i] == 'relu':
-#                l = layers.ReLULayer(dims[i], dims[i+1], weight_scale)
-#            elif layer_types[i] == 'relu-affine':
-#                l = layers.ReluAffineLayer(dims[i], dims[i+1], weight_scale)
-#            else:
-#                raise ValueError("Invalid layer type %s" % layer_types[i])
-#            self.layers.append(l)
-#
-#    def __str__(self):
-#        s = []
-#        s.append("%d layer network\n" % self.num_layers)
-#        for l in range(len(self.layers)-1):
-#            s.append('Layer %d : %s\n' % (l+1, self.layers[l]))
-#        # Output layer
-#        s.append("Output layer: %s\n" % (self.layers[-1]))
-#        return ''.join(s)
-#
-#    def __repr__(self):
-#        return self.__str__()
-#
-#
-#    def collect_params(self):
-#        """
-#        Collect params.
-#        This is just a compatability layer for the solver. In a real object oriented
-#        design the solver will need to be re-written
-#        """
-#
-#        self.params = {}
-#
-#        for i in range(len(self.layers)):
-#            self.params['W' + str(i+1)] = self.layers[i].W
-#            # TODO: Where to the gradients get stored in this configuration?
-#
-#    def loss(self, X, y=None):
-#        X = X.astype(self.dtype)
-#        if y is None:
-#            mode = 'test'
-#        else:
-#            mode = 'train'
-#
-#        # TODO : worry about dropout, batchnorm, later
-#        # Set batchnorm params based on whether this is a training or a test
-#        # run
-#        #self.dropout_param['mode'] = mode
-#        #if self.use_batchnorm:
-#        #    for k, bn_param in self.bn_params.items():
-#        #        bn_param[mode] = mode
-#
-#        # ===============================
-#        # FORWARD PASS
-#        # ===============================
-#        #hidden['h0'] = X.reshape(X.shape[0], np.prod(X.shape[1:]))   # TODO ; Check this...
-#        h = X.reshape(X.shape[0], np.prod(X.shape[1:]))
-#        for l in range(self.num_layers):
-#            idx = l + 1
-#            print("Layer %d forward pass" % idx)
-#            print(self.layers[l])
-#            # TODO : Dropout, batchnorm, etc
-#            h = self.layers[l].forward(h)
-#            if self.verbose:
-#                print(h.shape)
-#
-#        #scores = hidden['h' + str(self.num_layers)]
-#        scores = h
-#
-#        if mode == 'test':
-#            return scores
-#
-#        loss = 0.0
-#        #grads = {}
-#
-#        # Compute loss
-#        data_loss, dscores = layers.softmax_loss(scores, y)
-#        reg_loss = 0
-#        for l in range(self.num_layers):
-#            reg_loss +- 0.5 * self.reg * np.sum(self.layers[l].W * self.layers[l].W)
-#
-#        loss = data_loss + reg_loss
-#
-#        # ===============================
-#        # BACKWARD PASS
-#        # ===============================
-#        #hidden['dh' + str(self.num_layers)] = dscores
-#        for l in range(self.num_layers)[::-1]:
-#            idx = l + 1
-#
-#            # TODO : Need to create a structure in which to put all the
-#            # various derivatives for parameter update later
-#            lgrads = self.layers[l].backward(dh)
-#            dh = lgrads[0]
-#
-#
-#            #dh = hidden['dh' + str(idx)]
-#            #h_cache = hidden['cache_h' + str(idx)]
-#
-#            #if idx == self.num_layers:
-#            #    dh, dw, db = layers.affine_backward(dh, h_cache)
-#            #    hidden['dh' + str(idx-1)] = dh
-#            #    hidden['dW' + str(idx)] = dw
-#            #    hidden['db' + str(idx)] = db
-#            #else:
-#            #    if self.use_dropout:
-#            #        cache_hdrop = hidden['cache_hdrop' + str(idx)]
-#            #        dh = layers.dropout_backward(dh, cache_hdrop)
-#            #    if self.use_batchnorm:
-#            #        dh, dw, db, dgamma, dbeta = layers.affine_norm_relu_backward(dh, h_cache)
-#            #        hidden['dh' + str(idx-1)] = dh
-#            #        hidden['dW' + str(idx)] = dw
-#            #        hidden['db' + str(idx)] = db
-#            #        hidden['dgamma' + str(idx)] = dgamma
-#            #        hidden['dbeta' + str(idx)] = dbeta
-#            #    else:
-#            #        dh, dw, db = layers.affine_relu_backward(dh, h_cache)         # TODO This layer definition
-#            #        hidden['dh' + str(idx-1)] = dh
-#            #        hidden['dW' + str(idx)] = dw
-#            #        hidden['db' + str(idx)] = db
-#
-#
-#        return loss
-#
-#
+# TODO: get rid of this...
+class FCNetObject:
+    def __init__(self, hidden_dims, input_dim, layer_types, num_classes=10,
+                 dropout=0, use_batchnorm=False, reg=0.0,
+                 weight_scale=1e-2, dtype=np.float32, seed=None,
+                 verbose=False):
+
+        self.verbose = verbose
+        self.use_batchnorm = use_batchnorm
+        self.use_dropout = dropout > 0
+        self.reg = reg
+        self.num_layers = 1 + len(hidden_dims)
+        self.dtype = dtype
+        self.params = {}
+
+        # Initialize the parameters of the network, storing all values into a
+        # dictionary at self.params. The keys to the dictionary are W1, b1 fo
+        # layer 1, W2, b2 for layer 2, and so on.
+        if type(hidden_dims) is not list:
+            raise ValueError('hidden_dim must be a list')
+
+        if type(layer_types) is not list:
+            raise ValueError("layer_types must be a list")
+
+        if len(hidden_dims) <= 0:
+            raise ValueError("hidden_dims cannot be an empty list")
+
+        if len(layer_types) <= 0:
+            raise ValueError("layer_types cannot be an empty list")
+
+        if len(hidden_dims) != len(layer_types):
+            print('DEBUG : len(hidden_dims) != len(layer_types)')
+
+        dims = [input_dim] + hidden_dims + [num_classes]
+        layer_types = layer_types + ['affine']
+        self.layers = []
+
+        # TODO ; Debug - remove
+        if self.verbose:
+            print(len(dims))
+            print(dims)
+
+        # Init the layers
+        for i in range(len(dims)-1):
+            if(self.verbose):
+                print("Adding layer %d" % (i+1))
+            if layer_types[i] == 'affine':
+                l = layers.AffineLayer(dims[i], dims[i+1], weight_scale)
+            elif layer_types[i] == 'relu':
+                l = layers.ReLULayer(dims[i], dims[i+1], weight_scale)
+            elif layer_types[i] == 'relu-affine':
+                l = layers.ReluAffineLayer(dims[i], dims[i+1], weight_scale)
+            else:
+                raise ValueError("Invalid layer type %s" % layer_types[i])
+            self.layers.append(l)
+
+    def __str__(self):
+        s = []
+        s.append("%d layer network\n" % self.num_layers)
+        for l in range(len(self.layers)-1):
+            s.append('Layer %d : %s\n' % (l+1, self.layers[l]))
+        # Output layer
+        s.append("Output layer: %s\n" % (self.layers[-1]))
+        return ''.join(s)
+
+    def __repr__(self):
+        return self.__str__()
+
+
+    def collect_params(self):
+        """
+        Collect params.
+        This is just a compatability layer for the solver. In a real object oriented
+        design the solver will need to be re-written
+        """
+
+        self.params = {}
+
+        for i in range(len(self.layers)):
+            self.params['W' + str(i+1)] = self.layers[i].W
+            # TODO: Where to the gradients get stored in this configuration?
+
+    def loss(self, X, y=None):
+        X = X.astype(self.dtype)
+        if y is None:
+            mode = 'test'
+        else:
+            mode = 'train'
+
+        # TODO : worry about dropout, batchnorm, later
+        # Set batchnorm params based on whether this is a training or a test
+        # run
+        #self.dropout_param['mode'] = mode
+        #if self.use_batchnorm:
+        #    for k, bn_param in self.bn_params.items():
+        #        bn_param[mode] = mode
+
+        # ===============================
+        # FORWARD PASS
+        # ===============================
+        #hidden['h0'] = X.reshape(X.shape[0], np.prod(X.shape[1:]))   # TODO ; Check this...
+        h = X.reshape(X.shape[0], np.prod(X.shape[1:]))
+        for l in range(self.num_layers):
+            idx = l + 1
+            print("Layer %d forward pass" % idx)
+            print(self.layers[l])
+            # TODO : Dropout, batchnorm, etc
+            h = self.layers[l].forward(h)
+            if self.verbose:
+                print(h.shape)
+
+        #scores = hidden['h' + str(self.num_layers)]
+        scores = h
+
+        if mode == 'test':
+            return scores
+
+        loss = 0.0
+        #grads = {}
+
+        # Compute loss
+        data_loss, dscores = layers.softmax_loss(scores, y)
+        reg_loss = 0
+        for l in range(self.num_layers):
+            reg_loss +- 0.5 * self.reg * np.sum(self.layers[l].W * self.layers[l].W)
+
+        loss = data_loss + reg_loss
+
+        # ===============================
+        # BACKWARD PASS
+        # ===============================
+        #hidden['dh' + str(self.num_layers)] = dscores
+        for l in range(self.num_layers)[::-1]:
+            idx = l + 1
+
+            # TODO : Need to create a structure in which to put all the
+            # various derivatives for parameter update later
+            lgrads = self.layers[l].backward(dh)
+            dh = lgrads[0]
+
+
+            #dh = hidden['dh' + str(idx)]
+            #h_cache = hidden['cache_h' + str(idx)]
+
+            #if idx == self.num_layers:
+            #    dh, dw, db = layers.affine_backward(dh, h_cache)
+            #    hidden['dh' + str(idx-1)] = dh
+            #    hidden['dW' + str(idx)] = dw
+            #    hidden['db' + str(idx)] = db
+            #else:
+            #    if self.use_dropout:
+            #        cache_hdrop = hidden['cache_hdrop' + str(idx)]
+            #        dh = layers.dropout_backward(dh, cache_hdrop)
+            #    if self.use_batchnorm:
+            #        dh, dw, db, dgamma, dbeta = layers.affine_norm_relu_backward(dh, h_cache)
+            #        hidden['dh' + str(idx-1)] = dh
+            #        hidden['dW' + str(idx)] = dw
+            #        hidden['db' + str(idx)] = db
+            #        hidden['dgamma' + str(idx)] = dgamma
+            #        hidden['dbeta' + str(idx)] = dbeta
+            #    else:
+            #        dh, dw, db = layers.affine_relu_backward(dh, h_cache)         # TODO This layer definition
+            #        hidden['dh' + str(idx-1)] = dh
+            #        hidden['dW' + str(idx)] = dw
+            #        hidden['db' + str(idx)] = db
+
+        return loss

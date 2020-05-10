@@ -3,32 +3,34 @@ CONVNET
 Some basic convolutional networks
 
 """
-
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import numpy as np
 from pymllib.layers import layers
 from pymllib.layers import conv_layers
 from pymllib.utils import layer_utils
+
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
+from typing import Union
 
 # Debug
 #from pudb import set_trace; set_trace()
 
 # Some helper functions... there are really only for debugging use and
 # should be removed later in this branch
-def print_h_sizes(blocks):
+def print_h_sizes(blocks:Dict[str, Any]) -> None:
     for k, v, in blocks.items():
         if k[:1] == 'h':
             print("%s : %s " % (str(k), str(v.shape)))
 
-def print_layers(params, layer_type='W'):
+def print_layers(params:Dict[str, Any], layer_type:str='W') -> None:
     for k, v in params.items():
         if k[:1] == layer_type:
             print("%s : %s " % (str(k), str(v.shape)))
 
-class ConvNetLayer(object):
+
+class ConvNetLayer:
     """
     An L-layer convolutional network with the following architecture
 
@@ -39,34 +41,33 @@ class ConvNetLayer(object):
     channels
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         """
         Init a new network
         """
 
         # Get kwargs
-        self.verbose = kwargs.pop('verbose', False)
-        self.use_batchnorm = kwargs.pop('use_batchnorm', False)
-        #self.use_xavier = kwargs.pop('use_xavier', False)
-        self.weight_init = kwargs.pop('weight_init', 'gauss')
+        self.verbose       :bool  = kwargs.pop('verbose', False)
+        self.use_batchnorm :bool  = kwargs.pop('use_batchnorm', False)
+        self.weight_init   :str   = kwargs.pop('weight_init', 'gauss')
         # TODO : Dropout?
-        self.reg = kwargs.pop('reg', 0.0)
-        self.weight_scale = kwargs.pop('weight_scale', 1e-3)
-        self.dtype = kwargs.pop('dtype', np.float32)
-        self.filter_size = kwargs.pop('filter_size', 3)
+        self.reg           :float = kwargs.pop('reg', 0.0)
+        self.weight_scale  :float = kwargs.pop('weight_scale', 1e-3)
+        self.dtype         = kwargs.pop('dtype', np.float32)
+        self.filter_size   :int   = kwargs.pop('filter_size', 3)
 
         # Other internal params
-        input_dim = kwargs.pop('input_dim', (3, 32, 32))
-        num_filters = kwargs.pop('num_filters', [16, 32])
-        hidden_dims = kwargs.pop('hidden_dims', [100, 100])
-        num_classes = kwargs.pop('num_classes', 10)
-        self.L = len(num_filters)
-        self.M = len(hidden_dims)
+        input_dim   :Tuple[int, int, int] = kwargs.pop('input_dim', (3, 32, 32))
+        num_filters :List[int] = kwargs.pop('num_filters', [16, 32])
+        hidden_dims :List[int] = kwargs.pop('hidden_dims', [100, 100])
+        num_classes :int       = kwargs.pop('num_classes', 10)
+        self.L      = len(num_filters)
+        self.M      = len(hidden_dims)
         self.num_layers = self.L + self.M + 1
-        self.bn_params = {}
+        self.bn_params:Dict[str, Any] = {}
 
         # Internal parameter dict
-        self.params = {}
+        self.params :Dict[str, Any] = {}
 
         # Size of the input
         Cinput, Hinput, Winput = input_dim
@@ -125,7 +126,12 @@ class ConvNetLayer(object):
         for k, v in self.params.items():
             self.params[k] = v.astype(self.dtype)
 
-    def _size_conv(self, stride_conv, filter_size, H, W, n_conv):
+    def _size_conv(self,
+                   stride_conv:int,
+                   filter_size:int,
+                   H:int,
+                   W:int,
+                   n_conv:int) -> Tuple[int, int]:
         P = int((filter_size - 1)/ 2)
         Hc = int(1+ (H + 2 * P - filter_size) / stride_conv)
         Wc = int(1+ (W + 2 * P - filter_size) / stride_conv)
@@ -143,7 +149,7 @@ class ConvNetLayer(object):
             W = Wp
             return self._size_conv(stride_conv, filter_size, H, W, n_conv-1)
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = []
         s.append("%d layer network\n" % self.num_layers)
         s.append('weight init : %s\n' % self.weight_init)
@@ -157,7 +163,7 @@ class ConvNetLayer(object):
 
         return ''.join(s)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         s = []
         conv_layers = []
         fc_layers = []
@@ -174,7 +180,7 @@ class ConvNetLayer(object):
 
         return ''.join(s)
 
-    def _weight_init(self, N, D, fsize=None):
+    def _weight_init(self, N:int, D:int, fsize=None) -> np.ndarray:
         """
         WEIGHT_INIT
         Set up the weights for a given layer.
@@ -207,7 +213,7 @@ class ConvNetLayer(object):
         return W
 
 
-    def loss(self, X, y=None):
+    def loss(self, X:np.ndarray, y:Union[None, np.ndarray]=None) -> Any:
         """
         Evaluate loss and gradient for the convnet
         """
@@ -288,7 +294,7 @@ class ConvNetLayer(object):
             return scores
 
         loss = 0.0
-        grads = {}
+        grads :Dict[str, Any] = {}
         # Compute the loss
         data_loss, dscores = layers.softmax_loss(scores, y)
         reg_loss = 0.0
@@ -374,7 +380,7 @@ class ConvNetLayer(object):
         return loss, grads
 
 
-class ThreeLayerConvNet(object):
+class ThreeLayerConvNet:
     """
     A three layer convolutional network with the following architecture
 

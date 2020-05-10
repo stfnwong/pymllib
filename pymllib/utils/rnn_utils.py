@@ -12,7 +12,12 @@ from pymllib.utils import image_utils
 import numpy as np
 import matplotlib.pyplot as plt
 
-def check_loss(N, T, V, p, verbose=False):
+from typing import Any
+from typing import Dict
+from typing import List
+
+
+def check_loss(N:int, T:int, V:int, p:float, verbose:bool=False) -> Any:
     x = 0.001 * np.random.randn(N, T, V)
     y = np.random.randint(V, size=(N, T))
     mask = np.random.randn(N, T) <= p
@@ -24,9 +29,9 @@ def check_loss(N, T, V, p, verbose=False):
     return out
 
 
-def test_time_sampling(data, model, batch_size=16):
+def test_time_sampling(data:Any, model:Any, batch_size:int=16) -> Dict[str, Any]:
 
-    captions = {}
+    captions :Dict[str, Any] = {}
     for split in ['train', 'val']:
         minibatch = coco_utils.sample_coco_minibatch(data,
                         split=split,
@@ -44,7 +49,8 @@ def test_time_sampling(data, model, batch_size=16):
 
     return captions
 
-def plot_test_time_samples(gt_captions, sample_captions, urls, split):
+
+def plot_test_time_samples(gt_captions:List[str], sample_captions:List[str], urls:List[str], split:str) -> None:
 
     for gt, samp, url in zip(gt_captions, sample_captions, urls):
         plt.imshow(image_utils.image_from_url(url))

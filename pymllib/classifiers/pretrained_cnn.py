@@ -3,29 +3,32 @@ PRETRAINED CNN
 From CS231n
 """
 
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import numpy as np
 import h5py
 # Layers
 from pymllib.layers import layers
 
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
+from typing import Union
 
-class PretrainedCNN(object):
-    def __init__(self, **kwargs):
+
+class PretrainedCNN:
+    def __init__(self, **kwargs) -> None:
         """
         This is the pre-trained CNN from CS231n
         """
-        self.dtype = kwargs.pop('dtype', np.float32)
-        self.verbose = kwargs.pop('verbose', False)
-        self.num_classes = kwargs.pop('num_classes', 100)
-        self.input_size = kwargs.pop('input_size', 64)
-        h5file = kwargs.pop('h5file', None)
+        self.dtype             = kwargs.pop('dtype', np.float32)
+        self.verbose     :bool = kwargs.pop('verbose', False)
+        self.num_classes :int  = kwargs.pop('num_classes', 100)
+        self.input_size  :int  = kwargs.pop('input_size', 64)
+        h5file           :str  = kwargs.pop('h5file', None)
 
         # Set up convolution parameters
-        self.conv_params = []
+        self.conv_params:List[Dict[str, int]] = []
         self.conv_params.append({'stride': 2, 'pad': 2})
         self.conv_params.append({'stride': 1, 'pad': 1})
         self.conv_params.append({'stride': 2, 'pad': 2})
@@ -36,22 +39,22 @@ class PretrainedCNN(object):
         self.conv_params.append({'stride': 1, 'pad': 1})
         self.conv_params.append({'stride': 2, 'pad': 1})
 
-        self.filter_sizes = [5, 3, 3, 3, 3, 3, 3, 3, 3]
-        self.num_filters = [64, 64, 128, 128, 256, 256, 512, 52, 1024]
-        hidden_dim = 512
+        self.filter_sizes :List[int] = [5, 3, 3, 3, 3, 3, 3, 3, 3]
+        self.num_filters  :List[int] = [64, 64, 128, 128, 256, 256, 512, 52, 1024]
+        self.hidden_dim = 512
 
-        self.bn_params = []
+        self.bn_params :List[Dict[str, Any]]= []
 
-        cur_size = input_size
+        cur_size = self.input_size
         prev_dim = 3
         self.params = {}
         # Add conv layers
         for i, (f, next_dim) in enumerate(zip(self.filter_sizes, self.num_filters)):
             fan_in = f * f * prev_dim
-            self.params['W%d' % (i+1)] = np.sqrt(2.0 / fan_in) * np.random.randn(next_dim, prev_dim, f, f)
-            self.params['b%d' % (i+1)] = np.zeros(next_dim)
+            self.params['W%d' % (i+1)]     = np.sqrt(2.0 / fan_in) * np.random.randn(next_dim, prev_dim, f, f)
+            self.params['b%d' % (i+1)]     = np.zeros(next_dim)
             self.params['gamma%d' % (i+1)] = np.ones(next_dim)
-            self.params['beta%d' % (i+1)] = np.zeros(next_dim)
+            self.params['beta%d' % (i+1)]  = np.zeros(next_dim)
             self.bn_params.append({'mode': 'train'})
             prev_dim = next_dim
             if self.conv_params[i]['stride'] == 2:
@@ -59,26 +62,25 @@ class PretrainedCNN(object):
 
         # Add fully connected layers
         fan_in = cur_size * cur_size * self.num_filters[-1]
-        self.params['W%d' % (i+2)] = np.sqrt(2.0 / fan_in) * np.random.randn(fan_in, hidden_dim)
-        self.params['b%d' % (i+2)] = np.zeros(hidden_dim)
-        self.params['gamma%d' % (i+2)] = np.ones(hidden_dim)
-        self.params['beta%d' % (i+2)] = np.zeros(hidden_dim)
+        self.params['W%d' % (i+2)] = np.sqrt(2.0 / fan_in) * np.random.randn(fan_in, self.hidden_dim)
+        self.params['b%d' % (i+2)] = np.zeros(self.hidden_dim)
+        self.params['gamma%d' % (i+2)] = np.ones(self.hidden_dim)
+        self.params['beta%d' % (i+2)] = np.zeros(self.hidden_dim)
         self.bn_params.append({'mode': 'train'})
-        self.params['W%d' % (i+3)] = np.sqrt(2.0 / fan_in) * np.random.randn(hidden_dim, num_classes)
-        self.params['b%d' % (i+3)] = np.zeros(num_classes)
+        self.params['W%d' % (i+3)] = np.sqrt(2.0 / fan_in) * np.random.randn(self.hidden_dim, self.num_classes)
+        self.params['b%d' % (i+3)] = np.zeros(self.num_classes)
 
         # Cast to correct type
         for k, v in self.params.items():
             self.params[k] = v.astype(self.dtype)
 
         if h5file is not None:
-            self.load_weights(h5_file)
+            self.load_weights(h5file)
 
-    def load_weights(self, h5_file):
+    def load_weights(self, h5_file:str) -> None:
         """
         Load pre-trained weights from an HDF5 file.
         """
-
         # Before loading weights, make a dummy forward pass
         # to initialize the running averages in the parameters
         x = np.random.randn(1, 3, self.input_size, self.input_size)
@@ -118,7 +120,11 @@ class PretrainedCNN(object):
             for k, v in self.params.items():
                 self.params[k] = v.astype(self.dtype)
 
-    def forward(self, X, start=None, end=None, mode='test'):
+    def forward(self,
+                X:np.ndarray,
+                start:Union[int, None]=None,
+                end:Union[int, None]=None,
+                mode:str='test') -> Tuple[np.ndarray, Any]:
         """
         TODO : complete docstring
         """
@@ -161,11 +167,10 @@ class PretrainedCNN(object):
 
         return out, cache
 
-    def backward(self, dout, cache):
+    def backward(self, dout:np.ndarray, cache:Tuple[Any, Any, Any]) -> Tuple[np.ndarray, np.ndarray]:
         """
         TODO : docstring
         """
-
         start, end, layer_caches = cache
         dnext_a = dout
         grads = {}
@@ -200,16 +205,13 @@ class PretrainedCNN(object):
 
         return dX, grads
 
-
-
-    def loss(X, y=None):
+    def loss(self, X:np.ndarray, y:Union[None, np.ndarray]=None) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]] :
         """
         Classification loss used to train the network.
 
         Inputs:
             - X : Array of data of shape (N, 3, 64, 64)
             - y : Array of labels of shape (N,)
-
         """
 
         if y is None:

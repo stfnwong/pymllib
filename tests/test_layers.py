@@ -5,18 +5,12 @@ backward computations are correct
 
 Stefan Wong 2017
 """
-
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import numpy as np
 import unittest
 # Layers
-import pymllib.layers.layers as layers
-# Utils
-import pymllib.utils.check_gradient as check_gradient
-import pymllib.utils.error as error
+from pymllib.layers import layers
+from pymllib.utils import check_gradient
+from pymllib.utils import error
 
 # Debug
 #from pudb import set_trace; set_trace()

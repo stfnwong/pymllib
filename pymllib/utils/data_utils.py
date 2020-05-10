@@ -6,8 +6,13 @@ import os
 import platform
 from PIL import Image
 
+from typing import Any
+from typing import Dict
+from typing import IO
+from typing import Tuple
 
-def load_pickle(f):
+
+def load_pickle(f:IO[bytes]) -> Dict[str, Any]:
     version = platform.python_version_tuple()
     if version[0] == '2':
         return  pickle.load(f)
@@ -15,7 +20,8 @@ def load_pickle(f):
         return  pickle.load(f, encoding='latin1')
     raise ValueError("invalid python version: {}".format(version))
 
-def load_CIFAR_batch(filename):
+
+def load_CIFAR_batch(filename:str) -> Tuple[np.ndarray, np.ndarray]:
   """ load single batch of cifar """
   with open(filename, 'rb') as f:
     datadict = load_pickle(f)
@@ -25,7 +31,8 @@ def load_CIFAR_batch(filename):
     Y = np.array(Y)
     return X, Y
 
-def load_CIFAR10(ROOT):
+
+def load_CIFAR10(ROOT:str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
   """ load all of cifar """
   xs = []
   ys = []
@@ -41,8 +48,11 @@ def load_CIFAR10(ROOT):
   return Xtr, Ytr, Xte, Yte
 
 
-def get_CIFAR10_data(cifar10_dir, num_training=49000, num_validation=1000, num_test=1000,
-                     subtract_mean=True):
+def get_CIFAR10_data(cifar10_dir:str,
+                     num_training:int=49000,
+                     num_validation:int=1000,
+                     num_test:int=1000,
+                     subtract_mean:bool=True) -> Dict[str, Any]:
     """
     Load the CIFAR-10 dataset from disk and perform preprocessing to prepare
     it for classifiers. These are the same steps as we used for the SVM, but
@@ -83,7 +93,7 @@ def get_CIFAR10_data(cifar10_dir, num_training=49000, num_validation=1000, num_t
     }
 
 
-def load_tiny_imagenet(path, dtype=np.float32, subtract_mean=True):
+def load_tiny_imagenet(path:str, dtype=np.float32, subtract_mean:bool=True) -> Dict[str, Any]:
   """
   Load TinyImageNet. Each of TinyImageNet-100-A, TinyImageNet-100-B, and
   TinyImageNet-200 have the same directory structure, so this can be used
@@ -115,8 +125,8 @@ def load_tiny_imagenet(path, dtype=np.float32, subtract_mean=True):
 
   # Use words.txt to get names for each class
   with open(os.path.join(path, 'words.txt'), 'r') as f:
-    wnid_to_words = dict(line.split('\t') for line in f)
-    for wnid, words in wnid_to_words.iteritems():
+    wnid_to_words :Dict[str, Any]= dict(line.split('\t') for line in f)
+    for wnid, words in wnid_to_words.items():
       wnid_to_words[wnid] = [w.strip() for w in words.split(',')]
   class_names = [wnid_to_words[wnid] for wnid in wnids]
 
@@ -208,7 +218,7 @@ def load_tiny_imagenet(path, dtype=np.float32, subtract_mean=True):
   }
 
 
-def load_models(models_dir):
+def load_models(models_dir:str) -> Dict[str, Any]:
   """
   Load saved models from disk. This will attempt to unpickle all files in a
   directory; any files that give errors on unpickling (such as README.txt) will
