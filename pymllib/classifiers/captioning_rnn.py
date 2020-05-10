@@ -9,6 +9,7 @@ from pymllib.layers import layers
 from pymllib.layers import rnn_layers
 
 # typing
+from typing import Any
 from typing import Dict
 from typing import Tuple
 
